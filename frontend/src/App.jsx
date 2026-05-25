@@ -1806,7 +1806,7 @@ export default function App() {
               </span>
             </div>
             <p style={{ color: "var(--ink-soft)", lineHeight: "1.5", fontSize: "0.82rem", marginBottom: "16px" }}>
-              Next-generation token launchpad and swap terminal built on X Layer Testnet, powered by Uniswap V4 Hooks.
+              Next-generation token launchpad and swap terminal built on X Layer Network, powered by Uniswap V4 Hooks.
             </p>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontFamily: "Geist Mono, monospace", background: "rgba(95, 155, 108, 0.08)", color: "var(--success)", padding: "4px 10px", borderRadius: "100px", border: "1px solid rgba(95,155,108,0.18)" }}>
               <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--success)", animation: "pulse 1.5s ease infinite" }}></span>
