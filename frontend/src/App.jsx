@@ -291,7 +291,10 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {view === "landing" ? (
             <button
-              onClick={() => setView("console")}
+              onClick={() => {
+                setView("console");
+                setConsoleTab("portal");
+              }}
               className="btn-neon"
               style={{ padding: "10px 24px", fontSize: "14px" }}
             >
@@ -454,7 +457,10 @@ export default function App() {
 
               <div style={{ display: "flex", gap: "16px" }}>
                 <button
-                  onClick={() => setView("console")}
+                  onClick={() => {
+                    setView("console");
+                    setConsoleTab("portal");
+                  }}
                   className="btn-neon"
                   style={{ padding: "15px 32px", fontSize: "14px", borderRadius: "100px" }}
                 >
