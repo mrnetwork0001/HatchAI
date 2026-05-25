@@ -1777,27 +1777,133 @@ export default function App() {
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer
         style={{
-          marginTop: "auto",
+          marginTop: "80px",
           borderTop: "1px solid var(--line)",
-          paddingTop: "24px",
-          textAlign: "center",
-          color: "var(--color-text-muted)",
-          fontSize: "0.8rem",
-          fontFamily: "Geist Mono, monospace",
+          paddingTop: "48px",
+          paddingBottom: "24px",
+          color: "var(--ink-soft)",
+          fontSize: "0.85rem",
         }}
       >
-        <p>
-          HatchAI - Hook the Future Hackathon Submission |{" "}
-          <a
-            href={`${explorerUrl}/address/${deployments.contracts.hatchHook}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "var(--coral)", textDecoration: "none", fontWeight: "600" }}
-          >
-            HatchHook on OKLink
-          </a>{" "}
-          | Uniswap V4 Hook on X Layer Testnet
-        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "40px", marginBottom: "40px", textAlign: "left" }}>
+          
+          {/* Column 1: Branding & Info */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+              <img 
+                src="/logo.png" 
+                alt="HatchAI logo" 
+                style={{ 
+                  width: "28px", 
+                  height: "28px", 
+                  borderRadius: "50%", 
+                  border: "1.5px solid var(--ink)",
+                  objectFit: "cover"
+                }} 
+              />
+              <span style={{ fontSize: "1.2rem", fontWeight: "800", color: "var(--ink)" }}>
+                h<span style={{ color: "var(--coral)" }}>a</span>tchAI
+              </span>
+            </div>
+            <p style={{ color: "var(--ink-soft)", lineHeight: "1.5", fontSize: "0.82rem", marginBottom: "16px" }}>
+              Next-generation token launchpad and swap terminal built on X Layer Testnet, powered by Uniswap V4 Hooks.
+            </p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontFamily: "Geist Mono, monospace", background: "rgba(95, 155, 108, 0.08)", color: "var(--success)", padding: "4px 10px", borderRadius: "100px", border: "1px solid rgba(95,155,108,0.18)" }}>
+              <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--success)", animation: "pulse 1.5s ease infinite" }}></span>
+              X Layer Testnet Live
+            </div>
+          </div>
+
+          {/* Column 2: Platform Links */}
+          <div>
+            <h4 style={{ fontWeight: "700", color: "var(--ink)", marginBottom: "16px", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "1px" }}>
+              Platform
+            </h4>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.82rem" }}>
+              <li>
+                <span style={{ cursor: "pointer", color: "var(--ink-soft)", transition: "color 0.2s" }} className="hover-coral" onClick={() => setView("landing")}>
+                  Home Landing
+                </span>
+              </li>
+              <li>
+                <span style={{ cursor: "pointer", color: "var(--ink-soft)", transition: "color 0.2s" }} className="hover-coral" onClick={() => { setView("console"); setConsoleTab("portal"); }}>
+                  Launch Portal
+                </span>
+              </li>
+              <li>
+                <span style={{ cursor: "pointer", color: "var(--ink-soft)", transition: "color 0.2s" }} className="hover-coral" onClick={() => { setView("console"); setConsoleTab("swap"); }}>
+                  Swap Terminal
+                </span>
+              </li>
+              <li>
+                <span style={{ cursor: "pointer", color: "var(--ink-soft)", transition: "color 0.2s" }} className="hover-coral" onClick={() => { setView("console"); setConsoleTab("launchpad"); }}>
+                  Token Launchpad
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Smart Contracts (OKLink) */}
+          <div>
+            <h4 style={{ fontWeight: "700", color: "var(--ink)", marginBottom: "16px", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "1px" }}>
+              Smart Contracts
+            </h4>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontFamily: "Geist Mono, monospace", fontSize: "0.78rem" }}>
+              <li>
+                <a href={`${explorerUrl}/address/${deployments.contracts.hatchHook}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", textDecoration: "none", fontWeight: "600" }}>
+                  HatchHook ↗
+                </a>
+              </li>
+              <li>
+                <a href={`${explorerUrl}/address/${deployments.contracts.poolManager}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
+                  PoolManager ↗
+                </a>
+              </li>
+              <li>
+                <a href={`${explorerUrl}/address/${deployments.contracts.weth}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
+                  Mock WETH ↗
+                </a>
+              </li>
+              <li>
+                <a href={`${explorerUrl}/address/${deployments.contracts.hatchToken}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
+                  Mock HATCH ↗
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: System Specs */}
+          <div>
+            <h4 style={{ fontWeight: "700", color: "var(--ink)", marginBottom: "16px", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "1px" }}>
+              System Specs
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontFamily: "Geist Mono, monospace", fontSize: "0.78rem" }}>
+              <div>
+                <span style={{ color: "var(--muted)" }}>Chain ID:</span> 1952
+              </div>
+              <div>
+                <span style={{ color: "var(--muted)" }}>Tick Spacing:</span> 60
+              </div>
+              <div>
+                <span style={{ color: "var(--muted)" }}>Fee Decay:</span> Linear
+              </div>
+              <div>
+                <span style={{ color: "var(--muted)" }}>Uniswap V4:</span> Hook Active
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bottom Row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--line)", paddingTop: "20px", fontSize: "0.78rem", color: "var(--muted)", fontFamily: "Geist Mono, monospace", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            &copy; {new Date().getFullYear()} HatchAI. Built for Hook the Future Hackathon.
+          </div>
+          <div>
+            Uniswap V4 x X Layer Testnet
+          </div>
+        </div>
       </footer>
     </div>
   );

@@ -798,3 +798,10 @@ h2 .serif, h1 .serif, .serif {
   from, to { color: transparent }
   50% { color: var(--coral) }
 }
+
+.hover-coral {
+  transition: color 0.2s ease;
+}
+.hover-coral:hover {
+  color: var(--coral) !important;
+}
