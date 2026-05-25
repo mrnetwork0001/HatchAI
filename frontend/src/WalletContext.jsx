@@ -640,6 +640,44 @@ export function WalletProvider({ children }) {
     }
   };
 
+  const claimRoyaltiesAutonomously = async () => {
+    setIsTxPending(true);
+    setIsTxSuccess(false);
+
+    try {
+      const provider = new ethers.JsonRpcProvider("https://testrpc.xlayer.tech");
+      const keeperWallet = new ethers.Wallet("0xe8630f3355506a81ca01f16d696d17add0826aea74de13f3202e8148d456e9fe", provider);
+      
+      const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, keeperWallet);
+
+      addLog("Agent AI", `Autonomous Agent triggering claimFees() via onchain Keeper: ${keeperWallet.address.slice(0, 8)}...`, "info");
+      
+      const claimTx = await hatchHookContract.claimFees(activePoolKey);
+      setPendingTxHash(claimTx.hash);
+      addLog("Agent AI", `Autonomous transaction sent: ${claimTx.hash}. Waiting for block confirmation...`, "info");
+      
+      await claimTx.wait();
+      setIsTxSuccess(true);
+      setPendingTxHash(null);
+
+      addLog(
+        "Agent AI Success",
+        `Autonomous harvest completed successfully! Tx: ${claimTx.hash}`,
+        "success"
+      );
+
+      fetchOnChainData(wallet);
+      return { success: true, txHash: claimTx.hash };
+    } catch (err) {
+      console.error(err);
+      const msg = err?.reason || err?.message || "Autonomous execution failed";
+      addLog("Agent AI Error", msg, "error");
+      return { success: false, reason: msg };
+    } finally {
+      setIsTxPending(false);
+    }
+  };
+
   // ── Launchpad Initializer ──────────────────────────────────────────────────
   const initializePool = async (config) => {
     if (!wallet.connected) {
@@ -831,6 +869,7 @@ export function WalletProvider({ children }) {
 
         executeSwap,
         claimRoyalties,
+        claimRoyaltiesAutonomously,
         initializePool,
         resetToDefaultPool,
         selectPool,

@@ -153,6 +153,7 @@ export default function App() {
     timeElapsed,
     executeSwap,
     claimRoyalties,
+    claimRoyaltiesAutonomously,
     pendingTxHash,
     isTxPending,
     isDeployed,
@@ -206,13 +207,13 @@ export default function App() {
       const triggerAutonomousClaim = async () => {
         addLog("Agent AI", `Accumulated hook fees (${accumulatedFees.toFixed(4)} WETH) crossed threshold (${threshold} WETH). Profitability: POSITIVE. Initiating autonomous yield harvest & buyback-burn...`, "info");
         try {
-          const res = await claimRoyalties();
+          const res = await claimRoyaltiesAutonomously();
           if (res.success) {
             setAgentLog(`Agent: Harvest success! Tx: ${res.txHash?.slice(0, 10)}…`);
             addLog("Agent AI", `Autonomous execution success! Tx: ${res.txHash}`, "success");
           } else {
             setAgentLog(`Agent: Harvest failed or rejected.`);
-            addLog("Agent AI", `Autonomous execution failed: ${res.reason || "Rejected by user"}`, "error");
+            addLog("Agent AI", `Autonomous execution failed: ${res.reason || "Execution failed"}`, "error");
           }
         } catch (err) {
           setAgentLog(`Agent: Execution error.`);
@@ -224,7 +225,7 @@ export default function App() {
     } else {
       setAgentLog(`Monitoring... (${accumulatedFees.toFixed(4)} / ${threshold} WETH)`);
     }
-  }, [isAgentActive, accumulatedFees, agentThreshold, isConnected, isTxPending, addLog, claimRoyalties]);
+  }, [isAgentActive, accumulatedFees, agentThreshold, isConnected, isTxPending, addLog, claimRoyaltiesAutonomously]);
 
   // Typewriter effect state
   const words = ["safe", "secure", "proven"];
@@ -1522,19 +1523,19 @@ export default function App() {
                       3. Payout &amp; Deflationary Buyback
                     </h2>
                     <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "16px" }}>
-                      Harvest accumulated WETH swap fees. Splitting is executed onchain by HatchHook.
+                      Harvest accumulated WETH swap fees. Splitting is executed onchain by HatchHook. (Global Active Pool Stats)
                     </p>
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
                       <div style={{ padding: "12px", background: "rgba(255,255,255,0.2)", border: "1px solid var(--line)", borderRadius: "8px" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)" }}>Total Creator Payout</span>
+                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)" }}>Pool Creator Yield</span>
                         <div style={{ fontSize: "1.3rem", fontWeight: "700", marginTop: "4px", color: "var(--success)" }}>
                           {totalCreatorFeesClaimed} WETH
                         </div>
                       </div>
 
                       <div style={{ padding: "12px", background: "rgba(255,255,255,0.2)", border: "1px solid var(--line)", borderRadius: "8px" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)" }}>Total {projectTokenDetails.symbol} Burned</span>
+                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)" }}>Pool Tokens Burned</span>
                         <div style={{ fontSize: "1.3rem", fontWeight: "700", marginTop: "4px", color: "var(--error)" }}>
                           {Number(totalTokensBurned).toLocaleString(undefined, { maximumFractionDigits: 1 })} {projectTokenDetails.symbol}
                         </div>
