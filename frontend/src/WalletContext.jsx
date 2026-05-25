@@ -258,7 +258,8 @@ export function WalletProvider({ children }) {
   const [isTxPending, setIsTxPending] = useState(false);
   const [isTxSuccess, setIsTxSuccess] = useState(false);
 
-  const isOnCorrectChain = wallet.chainId === CHAIN_ID;
+  const [targetChainId, setTargetChainId] = useState(CHAIN_ID);
+  const isOnCorrectChain = wallet.chainId === targetChainId;
   const isDeployed = CONTRACTS.hatchHook !== "0x0000000000000000000000000000000000000000";
 
   // ── Dynamic Pool State ──────────────────────────────────────────────────────
@@ -424,14 +425,15 @@ export function WalletProvider({ children }) {
 
   useEffect(() => {
     if (!wallet.connected) {
-      const provider = new ethers.JsonRpcProvider("https://testrpc.xlayer.tech");
+      const rpcUrl = targetChainId === 196 ? "https://rpc.xlayer.tech" : "https://testrpc.xlayer.tech";
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
       const interval = setInterval(() => {
         provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, [wallet.connected]);
+  }, [wallet.connected, targetChainId]);
 
   // Listen for window.ethereum events
   useEffect(() => {
@@ -513,19 +515,31 @@ export function WalletProvider({ children }) {
     addLog("Wallet", "Disconnected.", "info");
   };
 
+  const handleSwitchChain = async () => {
+    const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+    addLog("Network", `Prompting wallet to switch to ${targetName} (Chain ID: ${targetChainId})...`, "info");
+    const success = await switchToChain(targetChainId);
+    if (success) {
+      addLog("Network", `Wallet successfully switched to ${targetName}.`, "success");
+    } else {
+      addLog("Network Error", `Failed to switch wallet network.`, "error");
+    }
+  };
+
   // ── Auto-switch network if connected to wrong chain ─────────────────────────
   useEffect(() => {
-    if (wallet.connected && wallet.chainId && wallet.chainId !== CHAIN_ID) {
-      addLog("Network", `Connected to wrong chain (${wallet.chainId}). Prompting to switch to correct network (Chain ID: ${CHAIN_ID})...`, "info");
-      switchToChain(CHAIN_ID).then((success) => {
+    if (wallet.connected && wallet.chainId && wallet.chainId !== targetChainId) {
+      const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+      addLog("Network", `Connected to wrong chain (${wallet.chainId}). Prompting to switch to correct network (${targetName}, Chain ID: ${targetChainId})...`, "info");
+      switchToChain(targetChainId).then((success) => {
         if (success) {
-          addLog("Network", "Successfully switched to correct network.", "success");
+          addLog("Network", `Successfully switched to ${targetName}.`, "success");
         } else {
           addLog("Network Error", "Failed to switch network or switch rejected by user.", "error");
         }
       });
     }
-  }, [wallet.connected, wallet.chainId, addLog]);
+  }, [wallet.connected, wallet.chainId, targetChainId, addLog]);
 
   // ── Derived State ───────────────────────────────────────────────────────────
   const nowSec = Math.floor(Date.now() / 1000);
@@ -576,9 +590,10 @@ export function WalletProvider({ children }) {
       addLog("Swap Error", "Connect your wallet first.", "error");
       return { success: false, reason: "Wallet not connected" };
     }
-    if (wallet.chainId !== CHAIN_ID) {
-      addLog("Swap Error", `Switch to X Layer Testnet (Chain: ${CHAIN_ID}) first.`, "error");
-      await switchToChain(CHAIN_ID);
+    if (wallet.chainId !== targetChainId) {
+      const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+      addLog("Swap Error", `Switch to ${targetName} (Chain: ${targetChainId}) first.`, "error");
+      await switchToChain(targetChainId);
       return { success: false, reason: "Wrong network" };
     }
 
@@ -668,9 +683,10 @@ export function WalletProvider({ children }) {
       addLog("Claim Error", "Connect your wallet first.", "error");
       return { success: false, reason: "Wallet not connected" };
     }
-    if (wallet.chainId !== CHAIN_ID) {
-      addLog("Claim Error", `Switch to X Layer Testnet (Chain: ${CHAIN_ID}) first.`, "error");
-      await switchToChain(CHAIN_ID);
+    if (wallet.chainId !== targetChainId) {
+      const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+      addLog("Claim Error", `Switch to ${targetName} (Chain: ${targetChainId}) first.`, "error");
+      await switchToChain(targetChainId);
       return { success: false, reason: "Wrong network" };
     }
 
@@ -713,7 +729,8 @@ export function WalletProvider({ children }) {
     setIsTxSuccess(false);
 
     try {
-      const provider = new ethers.JsonRpcProvider("https://testrpc.xlayer.tech");
+      const rpcUrl = targetChainId === 196 ? "https://rpc.xlayer.tech" : "https://testrpc.xlayer.tech";
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const keeperWallet = new ethers.Wallet("0xe8630f3355506a81ca01f16d696d17add0826aea74de13f3202e8148d456e9fe", provider);
       
       const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, keeperWallet);
@@ -751,9 +768,10 @@ export function WalletProvider({ children }) {
       addLog("Deploy Error", "Connect your wallet first.", "error");
       return { success: false, reason: "Wallet not connected" };
     }
-    if (wallet.chainId !== CHAIN_ID) {
-      addLog("Deploy Error", `Switch to X Layer Testnet (Chain: ${CHAIN_ID}) first.`, "error");
-      await switchToChain(CHAIN_ID);
+    if (wallet.chainId !== targetChainId) {
+      const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+      addLog("Deploy Error", `Switch to ${targetName} (Chain: ${targetChainId}) first.`, "error");
+      await switchToChain(targetChainId);
       return { success: false, reason: "Wrong network" };
     }
 
@@ -797,9 +815,10 @@ export function WalletProvider({ children }) {
       addLog("Faucet Error", "Connect your wallet first.", "error");
       return { success: false, reason: "Wallet not connected" };
     }
-    if (wallet.chainId !== CHAIN_ID) {
-      addLog("Faucet Error", `Switch to X Layer Testnet (Chain: ${CHAIN_ID}) first.`, "error");
-      await switchToChain(CHAIN_ID);
+    if (wallet.chainId !== targetChainId) {
+      const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+      addLog("Faucet Error", `Switch to ${targetName} (Chain: ${targetChainId}) first.`, "error");
+      await switchToChain(targetChainId);
       return { success: false, reason: "Wrong network" };
     }
 
@@ -841,9 +860,10 @@ export function WalletProvider({ children }) {
       addLog("Launchpad Error", "Connect your wallet first.", "error");
       return { success: false, reason: "Wallet not connected" };
     }
-    if (wallet.chainId !== CHAIN_ID) {
-      addLog("Launchpad Error", `Switch to X Layer Testnet (Chain: ${CHAIN_ID}) first.`, "error");
-      await switchToChain(CHAIN_ID);
+    if (wallet.chainId !== targetChainId) {
+      const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
+      addLog("Launchpad Error", `Switch to ${targetName} (Chain: ${targetChainId}) first.`, "error");
+      await switchToChain(targetChainId);
       return { success: false, reason: "Wrong network" };
     }
 
@@ -1066,7 +1086,7 @@ export function WalletProvider({ children }) {
         isConnected: wallet.connected,
         isOnCorrectChain,
         chainId: wallet.chainId,
-        switchChain: () => switchToChain(CHAIN_ID),
+        switchChain: handleSwitchChain,
         connect: handleConnect,
         disconnect: handleDisconnect,
 
@@ -1114,7 +1134,9 @@ export function WalletProvider({ children }) {
 
         deployments,
         isDeployed,
-        explorerUrl: deployments.explorerUrl,
+        explorerUrl: targetChainId === 196 ? "https://www.oklink.com/xlayer" : "https://www.oklink.com/xlayer-test",
+        targetChainId,
+        setTargetChainId,
       }}
     >
       {children}

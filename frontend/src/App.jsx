@@ -319,6 +319,8 @@ export default function App() {
     blockNumber,
     activeDecayMode,
     activeStartBlock,
+    targetChainId,
+    setTargetChainId,
   } = useWallet();
 
   const [view, setView] = useState("landing"); // 'landing' | 'console'
@@ -707,7 +709,7 @@ export default function App() {
       title: "Deploying Test ERC20 Token",
       status: "pending",
       txHash: "",
-      message: `Deploying custom ERC20 contract for ${tokenDeployName} (${tokenDeploySymbol}) on X Layer Testnet...`,
+      message: `Deploying custom ERC20 contract for ${tokenDeployName} (${tokenDeploySymbol}) on ${targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}...`,
       errorReason: ""
     });
     
@@ -985,7 +987,7 @@ export default function App() {
                   gap: "8px",
                   background: "rgba(50, 52, 58, 0.03)",
                   border: "1px solid var(--line)",
-                  padding: "6px 14px",
+                  padding: "6px 10px 6px 14px",
                   borderRadius: "100px",
                   fontSize: "11px",
                   fontFamily: "Geist Mono, monospace",
@@ -1000,7 +1002,27 @@ export default function App() {
                     animation: "pulse 1.5s ease infinite",
                   }}
                 />
-                <span>{isConnected && isOnCorrectChain ? "X Layer Testnet" : "X Layer Testnet (ID: 1952)"}</span>
+                <select
+                  value={targetChainId}
+                  onChange={(e) => {
+                    const selectedId = Number(e.target.value);
+                    setTargetChainId(selectedId);
+                  }}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--ink)",
+                    fontWeight: "700",
+                    fontSize: "11px",
+                    fontFamily: "Geist Mono, monospace",
+                    cursor: "pointer",
+                    outline: "none",
+                    paddingRight: "4px"
+                  }}
+                >
+                  <option value={1952} style={{ background: "var(--sand)", color: "var(--ink)" }}>X Layer Testnet</option>
+                  <option value={196} style={{ background: "var(--sand)", color: "var(--ink)" }}>X Layer Mainnet</option>
+                </select>
               </div>
 
               {/* Custom Connect Button */}
@@ -1050,7 +1072,7 @@ export default function App() {
         >
           <span style={{ color: "var(--error)", fontWeight: "600", fontSize: "14px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
             <AlertIcon size={16} color="var(--error)" />
-            Wrong network! Please switch to X Layer Testnet (Chain ID: 1952)
+            Wrong network! Please switch to {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"} (Chain ID: {targetChainId})
           </span>
           <button
             onClick={switchChain}
@@ -1369,7 +1391,7 @@ export default function App() {
               </div>
               <div className={`faq-answer ${openFaqIndex === 0 ? 'open' : ''}`}>
                 <p style={{ paddingBottom: "10px" }}>
-                  HatchAI is a secure launchpad and swap terminal built with Uniswap V4 Hooks on X Layer Testnet. It helps project developers launch liquidity pools containing automated defenses such as swap size caps, trade cooldowns, and dynamically decaying launch taxes.
+                  HatchAI is a secure launchpad and swap terminal built with Uniswap V4 Hooks on {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}. It helps project developers launch liquidity pools containing automated defenses such as swap size caps, trade cooldowns, and dynamically decaying launch taxes.
                 </p>
               </div>
             </div>
@@ -1405,7 +1427,7 @@ export default function App() {
               </div>
               <div className={`faq-answer ${openFaqIndex === 3 ? 'open' : ''}`}>
                 <p style={{ paddingBottom: "10px" }}>
-                  Simply connect your MetaMask or other Web3 wallet to X Layer Testnet (Chain ID 1952) using our top bar. You can swap WETH for project tokens in the Swap Terminal, monitor the decaying fees in real-time, or launch your own token sale under the Token Launchpad tab.
+                  Simply connect your MetaMask or other Web3 wallet to {targetChainId === 196 ? "X Layer Mainnet (Chain ID 196)" : "X Layer Testnet (Chain ID 1952)"} using our top bar. You can swap WETH for project tokens in the Swap Terminal, monitor the decaying fees in real-time, or launch your own token sale under the Token Launchpad tab.
                 </p>
               </div>
             </div>
@@ -1870,7 +1892,7 @@ export default function App() {
                         <LinkIcon size={36} color="var(--coral)" />
                       </div>
                       <p style={{ color: "var(--color-text-secondary)", marginBottom: "16px", fontSize: "0.9rem" }}>
-                        Connect your wallet to start swapping on X Layer Testnet
+                        Connect your wallet to start swapping on {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}
                       </p>
                       <button onClick={connect} className="btn-neon" style={{ width: "100%" }}>
                         Connect Wallet
@@ -2383,7 +2405,7 @@ export default function App() {
                         <div className="log-entry log-system">
                           <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
                           <span className="log-tag">[System]</span>
-                          <span style={{ color: "#fff" }}>Connect wallet to X Layer Testnet to start interacting.</span>
+                          <span style={{ color: "#fff" }}>Connect wallet to {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"} to start interacting.</span>
                         </div>
                       )}
                       {logs.map((log, index) => (
@@ -2412,7 +2434,7 @@ export default function App() {
                 Developer Token &amp; Pool Launchpad
               </h2>
               <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "32px", lineHeight: "1.5" }}>
-                Step-by-step developer console to deploy a test ERC20 token and initialize a protected Uniswap v4 sale pool on X Layer Testnet.
+                Step-by-step developer console to deploy a test ERC20 token and initialize a protected Uniswap v4 sale pool on {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}.
               </p>
 
               {!isConnected ? (
@@ -2421,7 +2443,7 @@ export default function App() {
                     <LinkIcon size={36} color="var(--coral)" />
                   </div>
                   <p style={{ color: "var(--ink-soft)", marginBottom: "16px" }}>
-                    Connect your wallet to deploy tokens and launch pools on X Layer Testnet
+                    Connect your wallet to deploy tokens and launch pools on {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}
                   </p>
                   <button onClick={connect} className="btn-neon" style={{ padding: "10px 24px" }}>
                     Connect Wallet
@@ -2447,7 +2469,7 @@ export default function App() {
                         Low OKB Balance Detected ({okbBalance} OKB)
                       </div>
                       <p style={{ margin: 0, color: "var(--ink-soft)" }}>
-                        Deploying contracts and seeding pools on X Layer Testnet requires native OKB tokens to cover gas fees. If your balance is insufficient, gas estimation will fail and transactions will revert.
+                        Deploying contracts and seeding pools on {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"} requires native OKB tokens to cover gas fees. If your balance is insufficient, gas estimation will fail and transactions will revert.
                       </p>
                       <div style={{ marginTop: "12px" }}>
                         <a
@@ -2520,7 +2542,7 @@ export default function App() {
                       Phase 1: Deploy a Test ERC20 Token
                     </h3>
                     <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginBottom: "20px", lineHeight: "1.4" }}>
-                      Need a token to test the launchpad? Quick-deploy a Mock ERC20 contract directly onto X Layer Testnet. The deployed address will automatically populate Phase 2.
+                      Need a token to test the launchpad? Quick-deploy a Mock ERC20 contract directly onto {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}. The deployed address will automatically populate Phase 2.
                     </p>
 
                     <form onSubmit={handleDeployToken} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -2899,7 +2921,7 @@ export default function App() {
             </p>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontFamily: "Geist Mono, monospace", background: "rgba(95, 155, 108, 0.08)", color: "var(--success)", padding: "4px 10px", borderRadius: "100px", border: "1px solid rgba(95,155,108,0.18)" }}>
               <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--success)", animation: "pulse 1.5s ease infinite" }}></span>
-              X Layer Testnet Live
+              {targetChainId === 196 ? "X Layer Mainnet Live" : "X Layer Testnet Live"}
             </div>
           </div>
 
@@ -2990,7 +3012,7 @@ export default function App() {
             &copy; {new Date().getFullYear()} HatchAI. Built for Hook the Future Hackathon.
           </div>
           <div>
-            Uniswap V4 x X Layer Testnet
+            Uniswap V4 x {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}
           </div>
         </div>
       </footer>
