@@ -214,6 +214,68 @@ const renderSimIcon = (type) => {
   }
 };
 
+const Tooltip = ({ text }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span 
+      style={{ position: "relative", display: "inline-flex", alignItems: "center", cursor: "help" }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <span style={{
+        display: "inline-flex",
+        background: "rgba(50,52,58,0.08)",
+        borderRadius: "50%",
+        width: "14px",
+        height: "14px",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "9px",
+        fontWeight: "800",
+        color: "var(--ink-soft)",
+        border: "1px solid var(--line)",
+        marginLeft: "4px",
+        transition: "all 0.2s ease"
+      }}>
+        !
+      </span>
+      {visible && (
+        <span style={{
+          position: "absolute",
+          bottom: "calc(100% + 8px)",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(28, 29, 33, 0.96)",
+          color: "var(--sand)",
+          padding: "8px 12px",
+          borderRadius: "8px",
+          fontSize: "0.74rem",
+          fontWeight: "500",
+          lineHeight: "1.35",
+          width: "250px",
+          textAlign: "center",
+          boxShadow: "0 6px 20px rgba(0, 0, 0, 0.25)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          backdropFilter: "blur(6px)",
+          zIndex: 1000,
+          pointerEvents: "none"
+        }}>
+          {text}
+          <span style={{
+            position: "absolute",
+            top: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            borderWidth: "5px",
+            borderStyle: "solid",
+            borderColor: "rgba(28, 29, 33, 0.96) transparent transparent transparent"
+          }} />
+        </span>
+      )}
+    </span>
+  );
+};
+
 export default function App() {
   const {
     address,
@@ -2664,8 +2726,9 @@ export default function App() {
 
                       {/* Decay Mode Selection */}
                       <div style={{ gridColumn: "span 2", marginBottom: "4px" }}>
-                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "8px", fontWeight: "600" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "2px", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "8px", fontWeight: "600" }}>
                           Decay Mode (Protection Period Calculation)
+                          <Tooltip text="Decides how the anti-sniper protection period decays. Time-Based decays linearly over hours. Block-Based decays in discrete steps over block height milestones (Blocks 1-30 face higher step rates) to defend against automated smart contract bots." />
                         </label>
                         <div style={{ display: "flex", background: "rgba(50,52,58,0.05)", borderRadius: "100px", padding: "3px", border: "1px solid var(--line)", width: "fit-content" }}>
                           <button
@@ -2713,8 +2776,9 @@ export default function App() {
 
                       {/* Decay Duration */}
                       <div>
-                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "2px", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
                           {launchDecayMode === "block" ? "Tax Decay Duration (Blocks)" : "Tax Decay Duration (Hours)"}
+                          <Tooltip text={launchDecayMode === "block" ? "The total number of blocks (approx. 2 seconds per block on X Layer) until the anti-sniper tax decays completely to the 0.3% baseline rate." : "The total number of hours until the anti-sniper tax decays completely to the 0.3% baseline rate."} />
                         </label>
                         <input
                           type="number"
@@ -2730,8 +2794,9 @@ export default function App() {
 
                       {/* Cooldown */}
                       <div>
-                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "2px", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
                           Wallet Trade Cooldown (Seconds)
+                          <Tooltip text="Prevents a single wallet from executing multiple swap transactions within the specified cooldown window (e.g. 60 seconds) to slow down bot snipers." />
                         </label>
                         <input
                           type="number"
@@ -2747,8 +2812,9 @@ export default function App() {
 
                       {/* Anti-Whale Limit */}
                       <div style={{ gridColumn: "span 2" }}>
-                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "2px", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
                           Anti-Whale Max Swap Cap (Tokens)
+                          <Tooltip text="The maximum amount of tokens a single wallet can purchase in a single transaction/block during the protection decay period." />
                         </label>
                         <input
                           type="number"
