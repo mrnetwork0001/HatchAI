@@ -290,6 +290,14 @@ export default function App() {
   const [launchSeedWeth, setLaunchSeedWeth] = useState("0.5"); // 0.5 WETH
 
   const [isFaucetPending, setIsFaucetPending] = useState(false);
+  const [txModal, setTxModal] = useState({
+    isOpen: false,
+    title: "",
+    status: "", // 'pending' | 'success' | 'error'
+    txHash: "",
+    message: "",
+    errorReason: ""
+  });
 
   useEffect(() => {
     if (tokenDeployStatus) {
@@ -300,7 +308,34 @@ export default function App() {
 
   const handleMintWeth = async () => {
     setIsFaucetPending(true);
-    await mintWeth("10");
+    setTxModal({
+      isOpen: true,
+      title: "Claim Mock WETH",
+      status: "pending",
+      txHash: "",
+      message: "Submitting transaction to mint 10 Mock WETH to your wallet... Please confirm in your wallet.",
+      errorReason: ""
+    });
+    const res = await mintWeth("10");
+    if (res.success) {
+      setTxModal({
+        isOpen: true,
+        title: "Claim Mock WETH",
+        status: "success",
+        txHash: res.txHash || "",
+        message: "Successfully claimed 10 Mock WETH! They are now available in your wallet.",
+        errorReason: ""
+      });
+    } else {
+      setTxModal({
+        isOpen: true,
+        title: "Claim Mock WETH",
+        status: "error",
+        txHash: "",
+        message: "Failed to claim Mock WETH.",
+        errorReason: res.reason
+      });
+    }
     setIsFaucetPending(false);
   };
 
@@ -329,27 +364,75 @@ export default function App() {
   const handleSwap = async (e) => {
     e.preventDefault();
     setStatusMsg({ text: "Submitting swap transaction…", type: "pending" });
+    setTxModal({
+      isOpen: true,
+      title: "Swap Tokens",
+      status: "pending",
+      txHash: "",
+      message: `Executing token swap on the protected pool... Please confirm the transaction in your wallet.`,
+      errorReason: ""
+    });
     const res = await executeSwap(swapAmount);
     if (res.success) {
       setStatusMsg({
         text: `Swap submitted! Tx: ${res.txHash?.slice(0, 10)}…`,
         type: "success",
       });
+      setTxModal({
+        isOpen: true,
+        title: "Swap Tokens",
+        status: "success",
+        txHash: res.txHash || "",
+        message: "Swap executed successfully! Balances have been updated.",
+        errorReason: ""
+      });
     } else {
       setStatusMsg({ text: res.reason || "Swap failed.", type: "error" });
+      setTxModal({
+        isOpen: true,
+        title: "Swap Tokens",
+        status: "error",
+        txHash: "",
+        message: "Failed to execute swap.",
+        errorReason: res.reason
+      });
     }
   };
 
   const handleClaim = async () => {
     setStatusMsg({ text: "Submitting claimFees transaction…", type: "pending" });
+    setTxModal({
+      isOpen: true,
+      title: "Harvest Royalties & Fees",
+      status: "pending",
+      txHash: "",
+      message: `Submitting claimFees to retrieve creator royalties and LP fees... Please confirm in your wallet.`,
+      errorReason: ""
+    });
     const res = await claimRoyalties();
     if (res.success) {
       setStatusMsg({
         text: `Claim submitted! Tx: ${res.txHash?.slice(0, 10)}…`,
         type: "success",
       });
+      setTxModal({
+        isOpen: true,
+        title: "Harvest Royalties & Fees",
+        status: "success",
+        txHash: res.txHash || "",
+        message: "Royalties and creator fees successfully harvested to your wallet!",
+        errorReason: ""
+      });
     } else {
       setStatusMsg({ text: res.reason || "Claim failed.", type: "error" });
+      setTxModal({
+        isOpen: true,
+        title: "Harvest Royalties & Fees",
+        status: "error",
+        txHash: "",
+        message: "Failed to harvest royalties.",
+        errorReason: res.reason
+      });
     }
   };
 
@@ -360,6 +443,14 @@ export default function App() {
       return;
     }
     setTokenDeployStatus({ text: "Submitting deployToken transaction...", type: "pending" });
+    setTxModal({
+      isOpen: true,
+      title: "Deploying Test ERC20 Token",
+      status: "pending",
+      txHash: "",
+      message: `Deploying custom ERC20 contract for ${tokenDeployName} (${tokenDeploySymbol}) on X Layer Testnet...`,
+      errorReason: ""
+    });
     
     try {
       const res = await deployToken(tokenDeployName, tokenDeploySymbol, tokenDeploySupply);
@@ -369,11 +460,35 @@ export default function App() {
           type: "success"
         });
         setLaunchTokenAddress(res.address);
+        setTxModal({
+          isOpen: true,
+          title: "Deploying Test ERC20 Token",
+          status: "success",
+          txHash: res.txHash || "",
+          message: `Successfully deployed your custom token contract at: ${res.address}. Initial supply minted to your wallet.`,
+          errorReason: ""
+        });
       } else {
         setTokenDeployStatus({ text: res.reason || "Deployment failed.", type: "error" });
+        setTxModal({
+          isOpen: true,
+          title: "Deploying Test ERC20 Token",
+          status: "error",
+          txHash: "",
+          message: "Failed to deploy custom token contract.",
+          errorReason: res.reason
+        });
       }
     } catch (err) {
       setTokenDeployStatus({ text: err.message || "Deployment failed.", type: "error" });
+      setTxModal({
+        isOpen: true,
+        title: "Deploying Test ERC20 Token",
+        status: "error",
+        txHash: "",
+        message: "Failed to deploy custom token contract.",
+        errorReason: err.message
+      });
     }
   };
 
@@ -384,6 +499,14 @@ export default function App() {
       return;
     }
     setLaunchStatus({ text: "Submitting initializePool transaction...", type: "pending" });
+    setTxModal({
+      isOpen: true,
+      title: "Launching Protected Pool",
+      status: "pending",
+      txHash: "",
+      message: "Configuring Uniswap v4 pool parameters, executing initialize call, granting token approvals, and seeding initial reserves... Please confirm transactions in your wallet.",
+      errorReason: ""
+    });
     
     const res = await initializePool({
       projectToken: launchTokenAddress,
@@ -403,11 +526,27 @@ export default function App() {
         text: `Pool Initialized! Custom pool ID: ${res.poolId.slice(0, 14)}...`,
         type: "success"
       });
+      setTxModal({
+        isOpen: true,
+        title: "Launching Protected Pool",
+        status: "success",
+        txHash: res.txHash || "",
+        message: `Pool successfully initialized and seeded with custom liquidity! Pool ID: ${res.poolId}`,
+        errorReason: ""
+      });
       setTimeout(() => {
         setConsoleTab("swap");
-      }, 2000);
+      }, 2500);
     } else {
       setLaunchStatus({ text: res.reason || "Launch failed.", type: "error" });
+      setTxModal({
+        isOpen: true,
+        title: "Launching Protected Pool",
+        status: "error",
+        txHash: "",
+        message: "Failed to launch protected pool.",
+        errorReason: res.reason
+      });
     }
   };
 
@@ -2314,6 +2453,102 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Transaction Status Modal */}
+      {txModal.isOpen && (
+        <div className="tx-modal-overlay">
+          <div className="tx-modal-content">
+            <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)" }}>
+              {txModal.title}
+            </h3>
+
+            {txModal.status === "pending" && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                <div className="tx-spinner"></div>
+                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--ink-soft)", lineHeight: "1.5" }}>
+                  {txModal.message}
+                </p>
+              </div>
+            )}
+
+            {txModal.status === "success" && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                <div className="tx-success-icon">✓</div>
+                <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--success)", fontWeight: "600" }}>
+                  Transaction Successful!
+                </p>
+                <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--ink-soft)", lineHeight: "1.5" }}>
+                  {txModal.message}
+                </p>
+              </div>
+            )}
+
+            {txModal.status === "error" && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", width: "100%" }}>
+                <div className="tx-error-icon">✕</div>
+                <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--error)", fontWeight: "600" }}>
+                  Transaction Failed
+                </p>
+                <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--ink-soft)", lineHeight: "1.5" }}>
+                  {txModal.message}
+                </p>
+                {txModal.errorReason && (
+                  <div
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      background: "rgba(194, 91, 91, 0.05)",
+                      border: "1px solid rgba(194, 91, 91, 0.15)",
+                      fontFamily: "Geist Mono, monospace",
+                      fontSize: "0.78rem",
+                      color: "var(--error)",
+                      textAlign: "left",
+                      maxHeight: "120px",
+                      overflowY: "auto",
+                      wordBreak: "break-all"
+                    }}
+                  >
+                    {txModal.errorReason}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(txModal.txHash || pendingTxHash) && (
+              <a
+                href={`${explorerUrl}/tx/${txModal.txHash || pendingTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: "0.85rem",
+                  color: "var(--coral-deep)",
+                  fontWeight: "600",
+                  textDecoration: "underline",
+                  marginTop: "8px"
+                }}
+              >
+                View transaction on Explorer →
+              </a>
+            )}
+
+            {txModal.status !== "pending" && (
+              <button
+                onClick={() => setTxModal(prev => ({ ...prev, isOpen: false }))}
+                className="btn-neon"
+                style={{
+                  width: "100%",
+                  marginTop: "12px",
+                  padding: "10px 24px",
+                  fontSize: "0.9rem"
+                }}
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -746,7 +746,7 @@ export function WalletProvider({ children }) {
       addLog("DEPLOY SUCCESSFUL", `Token deployed at address: ${address}. Initial supply: ${initialSupplyStr} ${symbol} minted to your wallet.`, "success");
       
       fetchOnChainData(wallet);
-      return { success: true, address };
+      return { success: true, address, txHash: deployTxHash };
     } catch (err) {
       console.error(err);
       const msg = err?.reason || err?.message || "Deployment failed";
@@ -789,7 +789,7 @@ export function WalletProvider({ children }) {
       addLog("WETH FAUCET SUCCESSFUL", `${amountStr} Mock WETH minted to your wallet!`, "success");
       
       fetchOnChainData(wallet);
-      return { success: true };
+      return { success: true, txHash: mintTx.hash };
     } catch (err) {
       console.error(err);
       const msg = err?.reason || err?.message || "Faucet mint failed";
