@@ -289,6 +289,9 @@ export function WalletProvider({ children }) {
   }, []);
 
   // ── Live Contract Reads ─────────────────────────────────────────────────────
+  const [blockNumber, setBlockNumber] = useState(0);
+  const [activeDecayMode, setActiveDecayMode] = useState("time");
+  const [activeStartBlock, setActiveStartBlock] = useState(0);
   const [okbBalance, setOkbBalance] = useState("0");
   const [wethBalance, setWethBalance] = useState("0");
   const [hatchBalance, setHatchBalance] = useState("0");
@@ -319,6 +322,7 @@ export function WalletProvider({ children }) {
     try {
       const balanceWei = await provider.getBalance(address);
       setOkbBalance(Number(ethers.formatEther(balanceWei)).toFixed(4));
+      provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
 
       if (!isDeployed) return;
 
@@ -417,6 +421,17 @@ export function WalletProvider({ children }) {
       return () => clearInterval(interval);
     }
   }, [wallet, fetchOnChainData]);
+
+  useEffect(() => {
+    if (!wallet.connected) {
+      const provider = new ethers.JsonRpcProvider("https://testrpc.xlayer.tech");
+      provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
+      const interval = setInterval(() => {
+        provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [wallet.connected]);
 
   // Listen for window.ethereum events
   useEffect(() => {
@@ -522,9 +537,29 @@ export function WalletProvider({ children }) {
   const cooldownDuration = poolConfig ? Number(poolConfig[7]) : 60;
 
   const timeElapsed = launchTime > 0 ? (nowSec - launchTime) * 1000 : 0;
-  const isProtectionActive = launchTime > 0 && nowSec < launchTime + decayDuration;
+  const isProtectionActive = activeDecayMode === "block"
+    ? (activeStartBlock > 0 && blockNumber < activeStartBlock + Math.max(1, Math.floor(decayDuration / 2)))
+    : (launchTime > 0 && nowSec < launchTime + decayDuration);
 
   const getCurrentFeeRate = () => {
+    if (activeDecayMode === "block") {
+      const blocksElapsed = blockNumber > activeStartBlock && activeStartBlock > 0 ? (blockNumber - activeStartBlock) : 0;
+      const totalBlocks = Math.max(1, Math.floor(decayDuration / 2));
+      
+      if (blocksElapsed >= totalBlocks) return endFee / 1_000_000;
+      
+      const pct = (blocksElapsed / totalBlocks) * 100;
+      if (pct < 10) {
+        return 0.90;
+      } else if (pct < 50) {
+        return 0.50;
+      } else if (pct < 100) {
+        return 0.10;
+      } else {
+        return endFee / 1_000_000;
+      }
+    }
+
     if (!isProtectionActive || launchTime === 0) return endFee / 1_000_000;
     const elapsed = nowSec - launchTime;
     const feeRange = startFee - endFee;
@@ -825,7 +860,8 @@ export function WalletProvider({ children }) {
       maxSwapAmountTokens,
       cooldownSeconds,
       seedProjectAmount,
-      seedWethAmount
+      seedWethAmount,
+      decayMode = "time"
     } = config;
 
     try {
@@ -840,8 +876,12 @@ export function WalletProvider({ children }) {
       const sqrtPrice = Math.sqrt(price);
       const sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * 79228162514264337593543950336));
 
-      const decayDuration = BigInt(Math.floor(parseFloat(decayDurationHours) * 3600));
-      const startFee = Math.floor(parseFloat(startFeePercent) * 10000);
+      const decayDuration = decayMode === "block"
+        ? BigInt(Math.floor(parseFloat(decayDurationHours) * 2))
+        : BigInt(Math.floor(parseFloat(decayDurationHours) * 3600));
+      const startFee = decayMode === "block"
+        ? 900000
+        : Math.floor(parseFloat(startFeePercent) * 10000);
       const endFee = Math.floor(parseFloat(endFeePercent) * 10000);
       const maxSwapAmount = ethers.parseEther(maxSwapAmountTokens);
       const cooldownDuration = BigInt(cooldownSeconds);
@@ -945,6 +985,8 @@ export function WalletProvider({ children }) {
         isHatchCurrency0,
         projectTokenAddress: projectToken
       });
+      setActiveDecayMode(decayMode);
+      setActiveStartBlock(blockNumber || 0);
 
       // Add to custom pools list
       const newPool = {
@@ -961,7 +1003,9 @@ export function WalletProvider({ children }) {
         maxSwapAmountTokens,
         cooldownSeconds,
         seedProjectAmount,
-        seedWethAmount
+        seedWethAmount,
+        decayMode,
+        startBlock: blockNumber || 0
       };
 
       setCustomPools((prev) => {
@@ -995,6 +1039,8 @@ export function WalletProvider({ children }) {
       isHatchCurrency0: deployments.isHatchCurrency0,
       projectTokenAddress: CONTRACTS.hatchToken
     });
+    setActiveDecayMode("time");
+    setActiveStartBlock(0);
     addLog("Launchpad", "Active pool reset to default HATCH pool.", "info");
   };
 
@@ -1007,6 +1053,8 @@ export function WalletProvider({ children }) {
       isHatchCurrency0: pool.isHatchCurrency0,
       projectTokenAddress: pool.projectTokenAddress
     });
+    setActiveDecayMode(pool.decayMode || "time");
+    setActiveStartBlock(pool.startBlock || 0);
     addLog("Launchpad", `Switched active pool view to ${pool.symbol}.`, "info");
   };
 
@@ -1059,6 +1107,10 @@ export function WalletProvider({ children }) {
 
         logs,
         addLog,
+
+        blockNumber,
+        activeDecayMode,
+        activeStartBlock,
 
         deployments,
         isDeployed,

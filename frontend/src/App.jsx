@@ -6,9 +6,15 @@ import deployments from "./deployments.json";
 // ── Custom SVG Theme Icons ──────────────────────────────────────────────────
 const RocketIcon = ({ size = 16, color = "var(--coral)", style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
-    <path d="M4.5 16.5c-1.5 1.26-2.5 3.19-2.5 5.5h8c0-2.31-1-4.24-2.5-5.5Z" />
-    <path d="M12 2C12 2 17 6 17 11c0 3.5-2.5 6-5 6s-5-2.5-5-6c0-5 5-11 5-11Z" />
-    <path d="M9 12h6" />
+    {/* Egg rocket body */}
+    <path d="M12 3c-4 0-6.5 5-6.5 11 0 2 2.5 3 6.5 3s6.5-1 6.5-3c0-6-2.5-11-6.5-11Z" />
+    {/* Fins */}
+    <path d="M5.5 14L2 19h4.5" />
+    <path d="M18.5 14l3.5 5h-4.5" />
+    {/* Exhaust flame */}
+    <path d="M9.5 17c0 2 2.5 3.5 2.5 3.5s2.5-1.5 2.5-3.5" />
+    {/* Round window */}
+    <circle cx="12" cy="10" r="2" />
   </svg>
 );
 
@@ -52,14 +58,17 @@ const ClockIcon = ({ size = 14, color = "var(--muted)", style }) => (
 
 const LockIcon = ({ size = 14, color = "var(--muted)", style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    <path d="M12 11C8.5 11 6 13.5 6 17c0 2.8 2.5 4.5 6 4.5s6-1.7 6-4.5c0-3.5-2.5-6-6-6Z" />
+    <circle cx="12" cy="15" r="1" fill={color} />
+    <path d="M12 16v2.5" strokeWidth="1.8" />
   </svg>
 );
 
 const ShieldIcon = ({ size = 28, color = "var(--coral)", style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+    <path d="M12 7c-2 0-3.5 2-3.5 4.5c0 2.2 1.5 3.5 3.5 3.5s3.5-1.3 3.5-3.5C15.5 9 14 7 12 7Z" strokeWidth="1.6" />
   </svg>
 );
 
@@ -106,8 +115,9 @@ const EggIcon = ({ size = 20, color = "var(--coral)", style }) => (
 const AlertIcon = ({ size = 16, color = "var(--error)", style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-    <line x1="12" y1="9" x2="12" y2="13" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
+    {/* Small cracked egg inside the warning sign */}
+    <path d="M12 9.5c-1.2 0-2 1.5-2 3.5s.8 2.5 2 2.5s2-1 2-2.5s-.8-3.5-2-3.5Z" strokeWidth="1.6" />
+    <path d="M12 10.5l-0.8 1.5l1.6 1l-1.2 1.5" strokeWidth="1.2" />
   </svg>
 );
 
@@ -129,6 +139,80 @@ const ChickHatchingIcon = ({ size = 48, color = "var(--coral)", style }) => (
     <path d="M47,38 C49,38 50,40 49,42 C48,43 46,41 46,38" stroke="var(--ink)" strokeWidth="2.5" strokeLinecap="round" />
   </svg>
 );
+
+const BotIcon = ({ size = 16, color = "var(--error)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
+    {/* Egg body */}
+    <path d="M12 5C7.5 5 4 9.5 4 14.5c0 4.5 3.5 7.5 8 7.5s8-3 8-7.5C20 9.5 16.5 5 12 5Z" />
+    {/* Robot antenna */}
+    <path d="M12 5V2" />
+    <circle cx="12" cy="2" r="0.5" fill={color} />
+    {/* Robot eyes */}
+    <line x1="8" y1="12" x2="10" y2="12" />
+    <line x1="14" y1="12" x2="16" y2="12" />
+    {/* Robot mouth */}
+    <path d="M9 16h6" />
+    <path d="M9 14.5v3M12 14.5v3M15 14.5v3" strokeWidth="1.2" />
+  </svg>
+);
+
+const UserIcon = ({ size = 16, color = "var(--coral)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
+    {/* Chick head */}
+    <path d="M6 12C6 8.5 8.5 6 12 6s6 2.5 6 6" />
+    {/* Beak */}
+    <polygon points="12,10 10,12 14,12" fill={color} stroke={color} strokeWidth="1" />
+    {/* Eyes */}
+    <circle cx="9.5" cy="9.5" r="0.8" fill={color} />
+    <circle cx="14.5" cy="9.5" r="0.8" fill={color} />
+    {/* Bottom egg shell */}
+    <path d="M4 12c0 4.5 3.5 7.5 8 7.5s8-3 8-7.5" />
+    {/* Crack lines */}
+    <path d="M4 12l3.5 1.5l4-1.5l4.5 1.5l4-1.5" />
+  </svg>
+);
+
+const SkullIcon = ({ size = 16, color = "var(--error)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
+    {/* Left broken piece */}
+    <path d="M10.5 4.5C7 5.5 5 9 5 13.5c0 4 3 7 7 7.5l-2-3.5l2.5-2l-2.5-2.5l2-3" />
+    {/* Right broken piece */}
+    <path d="M13.5 4.5C17 5.5 19 9 19 13.5c0 4-3 7-7 7.5l2-3.5l-2.5-2l2.5-2.5l-2-3" />
+  </svg>
+);
+
+const CheckIcon = ({ size = 16, color = "var(--success)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", display: "inline-block", ...style }}>
+    {/* Happy Chick in shell */}
+    <path d="M7 13c0-3.5 2.2-6 5-6s5 2.5 5 6" />
+    <path d="M4 13c0 4 3.5 6.5 8 6.5s8-2.5 8-6.5" />
+    <path d="M4 13l3.5 1l4.5-1.5l4 1.5l4-1" />
+    <polygon points="12,10 11,11.5 13,11.5" fill={color} stroke={color} strokeWidth="0.8" />
+    {/* Large check mark overlaid on the right */}
+    <path d="M15 11l2 2.2L21.5 8.5" stroke="var(--success)" strokeWidth="2.8" />
+  </svg>
+);
+
+const renderSimIcon = (type) => {
+  switch (type) {
+    case "bot":
+      return <BotIcon size={14} color="var(--error)" style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />;
+    case "user":
+      return <UserIcon size={14} color="var(--coral)" style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />;
+    case "alert":
+      return <AlertIcon size={14} color="var(--error)" style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />;
+    case "ruin":
+      return <SkullIcon size={14} color="var(--error)" style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />;
+    case "shield":
+      return <ShieldIcon size={14} color="var(--success)" style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />;
+    case "lock":
+      return <LockIcon size={14} color="var(--success)" style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />;
+    case "success":
+      return <CheckIcon size={14} color="var(--success)" style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />;
+    default:
+      return null;
+  }
+};
 
 export default function App() {
   const {
@@ -170,6 +254,9 @@ export default function App() {
     projectTokenDetails,
     customPools,
     addLog,
+    blockNumber,
+    activeDecayMode,
+    activeStartBlock,
   } = useWallet();
 
   const [view, setView] = useState("landing"); // 'landing' | 'console'
@@ -278,6 +365,7 @@ export default function App() {
   const [launchMaxSwap, setLaunchMaxSwap] = useState("1000");
   const [launchCooldown, setLaunchCooldown] = useState("60");
   const [launchStatus, setLaunchStatus] = useState(null); // { text, type }
+  const [launchDecayMode, setLaunchDecayMode] = useState("time"); // 'time' | 'block'
 
   // Deploy Token Form State
   const [tokenDeployName, setTokenDeployName] = useState("Mock Project Token");
@@ -288,6 +376,103 @@ export default function App() {
   // Seeding state for pool launch
   const [launchSeedProject, setLaunchSeedProject] = useState("5000000"); // 5 Million
   const [launchSeedWeth, setLaunchSeedWeth] = useState("0.5"); // 0.5 WETH
+
+  // Bot Simulation State
+  const [simState, setSimState] = useState("idle"); // 'idle' | 'running' | 'completed'
+  const [simStep, setSimStep] = useState(0);
+  const [unprotectedLogs, setUnprotectedLogs] = useState([]);
+  const [protectedLogs, setProtectedLogs] = useState([]);
+  const simIntervalRef = useRef(null);
+
+  // Clear simulation interval on unmount
+  useEffect(() => {
+    return () => {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const runSniperSimulation = () => {
+    if (simIntervalRef.current) {
+      clearInterval(simIntervalRef.current);
+    }
+    setSimState("running");
+    setSimStep(0);
+    setUnprotectedLogs([]);
+    setProtectedLogs([]);
+
+    const steps = [
+      {
+        unprotected: {
+          icon: "bot",
+          text: "MEV Sniper Bot spots launch in mempool. Snipe execution in Block 1. Buys 50,000 NAI. Fee: 0.3% ($1.50). Price: $0.10 → $0.45 (+350%)"
+        },
+        protected: {
+          icon: "shield",
+          text: "Bot Sniper spots launch. Tries to buy 50,000 NAI in Block 1. TRANSACTION REVERTED: Exceeds Anti-Whale Limit (Cap: 5,000 NAI)."
+        }
+      },
+      {
+        unprotected: {
+          icon: "bot",
+          text: "Sniper Bot B snipes in Block 2. Buys 30,000 NAI. Fee: 0.3% ($0.90). Price: $0.45 → $0.85 (+750%)"
+        },
+        protected: {
+          icon: "shield",
+          text: "Bot B tries to buy 4,500 NAI (under cap) in Block 2. TRANSACTION REVERTED: Wallet swap cooldown active (wait 60s)."
+        }
+      },
+      {
+        unprotected: {
+          icon: "user",
+          text: "Real user buys 500 NAI at peak price ($0.85). Suffers heavy price impact and slippage."
+        },
+        protected: {
+          icon: "user",
+          text: "Real user buys 500 NAI at low initial price ($0.10). Swap fee (10%) applied. 50% split triggers automatic Buyback & Burn!"
+        }
+      },
+      {
+        unprotected: {
+          icon: "alert",
+          text: "Bot A dumps 50,000 NAI at $0.80, draining pool WETH reserves. Profit: +$35,000. Price crashes: $0.80 → $0.15"
+        },
+        protected: {
+          icon: "lock",
+          text: "No bot liquidity. Price remains stable. Safe-launch fee decay continues."
+        }
+      },
+      {
+        unprotected: {
+          icon: "ruin",
+          text: "Bot B dumps 30,000 NAI at $0.15. WETH reserves depleted. Launch RUINED."
+        },
+        protected: {
+          icon: "success",
+          text: "Launch successful. 100% liquidity preserved. 500 NAI burned. Community is safe."
+        }
+      }
+    ];
+
+    let current = 0;
+    simIntervalRef.current = setInterval(() => {
+      if (current < steps.length) {
+        const nextUnprotected = steps[current].unprotected;
+        const nextProtected = steps[current].protected;
+        setUnprotectedLogs((prev) => [...prev, nextUnprotected]);
+        setProtectedLogs((prev) => [...prev, nextProtected]);
+        setSimStep(current + 1);
+        current++;
+      } else {
+        if (simIntervalRef.current) {
+          clearInterval(simIntervalRef.current);
+          simIntervalRef.current = null;
+        }
+        setSimState("completed");
+      }
+    }, 1800);
+  };
 
   const [isFaucetPending, setIsFaucetPending] = useState(false);
   const [txModal, setTxModal] = useState({
@@ -360,6 +545,18 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [launchStatus]);
+
+  const getEstimatedOutput = () => {
+    const amountIn = parseFloat(swapAmount);
+    if (isNaN(amountIn) || amountIn <= 0) return "0.00";
+    const reserveIn = poolReserves.weth;
+    const reserveOut = poolReserves.hatch;
+    if (reserveIn <= 0 || reserveOut <= 0) return "0.00";
+
+    const netInput = amountIn * (1 - currentFeeRate);
+    const amountOut = (reserveOut * netInput) / (reserveIn + netInput);
+    return amountOut.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   const handleSwap = async (e) => {
     e.preventDefault();
@@ -518,7 +715,8 @@ export default function App() {
       maxSwapAmountTokens: launchMaxSwap,
       cooldownSeconds: launchCooldown,
       seedProjectAmount: launchSeedProject,
-      seedWethAmount: launchSeedWeth
+      seedWethAmount: launchSeedWeth,
+      decayMode: launchDecayMode
     });
 
     if (res.success) {
@@ -551,17 +749,26 @@ export default function App() {
   };
 
   // Decay chart math
-  const progressRatio = Math.min(timeElapsed / (decayDuration * 1000), 1);
+  const blocksElapsed = (blockNumber > activeStartBlock && activeStartBlock > 0) ? (blockNumber - activeStartBlock) : 0;
+  const totalBlocks = Math.max(1, Math.floor(decayDuration / 2));
+
+  const progressRatio = activeDecayMode === "block"
+    ? Math.min(blocksElapsed / totalBlocks, 1)
+    : Math.min(timeElapsed / (decayDuration * 1000), 1);
+
   const remainingHours = Math.max(decayDuration / 3600 - timeElapsed / (3600 * 1000), 0);
+  const remainingBlocks = Math.max(totalBlocks - blocksElapsed, 0);
 
   const chartWidth = 500;
   const chartHeight = 150;
   const padding = 20;
 
+  const maxChartFee = activeDecayMode === "block" ? 0.90 : Math.max(startFee / 1_000_000, 0.10);
   const mapY = (fee) => {
     const minVal = padding;
     const maxVal = chartHeight - padding;
-    return maxVal - ((fee / (startFee / 1_000_000)) * (maxVal - minVal));
+    const denominator = maxChartFee > 0 ? maxChartFee : 1;
+    return maxVal - ((fee / denominator) * (maxVal - minVal));
   };
 
   const startFeeDecimal = startFee / 1_000_000;
@@ -573,6 +780,44 @@ export default function App() {
   const endY = mapY(endFeeDecimal);
   const currentX = startX + progressRatio * (endX - startX);
   const currentY = mapY(currentFeeRate);
+
+  const getBlockDecayPath = () => {
+    const x0 = startX;
+    const x1 = startX + 0.1 * (endX - startX);
+    const x2 = startX + 0.5 * (endX - startX);
+    const x3 = endX;
+    
+    const y1 = mapY(0.90);
+    const y2 = mapY(0.50);
+    const y3 = mapY(0.10);
+    const y4 = mapY(endFeeDecimal);
+    
+    return `M ${x0} ${y1} L ${x1} ${y1} L ${x1} ${y2} L ${x2} ${y2} L ${x2} ${y3} L ${x3} ${y3} L ${x3} ${y4}`;
+  };
+
+  const getActiveBlockDecayPath = () => {
+    const x0 = startX;
+    const x1 = startX + 0.1 * (endX - startX);
+    const x2 = startX + 0.5 * (endX - startX);
+    
+    const y1 = mapY(0.90);
+    const y2 = mapY(0.50);
+    const y3 = mapY(0.10);
+    const y4 = mapY(endFeeDecimal);
+    
+    let path = `M ${x0} ${y1}`;
+    
+    if (currentX <= x1) {
+      path += ` L ${currentX} ${y1}`;
+    } else if (currentX <= x2) {
+      path += ` L ${x1} ${y1} L ${x1} ${y2} L ${currentX} ${y2}`;
+    } else if (currentX <= endX) {
+      path += ` L ${x1} ${y1} L ${x1} ${y2} L ${x2} ${y2} L ${x2} ${y3} L ${currentX} ${y3}`;
+    } else {
+      path += ` L ${x1} ${y1} L ${x1} ${y2} L ${x2} ${y2} L ${x2} ${y3} L ${endX} ${y3} L ${endX} ${y4}`;
+    }
+    return path;
+  };
   // Combine custom user pools from context
   const userPools = (customPools || []).map((p) => ({
     symbol: p.symbol,
@@ -810,7 +1055,7 @@ export default function App() {
               </h1>
 
               <p style={{ fontSize: "17px", lineHeight: "1.6", color: "var(--ink-soft)", maxWidth: "520px", marginBottom: "36px" }}>
-                HatchAI is the first Uniswap v4 Hook-powered safe-launch pad on X Layer. Protect your token launches in seconds - dynamic taxes, whale caps, and instant onchain fee recycling.
+                HatchAI is the premier Uniswap V4 Hook-powered Safe-Launch &amp; Deflationary Buyback Suite on X Layer. Protect your token launches in seconds with dynamic decay taxes, anti-whale caps, and wallet cooldowns, while feeding swap fees directly back into an onchain buyback-and-burn engine.
               </p>
 
               <div className="flow">
@@ -1007,9 +1252,9 @@ export default function App() {
               <div className="feature-card">
                 <div className="feature-icon"><ChartIcon size={28} color="var(--coral)" /></div>
                 <div className="feature-info">
-                  <h4 className="feature-title">Dynamic Onchain Decay</h4>
+                  <h4 className="feature-title">Time &amp; Block Decay Modes</h4>
                   <p className="feature-desc">
-                    Uniswap V4 hook dynamically calculates swap fees based on the time elapsed since launch, decaying fees gracefully without manual intervention.
+                    Uniswap V4 hook dynamically decays swap fees based on either smooth time-based linear decay or step-wise block height milestones.
                   </p>
                 </div>
               </div>
@@ -1572,9 +1817,9 @@ export default function App() {
                   ) : (
                     <>
                       <form onSubmit={handleSwap}>
-                        <div style={{ marginBottom: "16px" }}>
-                          <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "8px" }}>
-                            Swap WETH → {projectTokenDetails.symbol}
+                        <div style={{ marginBottom: "12px" }}>
+                          <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "8px", fontWeight: "600" }}>
+                            You Pay (WETH)
                           </label>
                           <div style={{ position: "relative" }}>
                             <input
@@ -1586,7 +1831,7 @@ export default function App() {
                               style={{ paddingRight: "70px" }}
                               placeholder="0.0"
                               step="any"
-                              min="0.001"
+                              min="0.000001"
                             />
                             <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", fontSize: "0.85rem", fontWeight: "600", color: "var(--color-text-secondary)" }}>
                               WETH
@@ -1596,6 +1841,60 @@ export default function App() {
                             Balance: {wethBalance} WETH
                           </div>
                         </div>
+
+                        <div style={{ display: "flex", justifyContent: "center", margin: "4px 0" }}>
+                          <span style={{ fontSize: "1.2rem", color: "var(--coral)", fontWeight: "bold" }}>↓</span>
+                        </div>
+
+                        <div style={{ marginBottom: "16px" }}>
+                          <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "8px", fontWeight: "600" }}>
+                            You Receive ({projectTokenDetails.symbol})
+                          </label>
+                          <div style={{ position: "relative" }}>
+                            <input
+                              type="text"
+                              value={getEstimatedOutput()}
+                              className="glass-input"
+                              style={{ paddingRight: "70px", background: "rgba(255, 255, 255, 0.25)", cursor: "not-allowed" }}
+                              disabled
+                              readOnly
+                            />
+                            <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", fontSize: "0.85rem", fontWeight: "600", color: "var(--color-text-secondary)" }}>
+                              {projectTokenDetails.symbol}
+                            </span>
+                          </div>
+                          <div style={{ marginTop: "4px", fontSize: "0.78rem", color: "var(--color-text-muted)" }}>
+                            Balance: {hatchBalance} {projectTokenDetails.symbol}
+                          </div>
+                        </div>
+
+                        {/* Quote Details */}
+                        {parseFloat(swapAmount) > 0 && poolReserves.weth > 0 && (
+                          <div style={{ 
+                            background: "rgba(50, 52, 58, 0.02)", 
+                            border: "1px dashed var(--line)", 
+                            borderRadius: "8px", 
+                            padding: "10px 12px", 
+                            marginBottom: "16px", 
+                            fontSize: "0.78rem",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px"
+                          }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "var(--color-text-muted)" }}>Price:</span>
+                              <span style={{ fontWeight: "600" }}>
+                                1 WETH ≈ {((poolReserves.hatch) / poolReserves.weth).toLocaleString(undefined, { maximumFractionDigits: 2 })} {projectTokenDetails.symbol}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "var(--color-text-muted)" }}>Swap Fee ({(currentFeeRate * 100).toFixed(2)}%):</span>
+                              <span style={{ fontWeight: "600", color: "var(--coral-deep)" }}>
+                                -{(parseFloat(swapAmount) * currentFeeRate).toFixed(4)} WETH
+                              </span>
+                            </div>
+                          </div>
+                        )}
 
                         <button
                           id="swap-submit-btn"
@@ -1638,7 +1937,9 @@ export default function App() {
                         2. Safe-Launch Decay Monitor
                       </h2>
                       <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem", marginTop: "4px" }}>
-                        Fee declines from {(startFeeDecimal * 100).toFixed(0)}% to {(endFeeDecimal * 100).toFixed(1)}% over {decayDuration / 3600}h. Anti-whale &amp; cooldown active during launch phase.
+                        {activeDecayMode === "block"
+                          ? `Fee decays in 4 step-wise block phases over ${totalBlocks} blocks. Anti-whale & cooldown active during launch phase.`
+                          : `Fee declines from ${(startFeeDecimal * 100).toFixed(0)}% to {(endFeeDecimal * 100).toFixed(1)}% over ${decayDuration / 3600}h. Anti-whale & cooldown active during launch phase.`}
                       </p>
                     </div>
                     <div style={{ padding: "6px 12px", borderRadius: "20px", background: "rgba(95,155,108,0.08)", border: "1px solid rgba(95,155,108,0.18)", fontSize: "0.75rem", color: "var(--success)", fontWeight: "600", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "6px" }}>
@@ -1650,11 +1951,33 @@ export default function App() {
                   {/* SVG Decay Chart */}
                   <div style={{ textAlign: "center", position: "relative" }}>
                     <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ width: "100%", height: "auto" }}>
-                      <line x1={startX} y1={startY} x2={endX} y2={startY} stroke="rgba(0,0,0,0.03)" strokeDasharray="3" />
+                      <line x1={startX} y1={mapY(activeDecayMode === "block" ? 0.90 : startFeeDecimal)} x2={endX} y2={mapY(activeDecayMode === "block" ? 0.90 : startFeeDecimal)} stroke="rgba(0,0,0,0.03)" strokeDasharray="3" />
                       <line x1={startX} y1={endY} x2={endX} y2={endY} stroke="rgba(0,0,0,0.03)" strokeDasharray="3" />
-                      <line x1={startX} y1={startY} x2={endX} y2={endY} stroke="url(#decayGrad)" strokeWidth="3" />
-                      <line x1={startX} y1={startY} x2={currentX} y2={currentY} stroke="var(--coral)" strokeWidth="4" />
-                      <circle cx={currentX} cy={currentY} r="7" fill="var(--coral)" filter="url(#glow)" />
+                      
+                      {activeDecayMode === "block" ? (
+                        <>
+                          <path
+                            d={getBlockDecayPath()}
+                            fill="none"
+                            stroke="rgba(50, 52, 58, 0.12)"
+                            strokeWidth="3.5"
+                            strokeDasharray="4 2"
+                          />
+                          <path
+                            d={getActiveBlockDecayPath()}
+                            fill="none"
+                            stroke="var(--coral)"
+                            strokeWidth="4.5"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <line x1={startX} y1={startY} x2={endX} y2={endY} stroke="url(#decayGrad)" strokeWidth="3" />
+                          <line x1={startX} y1={startY} x2={currentX} y2={currentY} stroke="var(--coral)" strokeWidth="4" />
+                        </>
+                      )}
+                      
+                      <circle cx={currentX} cy={currentY} r="8" fill="var(--coral)" filter="url(#glow)" />
                       <defs>
                         <linearGradient id="decayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" stopColor="var(--coral)" />
@@ -1670,20 +1993,41 @@ export default function App() {
                       </defs>
                     </svg>
                     <div style={{ display: "flex", justifyContent: "space-between", width: "100%", padding: `0 ${padding}px`, fontSize: "0.8rem", color: "var(--color-text-secondary)", marginTop: "4px" }}>
-                      <span>Launch ({(startFeeDecimal * 100).toFixed(0)}% Fee)</span>
-                      <span>12h (~{((startFeeDecimal + endFeeDecimal)/2 * 100).toFixed(1)}% Fee)</span>
-                      <span>24h ({(endFeeDecimal * 100).toFixed(1)}% Fee)</span>
+                      {activeDecayMode === "block" ? (
+                        <>
+                          <span>Block 0 (90%)</span>
+                          <span>Block 10 (50%)</span>
+                          <span>Block 50 (10%)</span>
+                          <span>Block 100+ ({(endFeeDecimal * 100).toFixed(1)}%)</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Launch ({(startFeeDecimal * 100).toFixed(0)}% Fee)</span>
+                          <span>12h (~{((startFeeDecimal + endFeeDecimal)/2 * 100).toFixed(1)}% Fee)</span>
+                          <span>24h ({(endFeeDecimal * 100).toFixed(1)}% Fee)</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   {/* Rule Details */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "16px", background: "rgba(255,255,255,0.2)", border: "1px solid var(--line)", borderRadius: "10px", padding: "12px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginTop: "16px", background: "rgba(255,255,255,0.2)", border: "1px solid var(--line)", borderRadius: "10px", padding: "12px" }}>
                     <div>
                       <div style={{ color: "var(--color-text-muted)", fontSize: "0.75rem", textTransform: "uppercase" }}>
-                        Time Remaining
+                        {activeDecayMode === "block" ? "Blocks Remaining" : "Time Remaining"}
                       </div>
                       <div style={{ fontSize: "0.95rem", fontWeight: "600", color: isProtectionActive ? "var(--ink)" : "var(--success)" }}>
-                        {isProtectionActive ? `${remainingHours.toFixed(1)}h` : "Completed"}
+                        {activeDecayMode === "block"
+                          ? (isProtectionActive ? `${remainingBlocks} blocks` : "Completed")
+                          : (isProtectionActive ? `${remainingHours.toFixed(1)}h` : "Completed")}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ color: "var(--color-text-muted)", fontSize: "0.75rem", textTransform: "uppercase" }}>
+                        Current Block
+                      </div>
+                      <div style={{ fontSize: "0.95rem", fontWeight: "600", color: "var(--ink)" }}>
+                        #{blockNumber || "Fetching..."}
                       </div>
                     </div>
                     <div>
@@ -1708,6 +2052,88 @@ export default function App() {
 
               {/* Bottom Grid */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "24px" }}>
+                
+                {/* Simulation Panel */}
+                <div className="glass-card" style={{ gridColumn: "span 12", padding: "28px", marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+                    <div>
+                      <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <ShieldIcon size={20} color="var(--coral)" /> Interactive Launch Protection Simulator
+                      </h2>
+                      <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginTop: "4px" }}>
+                        Compare a sniper bot attack on a standard pool vs HatchAI's protected Uniswap V4 pool.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={runSniperSimulation}
+                      disabled={simState === "running"}
+                      className="btn-neon"
+                      style={{ padding: "10px 24px", minWidth: "200px" }}
+                    >
+                      {simState === "running" ? "Running Attack..." : "Simulate Sniper Attack"}
+                    </button>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                    {/* Left Column: Standard Pool */}
+                    <div style={{ background: "rgba(194, 91, 91, 0.02)", border: "1px solid rgba(194, 91, 91, 0.15)", borderRadius: "12px", padding: "20px" }}>
+                      <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--error)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
+                        <AlertIcon size={16} color="var(--error)" /> Standard Unprotected DEX Pool
+                      </h3>
+
+                      {unprotectedLogs.length === 0 ? (
+                        <p style={{ color: "var(--muted)", fontSize: "0.85rem", fontStyle: "italic", textAlign: "center", padding: "40px 0" }}>
+                          Click the button to launch a mock sniper attack.
+                        </p>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          {unprotectedLogs.map((log, i) => (
+                            <div key={i} style={{ fontSize: "0.82rem", lineHeight: "1.4", padding: "10px 12px", borderRadius: "8px", background: "rgba(194, 91, 91, 0.05)", borderLeft: "3px solid var(--error)", color: "var(--ink)", display: "flex", alignItems: "flex-start" }}>
+                              {renderSimIcon(log.icon)}
+                              <span>{log.text}</span>
+                            </div>
+                          ))}
+                          {simState === "completed" && (
+                            <div style={{ borderTop: "1px dashed rgba(194,91,91,0.2)", paddingTop: "12px", marginTop: "8px", color: "var(--error)", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                              <SkullIcon size={15} color="var(--error)" />
+                              Result: Pool rugged. Community capital lost.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: Protected Pool */}
+                    <div style={{ background: "rgba(95, 155, 108, 0.02)", border: "1px solid rgba(95, 155, 108, 0.15)", borderRadius: "12px", padding: "20px" }}>
+                      <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--success)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
+                        <ShieldIcon size={16} color="var(--success)" /> HatchAI Protected Hook Pool
+                      </h3>
+
+                      {protectedLogs.length === 0 ? (
+                        <p style={{ color: "var(--muted)", fontSize: "0.85rem", fontStyle: "italic", textAlign: "center", padding: "40px 0" }}>
+                          Click the button to launch a mock sniper attack.
+                        </p>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          {protectedLogs.map((log, i) => (
+                            <div key={i} style={{ fontSize: "0.82rem", lineHeight: "1.4", padding: "10px 12px", borderRadius: "8px", background: "rgba(95, 155, 108, 0.05)", borderLeft: "3px solid var(--success)", color: "var(--ink)", display: "flex", alignItems: "flex-start" }}>
+                              {renderSimIcon(log.icon)}
+                              <span>{log.text}</span>
+                            </div>
+                          ))}
+                          {simState === "completed" && (
+                            <div style={{ borderTop: "1px dashed rgba(95,155,108,0.2)", paddingTop: "12px", marginTop: "8px", color: "var(--success)", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                              <RocketIcon size={15} color="var(--success)" />
+                              Result: 100% Safe Launch. Token value protected!
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 
                 {/* Payout & Buyback Card */}
                 <div className="glass-card" style={{ gridColumn: "span 6", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -1776,7 +2202,7 @@ export default function App() {
                     <div style={{ borderTop: "1.5px dashed var(--line)", paddingTop: "16px", marginTop: "4px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "1.1rem" }}>🤖</span>
+                          <BotIcon size={18} color="var(--coral)" />
                           <span style={{ fontWeight: "700", fontSize: "0.9rem", color: "var(--ink)" }}>HatchAI Yield Agent</span>
                         </div>
                         
@@ -2236,10 +2662,59 @@ export default function App() {
                         />
                       </div>
 
+                      {/* Decay Mode Selection */}
+                      <div style={{ gridColumn: "span 2", marginBottom: "4px" }}>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "8px", fontWeight: "600" }}>
+                          Decay Mode (Protection Period Calculation)
+                        </label>
+                        <div style={{ display: "flex", background: "rgba(50,52,58,0.05)", borderRadius: "100px", padding: "3px", border: "1px solid var(--line)", width: "fit-content" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLaunchDecayMode("time");
+                              setLaunchDecayHours("24");
+                            }}
+                            style={{
+                              border: "none",
+                              borderRadius: "100px",
+                              padding: "6px 16px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              background: launchDecayMode === "time" ? "var(--ink)" : "transparent",
+                              color: launchDecayMode === "time" ? "var(--sand)" : "var(--ink-soft)",
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            TIME-BASED (HOURS)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLaunchDecayMode("block");
+                              setLaunchDecayHours("100");
+                            }}
+                            style={{
+                              border: "none",
+                              borderRadius: "100px",
+                              padding: "6px 16px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              background: launchDecayMode === "block" ? "var(--coral)" : "transparent",
+                              color: launchDecayMode === "block" ? "var(--sand)" : "var(--ink-soft)",
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            BLOCK-BASED (BLOCKS)
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Decay Duration */}
                       <div>
                         <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
-                          Tax Decay Duration (Hours)
+                          {launchDecayMode === "block" ? "Tax Decay Duration (Blocks)" : "Tax Decay Duration (Hours)"}
                         </label>
                         <input
                           type="number"
@@ -2248,7 +2723,7 @@ export default function App() {
                           value={launchDecayHours}
                           onChange={(e) => setLaunchDecayHours(e.target.value)}
                           min="1"
-                          max="168"
+                          max={launchDecayMode === "block" ? "10000" : "168"}
                           required
                         />
                       </div>
@@ -2465,7 +2940,7 @@ export default function App() {
             {txModal.status === "pending" && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
                 <div className="tx-spinner"></div>
-                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--ink-soft)", lineHeight: "1.5" }}>
+                <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--ink-soft)", lineHeight: "1.5", wordBreak: "break-word" }}>
                   {txModal.message}
                 </p>
               </div>
@@ -2477,7 +2952,7 @@ export default function App() {
                 <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--success)", fontWeight: "600" }}>
                   Transaction Successful!
                 </p>
-                <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--ink-soft)", lineHeight: "1.5" }}>
+                <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--ink-soft)", lineHeight: "1.5", wordBreak: "break-word" }}>
                   {txModal.message}
                 </p>
               </div>
@@ -2489,7 +2964,7 @@ export default function App() {
                 <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--error)", fontWeight: "600" }}>
                   Transaction Failed
                 </p>
-                <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--ink-soft)", lineHeight: "1.5" }}>
+                <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--ink-soft)", lineHeight: "1.5", wordBreak: "break-word" }}>
                   {txModal.message}
                 </p>
                 {txModal.errorReason && (

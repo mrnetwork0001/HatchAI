@@ -18,3 +18,8 @@ frontend/dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local Agent Configurations
+.agents/
+skills-lock.json
+
