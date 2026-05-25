@@ -165,12 +165,16 @@ export default function App() {
     isCustomPoolActive,
     projectTokenDetails,
     customPools,
+    addLog,
   } = useWallet();
 
   const [view, setView] = useState("landing"); // 'landing' | 'console'
   const [consoleTab, setConsoleTab] = useState("portal"); // 'portal' | 'swap' | 'launchpad'
   const [swapAmount, setSwapAmount] = useState("0.1");
   const [statusMsg, setStatusMsg] = useState(null); // { text, type }
+  const [isAgentActive, setIsAgentActive] = useState(false);
+  const [agentThreshold, setAgentThreshold] = useState("0.02");
+  const [agentLog, setAgentLog] = useState("Standing by...");
   const terminalEndRef = useRef(null);
 
   // FAQ accordion state
@@ -185,6 +189,42 @@ export default function App() {
     }, 2800);
     return () => clearInterval(timer);
   }, []);
+
+  // Autonomous Yield Harvester Agent Effect
+  useEffect(() => {
+    if (!isAgentActive || !isConnected) return;
+    addLog("Agent AI", `Autonomous Yield Agent activated. Target Pool: ${projectTokenDetails.symbol}/WETH. Threshold: ${agentThreshold} WETH`, "info");
+  }, [isAgentActive, isConnected, addLog, projectTokenDetails.symbol, agentThreshold]);
+
+  useEffect(() => {
+    if (!isAgentActive || !isConnected || accumulatedFees <= 0) return;
+    
+    const threshold = parseFloat(agentThreshold) || 0.02;
+    if (accumulatedFees >= threshold && !isTxPending) {
+      setAgentLog("Agent: Profit threshold reached! Executing harvest...");
+      
+      const triggerAutonomousClaim = async () => {
+        addLog("Agent AI", `Accumulated hook fees (${accumulatedFees.toFixed(4)} WETH) crossed threshold (${threshold} WETH). Profitability: POSITIVE. Initiating autonomous yield harvest & buyback-burn...`, "info");
+        try {
+          const res = await claimRoyalties();
+          if (res.success) {
+            setAgentLog(`Agent: Harvest success! Tx: ${res.txHash?.slice(0, 10)}…`);
+            addLog("Agent AI", `Autonomous execution success! Tx: ${res.txHash}`, "success");
+          } else {
+            setAgentLog(`Agent: Harvest failed or rejected.`);
+            addLog("Agent AI", `Autonomous execution failed: ${res.reason || "Rejected by user"}`, "error");
+          }
+        } catch (err) {
+          setAgentLog(`Agent: Execution error.`);
+          addLog("Agent AI", `Autonomous execution error: ${err.message}`, "error");
+        }
+      };
+      
+      triggerAutonomousClaim();
+    } else {
+      setAgentLog(`Monitoring... (${accumulatedFees.toFixed(4)} / ${threshold} WETH)`);
+    }
+  }, [isAgentActive, accumulatedFees, agentThreshold, isConnected, isTxPending, addLog, claimRoyalties]);
 
   // Typewriter effect state
   const words = ["safe", "secure", "proven"];
@@ -1523,19 +1563,120 @@ export default function App() {
                     </div>
                   </div>
 
-                  <button
-                    id="claim-fees-btn"
-                    onClick={handleClaim}
-                    disabled={accumulatedFees <= 0 || !isConnected || isTxPending || !isOnCorrectChain}
-                    className="btn-neon"
-                    style={{ width: "100%" }}
-                  >
-                    {isTxPending ? (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
-                        <HourglassIcon size={14} color="var(--sand)" /> Confirming…
-                      </span>
-                    ) : "Claim Creator Yield & Trigger Buyback-Burn"}
-                  </button>
+                  <div>
+                    <button
+                      id="claim-fees-btn"
+                      onClick={handleClaim}
+                      disabled={accumulatedFees <= 0 || !isConnected || isTxPending || !isOnCorrectChain || isAgentActive}
+                      className="btn-neon"
+                      style={{ width: "100%", marginBottom: "20px" }}
+                    >
+                      {isTxPending ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+                          <HourglassIcon size={14} color="var(--sand)" /> Confirming…
+                        </span>
+                      ) : isAgentActive ? "Agent Auto-Harvest Mode Enabled" : "Manual Creator Claim & Buyback-Burn"}
+                    </button>
+
+                    {/* AI Agent Section */}
+                    <div style={{ borderTop: "1.5px dashed var(--line)", paddingTop: "16px", marginTop: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "1.1rem" }}>🤖</span>
+                          <span style={{ fontWeight: "700", fontSize: "0.9rem", color: "var(--ink)" }}>HatchAI Yield Agent</span>
+                        </div>
+                        
+                        {/* Toggle switch styled cleanly */}
+                        <div style={{ display: "flex", background: "rgba(50,52,58,0.05)", borderRadius: "100px", padding: "3px", border: "1px solid var(--line)" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAgentActive(false);
+                              addLog("Agent AI", "Autonomous Yield Agent deactivated. Switched to manual mode.", "info");
+                            }}
+                            style={{
+                              border: "none",
+                              borderRadius: "100px",
+                              padding: "4px 12px",
+                              fontSize: "10px",
+                              fontWeight: "700",
+                              background: !isAgentActive ? "var(--ink)" : "transparent",
+                              color: !isAgentActive ? "var(--sand)" : "var(--ink-soft)",
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            MANUAL
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAgentActive(true);
+                            }}
+                            style={{
+                              border: "none",
+                              borderRadius: "100px",
+                              padding: "4px 12px",
+                              fontSize: "10px",
+                              fontWeight: "700",
+                              background: isAgentActive ? "var(--coral)" : "transparent",
+                              color: isAgentActive ? "var(--sand)" : "var(--ink-soft)",
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            AGENT ACTIVE
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Agent status log panel */}
+                      <div style={{ background: "rgba(50,52,58,0.02)", border: "1px solid var(--line)", borderRadius: "8px", padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem" }}>
+                          <span style={{ color: "var(--muted)" }}>Agent Status:</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "700", color: isAgentActive ? "var(--success)" : "var(--muted)" }}>
+                            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: isAgentActive ? "var(--success)" : "var(--muted)", animation: isAgentActive ? "pulse 1.5s ease infinite" : "none" }}></span>
+                            {isAgentActive ? "AUTONOMOUS MONITORING" : "STANDBY"}
+                          </span>
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem" }}>
+                          <span style={{ color: "var(--muted)" }}>Auto-Harvest Threshold:</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <input 
+                              type="number"
+                              value={agentThreshold}
+                              onChange={(e) => {
+                                setAgentThreshold(e.target.value);
+                                if (isAgentActive) {
+                                  addLog("Agent AI", `Auto-harvest threshold updated to ${e.target.value} WETH`, "info");
+                                }
+                              }}
+                              disabled={isAgentActive}
+                              style={{
+                                width: "60px",
+                                background: "rgba(255,255,255,0.7)",
+                                border: "1px solid var(--line)",
+                                borderRadius: "4px",
+                                padding: "2px 6px",
+                                fontSize: "0.75rem",
+                                fontWeight: "600",
+                                textAlign: "right"
+                              }}
+                              step="0.005"
+                              min="0.001"
+                            />
+                            <span style={{ fontWeight: "600" }}>WETH</span>
+                          </div>
+                        </div>
+
+                        <div style={{ borderTop: "1px dashed var(--line)", paddingTop: "8px", marginTop: "2px", fontSize: "0.75rem", fontFamily: "Geist Mono, monospace", color: "var(--ink-soft)" }}>
+                          <span style={{ color: "var(--muted)" }}>Agent Log:</span>{" "}
+                          <span style={{ color: isAgentActive ? "var(--coral-deep)" : "var(--ink)" }}>{agentLog}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Blockchain Console */}
