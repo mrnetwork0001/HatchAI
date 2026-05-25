@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { ethers } from "ethers";
 import { useWallet } from "./WalletContext";
 import deployments from "./deployments.json";
 
@@ -161,6 +162,8 @@ export default function App() {
     connect,
     disconnect,
     initializePool,
+    deployToken,
+    mintWeth,
     resetToDefaultPool,
     selectPool,
     isCustomPoolActive,
@@ -276,6 +279,31 @@ export default function App() {
   const [launchCooldown, setLaunchCooldown] = useState("60");
   const [launchStatus, setLaunchStatus] = useState(null); // { text, type }
 
+  // Deploy Token Form State
+  const [tokenDeployName, setTokenDeployName] = useState("Mock Project Token");
+  const [tokenDeploySymbol, setTokenDeploySymbol] = useState("MPT");
+  const [tokenDeploySupply, setTokenDeploySupply] = useState("10000000"); // 10 Million
+  const [tokenDeployStatus, setTokenDeployStatus] = useState(null); // { text, type }
+
+  // Seeding state for pool launch
+  const [launchSeedProject, setLaunchSeedProject] = useState("5000000"); // 5 Million
+  const [launchSeedWeth, setLaunchSeedWeth] = useState("0.5"); // 0.5 WETH
+
+  const [isFaucetPending, setIsFaucetPending] = useState(false);
+
+  useEffect(() => {
+    if (tokenDeployStatus) {
+      const timer = setTimeout(() => setTokenDeployStatus(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [tokenDeployStatus]);
+
+  const handleMintWeth = async () => {
+    setIsFaucetPending(true);
+    await mintWeth("10");
+    setIsFaucetPending(false);
+  };
+
   // Auto-scroll terminal
   useEffect(() => {
     if (terminalEndRef.current) {
@@ -325,6 +353,30 @@ export default function App() {
     }
   };
 
+  const handleDeployToken = async (e) => {
+    e.preventDefault();
+    if (!tokenDeployName || !tokenDeploySymbol || !tokenDeploySupply) {
+      setTokenDeployStatus({ text: "Please fill in all token details.", type: "error" });
+      return;
+    }
+    setTokenDeployStatus({ text: "Submitting deployToken transaction...", type: "pending" });
+    
+    try {
+      const res = await deployToken(tokenDeployName, tokenDeploySymbol, tokenDeploySupply);
+      if (res.success) {
+        setTokenDeployStatus({
+          text: `Token Deployed! Address: ${res.address}`,
+          type: "success"
+        });
+        setLaunchTokenAddress(res.address);
+      } else {
+        setTokenDeployStatus({ text: res.reason || "Deployment failed.", type: "error" });
+      }
+    } catch (err) {
+      setTokenDeployStatus({ text: err.message || "Deployment failed.", type: "error" });
+    }
+  };
+
   const handleLaunchPool = async (e) => {
     e.preventDefault();
     if (!launchTokenAddress.startsWith("0x") || launchTokenAddress.length !== 42) {
@@ -341,7 +393,9 @@ export default function App() {
       startFeePercent: launchStartFee,
       endFeePercent: launchEndFee,
       maxSwapAmountTokens: launchMaxSwap,
-      cooldownSeconds: launchCooldown
+      cooldownSeconds: launchCooldown,
+      seedProjectAmount: launchSeedProject,
+      seedWethAmount: launchSeedWeth
     });
 
     if (res.success) {
@@ -1726,12 +1780,12 @@ export default function App() {
           {/* TAB 2: DEVELOPER LAUNCHPAD */}
           {consoleTab === "launchpad" && (
             <div className="glass-card" style={{ padding: "32px", maxWidth: "800px", margin: "0 auto" }}>
-              <h2 style={{ fontSize: "1.3rem", fontWeight: "700", color: "var(--ink)", marginBottom: "8px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                <EggIcon size={20} color="var(--coral)" />
-                Launch a Protected Token Sale
+              <h2 style={{ fontSize: "1.5rem", fontWeight: "800", color: "var(--ink)", marginBottom: "8px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                <EggIcon size={24} color="var(--coral)" />
+                Developer Token &amp; Pool Launchpad
               </h2>
-              <p style={{ color: "var(--color-text-secondary)", fontSize: "0.9rem", marginBottom: "24px", lineHeight: "1.5" }}>
-                Initialize a custom Uniswap v4 pool registered with HatchHook. Input your ERC20 project token and define your bot-protection and decay-tax parameters.
+              <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem", marginBottom: "32px", lineHeight: "1.5" }}>
+                Step-by-step developer console to deploy a test ERC20 token and initialize a protected Uniswap v4 sale pool on X Layer Testnet.
               </p>
 
               {!isConnected ? (
@@ -1739,175 +1793,388 @@ export default function App() {
                   <div style={{ marginBottom: "12px" }}>
                     <LinkIcon size={36} color="var(--coral)" />
                   </div>
-                  <p style={{ color: "var(--color-text-secondary)", marginBottom: "16px" }}>
-                    Connect your wallet to launch a pool on X Layer Testnet
+                  <p style={{ color: "var(--ink-soft)", marginBottom: "16px" }}>
+                    Connect your wallet to deploy tokens and launch pools on X Layer Testnet
                   </p>
                   <button onClick={connect} className="btn-neon" style={{ padding: "10px 24px" }}>
                     Connect Wallet
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleLaunchPool} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
                   
-                  {/* Token Address */}
-                  <div style={{ gridColumn: "span 2" }}>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      Project Token Contract Address (ERC20)
-                    </label>
-                    <input
-                      type="text"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      placeholder="0x..."
-                      value={launchTokenAddress}
-                      onChange={(e) => setLaunchTokenAddress(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Base Token Address */}
-                  <div>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      Base Token Address (default WETH)
-                    </label>
-                    <input
-                      type="text"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      value={launchBaseAddress}
-                      onChange={(e) => setLaunchBaseAddress(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Initial Price Ratio */}
-                  <div>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      Price Ratio (Project Tokens per 1 Base)
-                    </label>
-                    <input
-                      type="number"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      value={launchPriceRatio}
-                      onChange={(e) => setLaunchPriceRatio(e.target.value)}
-                      min="0.00001"
-                      step="any"
-                      required
-                    />
-                  </div>
-
-                  {/* Start Fee */}
-                  <div>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      Start Launch Tax (%)
-                    </label>
-                    <input
-                      type="number"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      value={launchStartFee}
-                      onChange={(e) => setLaunchStartFee(e.target.value)}
-                      min="0.3"
-                      max="30"
-                      step="0.1"
-                      required
-                    />
-                  </div>
-
-                  {/* End Fee */}
-                  <div>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      End Baseline Fee (%)
-                    </label>
-                    <input
-                      type="number"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      value={launchEndFee}
-                      onChange={(e) => setLaunchEndFee(e.target.value)}
-                      min="0.01"
-                      max="5"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-
-                  {/* Decay Duration */}
-                  <div>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      Tax Decay Duration (Hours)
-                    </label>
-                    <input
-                      type="number"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      value={launchDecayHours}
-                      onChange={(e) => setLaunchDecayHours(e.target.value)}
-                      min="1"
-                      max="168"
-                      required
-                    />
-                  </div>
-
-                  {/* Cooldown */}
-                  <div>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      Wallet Trade Cooldown (Seconds)
-                    </label>
-                    <input
-                      type="number"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      value={launchCooldown}
-                      onChange={(e) => setLaunchCooldown(e.target.value)}
-                      min="0"
-                      max="3600"
-                      required
-                    />
-                  </div>
-
-                  {/* Anti-Whale Limit */}
-                  <div style={{ gridColumn: "span 2" }}>
-                    <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "6px", fontWeight: "600" }}>
-                      Anti-Whale Max Swap Cap (Tokens)
-                    </label>
-                    <input
-                      type="number"
-                      className="glass-input"
-                      style={{ borderRadius: "8px" }}
-                      value={launchMaxSwap}
-                      onChange={(e) => setLaunchMaxSwap(e.target.value)}
-                      min="1"
-                      required
-                    />
-                  </div>
-
-                  {/* Submit Button */}
-                  <div style={{ gridColumn: "span 2", marginTop: "12px" }}>
-                    <button
-                      type="submit"
-                      className="btn-neon"
-                      style={{ width: "100%", padding: "14px" }}
-                      disabled={isTxPending || !isOnCorrectChain}
+                  {parseFloat(okbBalance) < 0.05 && (
+                    <div
+                      style={{
+                        padding: "16px 20px",
+                        borderRadius: "12px",
+                        background: "rgba(194, 91, 91, 0.08)",
+                        border: "1px solid rgba(194, 91, 91, 0.18)",
+                        fontSize: "0.88rem",
+                        color: "var(--error)",
+                        lineHeight: "1.5"
+                      }}
                     >
-                      {isTxPending ? (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
-                          <HourglassIcon size={14} color="var(--sand)" /> Initializing pool onchain...
-                        </span>
-                      ) : (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
-                          <RocketIcon size={14} color="var(--sand)" /> Initialize Launch Pool
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              )}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "700", marginBottom: "6px" }}>
+                        <AlertIcon size={18} color="var(--error)" />
+                        Low OKB Balance Detected ({okbBalance} OKB)
+                      </div>
+                      <p style={{ margin: 0, color: "var(--ink-soft)" }}>
+                        Deploying contracts and seeding pools on X Layer Testnet requires native OKB tokens to cover gas fees. If your balance is insufficient, gas estimation will fail and transactions will revert.
+                      </p>
+                      <div style={{ marginTop: "12px" }}>
+                        <a
+                          href="https://www.okx.com/web3/faucet"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-outline"
+                          style={{
+                            padding: "6px 14px",
+                            fontSize: "0.78rem",
+                            textDecoration: "none",
+                            display: "inline-block",
+                            border: "1px solid var(--error)",
+                            color: "var(--error)",
+                            borderRadius: "100px",
+                            fontWeight: "600"
+                          }}
+                        >
+                          Request Testnet OKB from OKX Faucet →
+                        </a>
+                      </div>
+                    </div>
+                  )}
 
-              {launchStatus && (
-                <div style={{ marginTop: "16px", padding: "12px 16px", borderRadius: "8px", fontSize: "0.88rem", background: launchStatus.type === "error" ? "rgba(194, 91, 91, 0.08)" : launchStatus.type === "success" ? "rgba(95, 155, 108, 0.08)" : "rgba(50, 52, 58, 0.03)", border: `1px solid ${launchStatus.type === "error" ? "rgba(194, 91, 91, 0.2)" : launchStatus.type === "success" ? "rgba(95, 155, 108, 0.2)" : "var(--line)"}`, color: launchStatus.type === "error" ? "var(--error)" : launchStatus.type === "success" ? "var(--success)" : "var(--ink)" }}>
-                  {launchStatus.text}
+                  {parseFloat(wethBalance) < (parseFloat(launchSeedWeth) || 0.5) && (
+                    <div
+                      style={{
+                        padding: "16px 20px",
+                        borderRadius: "12px",
+                        background: "rgba(224, 134, 0, 0.08)",
+                        border: "1px solid rgba(224, 134, 0, 0.18)",
+                        fontSize: "0.88rem",
+                        color: "#c28019",
+                        lineHeight: "1.5"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "700", marginBottom: "6px" }}>
+                        <AlertIcon size={18} color="#c28019" />
+                        Insufficient WETH Balance ({wethBalance} / {launchSeedWeth || "0.5"} WETH)
+                      </div>
+                      <p style={{ margin: 0, color: "var(--ink-soft)" }}>
+                        Seeding this pool requires WETH (Wrapped Ether). Uniswap v4's PoolManager contract will prompt you to approve WETH spend so that it can retrieve the seeded reserves from your wallet. Mint mock WETH below to continue.
+                      </p>
+                      <div style={{ marginTop: "12px" }}>
+                        <button
+                          onClick={handleMintWeth}
+                          className="btn-neon"
+                          disabled={isFaucetPending || isTxPending}
+                          style={{
+                            padding: "8px 18px",
+                            fontSize: "0.82rem",
+                            fontWeight: "600",
+                            borderRadius: "100px"
+                          }}
+                        >
+                          {isFaucetPending ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                              <HourglassIcon size={14} color="var(--sand)" /> Minting WETH...
+                            </span>
+                          ) : "Claim 10 Mock WETH (Faucet)"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Phase 1: Deploy a Test ERC20 Token */}
+                  <div style={{ borderBottom: "1.5px dashed var(--line)", paddingBottom: "32px" }}>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--coral-deep)", marginBottom: "16px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ display: "inline-block", background: "var(--coral)", color: "var(--sand)", width: "24px", height: "24px", borderRadius: "50%", textAlign: "center", lineHeight: "24px", fontSize: "12px", fontWeight: "800" }}>1</span>
+                      Phase 1: Deploy a Test ERC20 Token
+                    </h3>
+                    <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginBottom: "20px", lineHeight: "1.4" }}>
+                      Need a token to test the launchpad? Quick-deploy a Mock ERC20 contract directly onto X Layer Testnet. The deployed address will automatically populate Phase 2.
+                    </p>
+
+                    <form onSubmit={handleDeployToken} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Token Name
+                        </label>
+                        <input
+                          type="text"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={tokenDeployName}
+                          onChange={(e) => setTokenDeployName(e.target.value)}
+                          placeholder="e.g. Mock Project Token"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Token Symbol
+                        </label>
+                        <input
+                          type="text"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={tokenDeploySymbol}
+                          onChange={(e) => setTokenDeploySymbol(e.target.value)}
+                          placeholder="e.g. MPT"
+                          required
+                        />
+                      </div>
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Total Supply (Tokens)
+                        </label>
+                        <input
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={tokenDeploySupply}
+                          onChange={(e) => setTokenDeploySupply(e.target.value)}
+                          placeholder="e.g. 10000000"
+                          min="1"
+                          required
+                        />
+                      </div>
+                      <div style={{ gridColumn: "span 2", marginTop: "4px" }}>
+                        <button
+                          type="submit"
+                          className="btn-outline"
+                          style={{ width: "100%", padding: "12px", border: "1px solid var(--coral)", color: "var(--coral-deep)", fontWeight: "700" }}
+                          disabled={isTxPending || !isOnCorrectChain}
+                        >
+                          {isTxPending ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+                              <HourglassIcon size={14} color="var(--coral)" /> Deploying contract...
+                            </span>
+                          ) : "Deploy Token"}
+                        </button>
+                      </div>
+                    </form>
+
+                    {tokenDeployStatus && (
+                      <div style={{ marginTop: "16px", padding: "12px 16px", borderRadius: "8px", fontSize: "0.88rem", background: tokenDeployStatus.type === "error" ? "rgba(194, 91, 91, 0.08)" : tokenDeployStatus.type === "success" ? "rgba(95, 155, 108, 0.08)" : "rgba(50, 52, 58, 0.03)", border: `1px solid ${tokenDeployStatus.type === "error" ? "rgba(194, 91, 91, 0.2)" : tokenDeployStatus.type === "success" ? "rgba(95, 155, 108, 0.2)" : "var(--line)"}`, color: tokenDeployStatus.type === "error" ? "var(--error)" : tokenDeployStatus.type === "success" ? "var(--success)" : "var(--ink)" }}>
+                        {tokenDeployStatus.text}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phase 2: Launch a Protected Token Sale */}
+                  <div>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--coral-deep)", marginBottom: "16px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ display: "inline-block", background: "var(--coral)", color: "var(--sand)", width: "24px", height: "24px", borderRadius: "50%", textAlign: "center", lineHeight: "24px", fontSize: "12px", fontWeight: "800" }}>2</span>
+                      Phase 2: Launch a Protected Token Sale
+                    </h3>
+                    <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginBottom: "20px", lineHeight: "1.4" }}>
+                      Configure and initialize the Uniswap v4 pool. Define your pricing, bot-protection parameters, and explicitly state how much of your token supply is put up for sale (seeded) alongside initial WETH reserves.
+                    </p>
+
+                    <form onSubmit={handleLaunchPool} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                      {/* Token Address */}
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Project Token Contract Address (ERC20)
+                        </label>
+                        <input
+                          id="launch-token-address-input"
+                          type="text"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          placeholder="0x..."
+                          value={launchTokenAddress}
+                          onChange={(e) => setLaunchTokenAddress(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      {/* Base Token Address */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Base Token Address (default WETH)
+                        </label>
+                        <input
+                          type="text"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchBaseAddress}
+                          onChange={(e) => setLaunchBaseAddress(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      {/* Initial Price Ratio */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Price Ratio (Project Tokens per 1 Base)
+                        </label>
+                        <input
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchPriceRatio}
+                          onChange={(e) => setLaunchPriceRatio(e.target.value)}
+                          min="0.00001"
+                          step="any"
+                          required
+                        />
+                      </div>
+
+                      {/* Project Tokens for Sale */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          Project Tokens up for Sale (Seeded)
+                          <span style={{ fontSize: "10px", color: "var(--muted)" }}>(e.g. 5,000,000)</span>
+                        </label>
+                        <input
+                          id="launch-seed-project-input"
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchSeedProject}
+                          onChange={(e) => setLaunchSeedProject(e.target.value)}
+                          min="0"
+                          step="any"
+                          required
+                        />
+                      </div>
+
+                      {/* WETH for Sale */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          WETH up for Sale (Seeded)
+                          <span style={{ fontSize: "10px", color: "var(--muted)" }}>(e.g. 0.5 WETH)</span>
+                        </label>
+                        <input
+                          id="launch-seed-weth-input"
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchSeedWeth}
+                          onChange={(e) => setLaunchSeedWeth(e.target.value)}
+                          min="0"
+                          step="any"
+                          required
+                        />
+                      </div>
+
+                      {/* Start Fee */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Start Launch Tax (%)
+                        </label>
+                        <input
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchStartFee}
+                          onChange={(e) => setLaunchStartFee(e.target.value)}
+                          min="0.3"
+                          max="30"
+                          step="0.1"
+                          required
+                        />
+                      </div>
+
+                      {/* End Fee */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          End Baseline Fee (%)
+                        </label>
+                        <input
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchEndFee}
+                          onChange={(e) => setLaunchEndFee(e.target.value)}
+                          min="0.01"
+                          max="5"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+
+                      {/* Decay Duration */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Tax Decay Duration (Hours)
+                        </label>
+                        <input
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchDecayHours}
+                          onChange={(e) => setLaunchDecayHours(e.target.value)}
+                          min="1"
+                          max="168"
+                          required
+                        />
+                      </div>
+
+                      {/* Cooldown */}
+                      <div>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Wallet Trade Cooldown (Seconds)
+                        </label>
+                        <input
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchCooldown}
+                          onChange={(e) => setLaunchCooldown(e.target.value)}
+                          min="0"
+                          max="3600"
+                          required
+                        />
+                      </div>
+
+                      {/* Anti-Whale Limit */}
+                      <div style={{ gridColumn: "span 2" }}>
+                        <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
+                          Anti-Whale Max Swap Cap (Tokens)
+                        </label>
+                        <input
+                          type="number"
+                          className="glass-input"
+                          style={{ borderRadius: "8px" }}
+                          value={launchMaxSwap}
+                          onChange={(e) => setLaunchMaxSwap(e.target.value)}
+                          min="1"
+                          required
+                        />
+                      </div>
+
+                      {/* Submit Button */}
+                      <div style={{ gridColumn: "span 2", marginTop: "12px" }}>
+                        <button
+                          type="submit"
+                          className="btn-neon"
+                          style={{ width: "100%", padding: "14px" }}
+                          disabled={isTxPending || !isOnCorrectChain}
+                        >
+                          {isTxPending ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+                              <HourglassIcon size={14} color="var(--sand)" /> Initializing pool and seeding liquidity...
+                            </span>
+                          ) : (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+                              <RocketIcon size={14} color="var(--sand)" /> Initialize Launch Pool
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+
+                    {launchStatus && (
+                      <div style={{ marginTop: "16px", padding: "12px 16px", borderRadius: "8px", fontSize: "0.88rem", background: launchStatus.type === "error" ? "rgba(194, 91, 91, 0.08)" : launchStatus.type === "success" ? "rgba(95, 155, 108, 0.08)" : "rgba(50, 52, 58, 0.03)", border: `1px solid ${launchStatus.type === "error" ? "rgba(194, 91, 91, 0.2)" : launchStatus.type === "success" ? "rgba(95, 155, 108, 0.2)" : "var(--line)"}`, color: launchStatus.type === "error" ? "var(--error)" : launchStatus.type === "success" ? "var(--success)" : "var(--ink)" }}>
+                        {launchStatus.text}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>

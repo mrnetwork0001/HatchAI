@@ -10,6 +10,8 @@ import { ethers } from "ethers";
 import { connectWallet, disconnectWallet, INITIAL_STATE } from "./lib/wallet";
 import { switchToChain } from "./lib/xlayer";
 import deployments from "./deployments.json";
+import { MOCK_ERC20_ABI, MOCK_ERC20_BYTECODE } from "./lib/mockErc20";
+
 
 // ── ABIs (minimal - only functions the frontend needs) ───────────────────────
 const HATCH_HOOK_ABI = [
@@ -150,6 +152,27 @@ const POOL_MANAGER_ABI = [
     ],
     outputs: [{ name: "tick", type: "int24" }],
   },
+  {
+    name: "addLiquidityDirect",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      {
+        name: "key",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+      { name: "amount0", type: "uint256" },
+      { name: "amount1", type: "uint256" },
+    ],
+    outputs: [],
+  },
 ];
 
 const ERC20_ABI = [
@@ -186,6 +209,16 @@ const ERC20_ABI = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "string" }],
+  },
+  {
+    name: "mint",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
   },
 ];
 
@@ -678,6 +711,95 @@ export function WalletProvider({ children }) {
     }
   };
 
+  const deployToken = async (name, symbol, initialSupplyStr) => {
+    if (!wallet.connected) {
+      addLog("Deploy Error", "Connect your wallet first.", "error");
+      return { success: false, reason: "Wallet not connected" };
+    }
+    if (wallet.chainId !== CHAIN_ID) {
+      addLog("Deploy Error", `Switch to X Layer Testnet (Chain: ${CHAIN_ID}) first.`, "error");
+      await switchToChain(CHAIN_ID);
+      return { success: false, reason: "Wrong network" };
+    }
+
+    setIsTxPending(true);
+    setIsTxSuccess(false);
+
+    try {
+      addLog("Deploy Token", `Deploying standard ERC20 token ${name} (${symbol})...`, "info");
+      
+      const signer = wallet.signer;
+      const factory = new ethers.ContractFactory(MOCK_ERC20_ABI, MOCK_ERC20_BYTECODE, signer);
+      
+      const supply = BigInt(initialSupplyStr);
+      
+      const contract = await factory.deploy(name, symbol, supply, { gasLimit: 3000000 });
+      const deployTxHash = contract.deploymentTransaction().hash;
+      setPendingTxHash(deployTxHash);
+      addLog("Deploy Token", `Deployment transaction submitted. Hash: ${deployTxHash}. Waiting for confirmation...`, "info");
+      
+      await contract.waitForDeployment();
+      const address = await contract.getAddress();
+      
+      setIsTxSuccess(true);
+      setPendingTxHash(null);
+      addLog("DEPLOY SUCCESSFUL", `Token deployed at address: ${address}. Initial supply: ${initialSupplyStr} ${symbol} minted to your wallet.`, "success");
+      
+      fetchOnChainData(wallet);
+      return { success: true, address };
+    } catch (err) {
+      console.error(err);
+      const msg = err?.reason || err?.message || "Deployment failed";
+      addLog("DEPLOY ERROR", `Token deployment failed: ${msg}`, "error");
+      return { success: false, reason: msg };
+    } finally {
+      setIsTxPending(false);
+    }
+  };
+
+  const mintWeth = async (amountStr = "10") => {
+    if (!wallet.connected) {
+      addLog("Faucet Error", "Connect your wallet first.", "error");
+      return { success: false, reason: "Wallet not connected" };
+    }
+    if (wallet.chainId !== CHAIN_ID) {
+      addLog("Faucet Error", `Switch to X Layer Testnet (Chain: ${CHAIN_ID}) first.`, "error");
+      await switchToChain(CHAIN_ID);
+      return { success: false, reason: "Wrong network" };
+    }
+
+    setIsTxPending(true);
+    setIsTxSuccess(false);
+
+    try {
+      addLog("WETH Faucet", `Minting ${amountStr} Mock WETH to your wallet...`, "info");
+      
+      const signer = wallet.signer;
+      const wethContract = new ethers.Contract(CONTRACTS.weth, ERC20_ABI, signer);
+      
+      const amountWei = ethers.parseEther(amountStr);
+      
+      const mintTx = await wethContract.mint(wallet.address, amountWei, { gasLimit: 100000 });
+      setPendingTxHash(mintTx.hash);
+      addLog("WETH Faucet", `Transaction submitted. Hash: ${mintTx.hash}. Waiting for confirmation...`, "info");
+      
+      await mintTx.wait();
+      setIsTxSuccess(true);
+      setPendingTxHash(null);
+      addLog("WETH FAUCET SUCCESSFUL", `${amountStr} Mock WETH minted to your wallet!`, "success");
+      
+      fetchOnChainData(wallet);
+      return { success: true };
+    } catch (err) {
+      console.error(err);
+      const msg = err?.reason || err?.message || "Faucet mint failed";
+      addLog("WETH FAUCET ERROR", `Mint failed: ${msg}`, "error");
+      return { success: false, reason: msg };
+    } finally {
+      setIsTxPending(false);
+    }
+  };
+
   // ── Launchpad Initializer ──────────────────────────────────────────────────
   const initializePool = async (config) => {
     if (!wallet.connected) {
@@ -701,7 +823,9 @@ export function WalletProvider({ children }) {
       startFeePercent,
       endFeePercent,
       maxSwapAmountTokens,
-      cooldownSeconds
+      cooldownSeconds,
+      seedProjectAmount,
+      seedWethAmount
     } = config;
 
     try {
@@ -741,15 +865,66 @@ export function WalletProvider({ children }) {
       const signer = wallet.signer;
       const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, signer);
       
-      const initTx = await poolManagerContract.initialize(poolKey, sqrtPriceX96, hookData);
-      setPendingTxHash(initTx.hash);
-      addLog("Launchpad", `Transaction submitted: ${initTx.hash}. Waiting for confirmation...`, "info");
-      
-      await initTx.wait();
-      setIsTxSuccess(true);
-      setPendingTxHash(null);
-      
       const newPoolId = computePoolId(poolKey);
+
+      // Check if pool is already initialized
+      addLog("Launchpad", "Checking pool status on-chain...", "info");
+      const poolState = await poolManagerContract.pools(newPoolId);
+      const isAlreadyInitialized = poolState && (poolState.initialized || poolState[2]);
+
+      let initTxHash = "";
+      if (!isAlreadyInitialized) {
+        addLog("Launchpad", "Initializing Uniswap V4 Pool on PoolManager...", "info");
+        const initTx = await poolManagerContract.initialize(poolKey, sqrtPriceX96, hookData, { gasLimit: 3000000 });
+        setPendingTxHash(initTx.hash);
+        addLog("Launchpad", `Transaction submitted: ${initTx.hash}. Waiting for confirmation...`, "info");
+        await initTx.wait();
+        initTxHash = initTx.hash;
+        setIsTxSuccess(true);
+        setPendingTxHash(null);
+      } else {
+        addLog("Launchpad", "Pool already initialized on-chain. Skipping initialize step.", "info");
+      }
+
+      // ── Optional Initial Liquidity Seeding ─────────────────────────────────
+      const pAmt = parseFloat(seedProjectAmount || "0");
+      const wAmt = parseFloat(seedWethAmount || "0");
+      if (pAmt > 0 && wAmt > 0) {
+        const reserves0 = poolState ? (poolState.reserves0 || poolState[0]) : 0n;
+        const reserves1 = poolState ? (poolState.reserves1 || poolState[1]) : 0n;
+        const hasLiquidity = (reserves0 && reserves0 > 0n) || (reserves1 && reserves1 > 0n);
+
+        if (!hasLiquidity) {
+          addLog("Launchpad", "Seeding initial liquidity to PoolManager...", "info");
+          const seedProjectWei = ethers.parseEther(seedProjectAmount);
+          const seedWethWei = ethers.parseEther(seedWethAmount);
+
+          const projectERC20 = new ethers.Contract(projectToken, ERC20_ABI, signer);
+          const wethERC20 = new ethers.Contract(baseToken, ERC20_ABI, signer);
+
+          // 1. Approve project token spend
+          addLog("Launchpad", `Approving ${seedProjectAmount} Project Tokens for PoolManager...`, "info");
+          const appTx0 = await projectERC20.approve(CONTRACTS.poolManager, seedProjectWei, { gasLimit: 150000 });
+          await appTx0.wait();
+
+          // 2. Approve WETH spend
+          addLog("Launchpad", `Approving ${seedWethAmount} WETH for PoolManager...`, "info");
+          const appTx1 = await wethERC20.approve(CONTRACTS.poolManager, seedWethWei, { gasLimit: 150000 });
+          await appTx1.wait();
+
+          // 3. Call addLiquidityDirect
+          addLog("Launchpad", "Submitting addLiquidityDirect transaction...", "info");
+          const liq0 = isHatchCurrency0 ? seedProjectWei : seedWethWei;
+          const liq1 = isHatchCurrency0 ? seedWethWei : seedProjectWei;
+
+          const addLiqTx = await poolManagerContract.addLiquidityDirect(poolKey, liq0, liq1, { gasLimit: 3000000 });
+          setPendingTxHash(addLiqTx.hash);
+          await addLiqTx.wait();
+          addLog("Launchpad", `Liquidity seeded successfully! Tx: ${addLiqTx.hash}`, "success");
+        } else {
+          addLog("Launchpad", "Pool already has seeded liquidity. Skipping liquidity seeding step.", "info");
+        }
+      }
 
       // Query symbol of the project token
       const projectTokenContract = new ethers.Contract(projectToken, ERC20_ABI, signer);
@@ -757,7 +932,7 @@ export function WalletProvider({ children }) {
 
       addLog(
         "LAUNCH SUCCESSFUL",
-        `Pool successfully initialized! ID: ${newPoolId.slice(0, 10)}... Tx: ${initTx.hash}`,
+        `Pool successfully initialized! ID: ${newPoolId.slice(0, 10)}... Tx: ${initTxHash || "Already Initialized"}`,
         "success"
       );
 
@@ -784,7 +959,9 @@ export function WalletProvider({ children }) {
         startFeePercent,
         endFeePercent,
         maxSwapAmountTokens,
-        cooldownSeconds
+        cooldownSeconds,
+        seedProjectAmount,
+        seedWethAmount
       };
 
       setCustomPools((prev) => {
@@ -797,7 +974,7 @@ export function WalletProvider({ children }) {
         return updated;
       });
 
-      return { success: true, txHash: initTx.hash, poolId: newPoolId };
+      return { success: true, txHash: initTxHash, poolId: newPoolId };
     } catch (err) {
       console.error(err);
       const msg = err?.reason || err?.message || "Initialization failed";
@@ -807,6 +984,7 @@ export function WalletProvider({ children }) {
       setIsTxPending(false);
     }
   };
+
 
   const resetToDefaultPool = () => {
     setActivePoolKey(POOL_KEY);
@@ -871,6 +1049,8 @@ export function WalletProvider({ children }) {
         claimRoyalties,
         claimRoyaltiesAutonomously,
         initializePool,
+        deployToken,
+        mintWeth,
         resetToDefaultPool,
         selectPool,
         customPools,
