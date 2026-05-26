@@ -2146,86 +2146,88 @@ export default function App() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "24px" }}>
                 
                 {/* Simulation Panel */}
-                <div className="glass-card" style={{ gridColumn: "span 12", padding: "28px", marginBottom: "12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-                    <div>
-                      <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)", display: "flex", alignItems: "center", gap: "8px" }}>
-                        <ShieldIcon size={20} color="var(--coral)" /> Interactive Launch Protection Simulator
-                      </h2>
-                      <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginTop: "4px" }}>
-                        Compare a sniper bot attack on a standard pool vs HatchAI's protected Uniswap V4 pool.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={runSniperSimulation}
-                      disabled={simState === "running"}
-                      className="btn-neon"
-                      style={{ padding: "10px 24px", minWidth: "200px" }}
-                    >
-                      {simState === "running" ? "Running Attack..." : "Simulate Sniper Attack"}
-                    </button>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-                    {/* Left Column: Standard Pool */}
-                    <div style={{ background: "rgba(194, 91, 91, 0.02)", border: "1px solid rgba(194, 91, 91, 0.15)", borderRadius: "12px", padding: "20px" }}>
-                      <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--error)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
-                        <AlertIcon size={16} color="var(--error)" /> Standard Unprotected DEX Pool
-                      </h3>
-
-                      {unprotectedLogs.length === 0 ? (
-                        <p style={{ color: "var(--muted)", fontSize: "0.85rem", fontStyle: "italic", textAlign: "center", padding: "40px 0" }}>
-                          Click the button to launch a mock sniper attack.
+                {targetChainId !== 196 && (
+                  <div className="glass-card" style={{ gridColumn: "span 12", padding: "28px", marginBottom: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+                      <div>
+                        <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <ShieldIcon size={20} color="var(--coral)" /> Interactive Launch Protection Simulator
+                        </h2>
+                        <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginTop: "4px" }}>
+                          Compare a sniper bot attack on a standard pool vs HatchAI's protected Uniswap V4 pool.
                         </p>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                          {unprotectedLogs.map((log, i) => (
-                            <div key={i} style={{ fontSize: "0.82rem", lineHeight: "1.4", padding: "10px 12px", borderRadius: "8px", background: "rgba(194, 91, 91, 0.05)", borderLeft: "3px solid var(--error)", color: "var(--ink)", display: "flex", alignItems: "flex-start" }}>
-                              {renderSimIcon(log.icon)}
-                              <span>{log.text}</span>
-                            </div>
-                          ))}
-                          {simState === "completed" && (
-                            <div style={{ borderTop: "1px dashed rgba(194,91,91,0.2)", paddingTop: "12px", marginTop: "8px", color: "var(--error)", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                              <SkullIcon size={15} color="var(--error)" />
-                              Result: Pool rugged. Community capital lost.
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={runSniperSimulation}
+                        disabled={simState === "running"}
+                        className="btn-neon"
+                        style={{ padding: "10px 24px", minWidth: "200px" }}
+                      >
+                        {simState === "running" ? "Running Attack..." : "Simulate Sniper Attack"}
+                      </button>
                     </div>
 
-                    {/* Right Column: Protected Pool */}
-                    <div style={{ background: "rgba(95, 155, 108, 0.02)", border: "1px solid rgba(95, 155, 108, 0.15)", borderRadius: "12px", padding: "20px" }}>
-                      <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--success)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
-                        <ShieldIcon size={16} color="var(--success)" /> HatchAI Protected Hook Pool
-                      </h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                      {/* Left Column: Standard Pool */}
+                      <div style={{ background: "rgba(194, 91, 91, 0.02)", border: "1px solid rgba(194, 91, 91, 0.15)", borderRadius: "12px", padding: "20px" }}>
+                        <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--error)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
+                          <AlertIcon size={16} color="var(--error)" /> Standard Unprotected DEX Pool
+                        </h3>
 
-                      {protectedLogs.length === 0 ? (
-                        <p style={{ color: "var(--muted)", fontSize: "0.85rem", fontStyle: "italic", textAlign: "center", padding: "40px 0" }}>
-                          Click the button to launch a mock sniper attack.
-                        </p>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                          {protectedLogs.map((log, i) => (
-                            <div key={i} style={{ fontSize: "0.82rem", lineHeight: "1.4", padding: "10px 12px", borderRadius: "8px", background: "rgba(95, 155, 108, 0.05)", borderLeft: "3px solid var(--success)", color: "var(--ink)", display: "flex", alignItems: "flex-start" }}>
-                              {renderSimIcon(log.icon)}
-                              <span>{log.text}</span>
-                            </div>
-                          ))}
-                          {simState === "completed" && (
-                            <div style={{ borderTop: "1px dashed rgba(95,155,108,0.2)", paddingTop: "12px", marginTop: "8px", color: "var(--success)", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                              <RocketIcon size={15} color="var(--success)" />
-                              Result: 100% Safe Launch. Token value protected!
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        {unprotectedLogs.length === 0 ? (
+                          <p style={{ color: "var(--muted)", fontSize: "0.85rem", fontStyle: "italic", textAlign: "center", padding: "40px 0" }}>
+                            Click the button to launch a mock sniper attack.
+                          </p>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            {unprotectedLogs.map((log, i) => (
+                              <div key={i} style={{ fontSize: "0.82rem", lineHeight: "1.4", padding: "10px 12px", borderRadius: "8px", background: "rgba(194, 91, 91, 0.05)", borderLeft: "3px solid var(--error)", color: "var(--ink)", display: "flex", alignItems: "flex-start" }}>
+                                {renderSimIcon(log.icon)}
+                                <span>{log.text}</span>
+                              </div>
+                            ))}
+                            {simState === "completed" && (
+                              <div style={{ borderTop: "1px dashed rgba(194,91,91,0.2)", paddingTop: "12px", marginTop: "8px", color: "var(--error)", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                                <SkullIcon size={15} color="var(--error)" />
+                                Result: Pool rugged. Community capital lost.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right Column: Protected Pool */}
+                      <div style={{ background: "rgba(95, 155, 108, 0.02)", border: "1px solid rgba(95, 155, 108, 0.15)", borderRadius: "12px", padding: "20px" }}>
+                        <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--success)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
+                          <ShieldIcon size={16} color="var(--success)" /> HatchAI Protected Hook Pool
+                        </h3>
+
+                        {protectedLogs.length === 0 ? (
+                          <p style={{ color: "var(--muted)", fontSize: "0.85rem", fontStyle: "italic", textAlign: "center", padding: "40px 0" }}>
+                            Click the button to launch a mock sniper attack.
+                          </p>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            {protectedLogs.map((log, i) => (
+                              <div key={i} style={{ fontSize: "0.82rem", lineHeight: "1.4", padding: "10px 12px", borderRadius: "8px", background: "rgba(95, 155, 108, 0.05)", borderLeft: "3px solid var(--success)", color: "var(--ink)", display: "flex", alignItems: "flex-start" }}>
+                                {renderSimIcon(log.icon)}
+                                <span>{log.text}</span>
+                              </div>
+                            ))}
+                            {simState === "completed" && (
+                              <div style={{ borderTop: "1px dashed rgba(95,155,108,0.2)", paddingTop: "12px", marginTop: "8px", color: "var(--success)", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                                <RocketIcon size={15} color="var(--success)" />
+                                Result: 100% Safe Launch. Token value protected!
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 
                 {/* Payout & Buyback Card */}
                 <div className="glass-card" style={{ gridColumn: "span 6", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -2276,118 +2278,140 @@ export default function App() {
                   </div>
 
                   <div>
-                    <button
-                      id="claim-fees-btn"
-                      onClick={handleClaim}
-                      disabled={accumulatedFees <= 0 || !isConnected || isTxPending || !isOnCorrectChain || isAgentActive}
-                      className="btn-neon"
-                      style={{ width: "100%", marginBottom: "20px" }}
-                    >
-                      {isTxPending ? (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
-                          <HourglassIcon size={14} color="var(--sand)" /> Confirming…
-                        </span>
-                      ) : isAgentActive ? "Agent Auto-Harvest Mode Enabled" : "Manual Creator Claim & Buyback-Burn"}
-                    </button>
-
-                    {/* AI Agent Section */}
-                    <div style={{ borderTop: "1.5px dashed var(--line)", paddingTop: "16px", marginTop: "4px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <BotIcon size={18} color="var(--coral)" />
-                          <span style={{ fontWeight: "700", fontSize: "0.9rem", color: "var(--ink)" }}>HatchAI Yield Agent</span>
+                    {targetChainId === 196 ? (
+                      <div style={{ 
+                        background: "rgba(95, 155, 108, 0.05)", 
+                        border: "1px solid rgba(95, 155, 108, 0.15)", 
+                        borderRadius: "8px", 
+                        padding: "14px", 
+                        fontSize: "0.85rem", 
+                        lineHeight: "1.5",
+                        color: "var(--ink-soft)" 
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--success)", fontWeight: "700", marginBottom: "8px" }}>
+                          <ShieldIcon size={16} color="var(--success)" /> Official V4 Fee Harvest
                         </div>
-                        
-                        {/* Toggle switch styled cleanly */}
-                        <div style={{ display: "flex", background: "rgba(50,52,58,0.05)", borderRadius: "100px", padding: "3px", border: "1px solid var(--line)" }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsAgentActive(false);
-                              addLog("Agent AI", "Autonomous Yield Agent deactivated. Switched to manual mode.", "info");
-                            }}
-                            style={{
-                              border: "none",
-                              borderRadius: "100px",
-                              padding: "4px 12px",
-                              fontSize: "10px",
-                              fontWeight: "700",
-                              background: !isAgentActive ? "var(--ink)" : "transparent",
-                              color: !isAgentActive ? "var(--sand)" : "var(--ink-soft)",
-                              cursor: "pointer",
-                              transition: "all 0.2s"
-                            }}
-                          >
-                            MANUAL
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsAgentActive(true);
-                            }}
-                            style={{
-                              border: "none",
-                              borderRadius: "100px",
-                              padding: "4px 12px",
-                              fontSize: "10px",
-                              fontWeight: "700",
-                              background: isAgentActive ? "var(--coral)" : "transparent",
-                              color: isAgentActive ? "var(--sand)" : "var(--ink-soft)",
-                              cursor: "pointer",
-                              transition: "all 0.2s"
-                            }}
-                          >
-                            AGENT ACTIVE
-                          </button>
+                        On X Layer Mainnet, the dynamic swap fee (launch protection fee) behaves as an LP fee override. Fees accrue directly to your liquidity provider position NFT.
+                        <div style={{ marginTop: "10px" }}>
+                          Use the official Uniswap V4 Position Manager (<a href={`${explorerUrl}/address/${contracts.positionManager}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", fontWeight: "600", textDecoration: "underline" }}>{contracts.positionManager?.slice(0, 8)}...</a>) to claim fees.
                         </div>
                       </div>
+                    ) : (
+                      <>
+                        <button
+                          id="claim-fees-btn"
+                          onClick={handleClaim}
+                          disabled={accumulatedFees <= 0 || !isConnected || isTxPending || !isOnCorrectChain || isAgentActive}
+                          className="btn-neon"
+                          style={{ width: "100%", marginBottom: "20px" }}
+                        >
+                          {isTxPending ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+                              <HourglassIcon size={14} color="var(--sand)" /> Confirming…
+                            </span>
+                          ) : isAgentActive ? "Agent Auto-Harvest Mode Enabled" : "Manual Creator Claim & Buyback-Burn"}
+                        </button>
 
-                      {/* Agent status log panel */}
-                      <div style={{ background: "rgba(50,52,58,0.02)", border: "1px solid var(--line)", borderRadius: "8px", padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem" }}>
-                          <span style={{ color: "var(--muted)" }}>Agent Status:</span>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "700", color: isAgentActive ? "var(--success)" : "var(--muted)" }}>
-                            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: isAgentActive ? "var(--success)" : "var(--muted)", animation: isAgentActive ? "pulse 1.5s ease infinite" : "none" }}></span>
-                            {isAgentActive ? "AUTONOMOUS MONITORING" : "STANDBY"}
-                          </span>
-                        </div>
+                        {/* AI Agent Section */}
+                        <div style={{ borderTop: "1.5px dashed var(--line)", paddingTop: "16px", marginTop: "4px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <BotIcon size={18} color="var(--coral)" />
+                              <span style={{ fontWeight: "700", fontSize: "0.9rem", color: "var(--ink)" }}>HatchAI Yield Agent</span>
+                            </div>
+                            
+                            {/* Toggle switch styled cleanly */}
+                            <div style={{ display: "flex", background: "rgba(50,52,58,0.05)", borderRadius: "100px", padding: "3px", border: "1px solid var(--line)" }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAgentActive(false);
+                                  addLog("Agent AI", "Autonomous Yield Agent deactivated. Switched to manual mode.", "info");
+                                }}
+                                style={{
+                                  border: "none",
+                                  borderRadius: "100px",
+                                  padding: "4px 12px",
+                                  fontSize: "10px",
+                                  fontWeight: "700",
+                                  background: !isAgentActive ? "var(--ink)" : "transparent",
+                                  color: !isAgentActive ? "var(--sand)" : "var(--ink-soft)",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s"
+                                }}
+                              >
+                                MANUAL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAgentActive(true);
+                                }}
+                                style={{
+                                  border: "none",
+                                  borderRadius: "100px",
+                                  padding: "4px 12px",
+                                  fontSize: "10px",
+                                  fontWeight: "700",
+                                  background: isAgentActive ? "var(--coral)" : "transparent",
+                                  color: isAgentActive ? "var(--sand)" : "var(--ink-soft)",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s"
+                                }}
+                              >
+                                AGENT ACTIVE
+                              </button>
+                            </div>
+                          </div>
 
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem" }}>
-                          <span style={{ color: "var(--muted)" }}>Auto-Harvest Threshold:</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <input 
-                              type="number"
-                              value={agentThreshold}
-                              onChange={(e) => {
-                                setAgentThreshold(e.target.value);
-                                if (isAgentActive) {
-                                  addLog("Agent AI", `Auto-harvest threshold updated to ${e.target.value} WETH`, "info");
-                                }
-                              }}
-                              disabled={isAgentActive}
-                              style={{
-                                width: "60px",
-                                background: "rgba(255,255,255,0.7)",
-                                border: "1px solid var(--line)",
-                                borderRadius: "4px",
-                                padding: "2px 6px",
-                                fontSize: "0.75rem",
-                                fontWeight: "600",
-                                textAlign: "right"
-                              }}
-                              step="0.005"
-                              min="0.001"
-                            />
-                            <span style={{ fontWeight: "600" }}>WETH</span>
+                          {/* Agent status log panel */}
+                          <div style={{ background: "rgba(50,52,58,0.02)", border: "1px solid var(--line)", borderRadius: "8px", padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem" }}>
+                              <span style={{ color: "var(--muted)" }}>Agent Status:</span>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "700", color: isAgentActive ? "var(--success)" : "var(--muted)" }}>
+                                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: isAgentActive ? "var(--success)" : "var(--muted)", animation: isAgentActive ? "pulse 1.5s ease infinite" : "none" }}></span>
+                                {isAgentActive ? "AUTONOMOUS MONITORING" : "STANDBY"}
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem" }}>
+                              <span style={{ color: "var(--muted)" }}>Auto-Harvest Threshold:</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <input 
+                                  type="number"
+                                  value={agentThreshold}
+                                  onChange={(e) => {
+                                    setAgentThreshold(e.target.value);
+                                    if (isAgentActive) {
+                                      addLog("Agent AI", `Auto-harvest threshold updated to ${e.target.value} WETH`, "info");
+                                    }
+                                  }}
+                                  disabled={isAgentActive}
+                                  style={{
+                                    width: "60px",
+                                    background: "rgba(255,255,255,0.7)",
+                                    border: "1px solid var(--line)",
+                                    borderRadius: "4px",
+                                    padding: "2px 6px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "600",
+                                    textAlign: "right"
+                                  }}
+                                  step="0.005"
+                                  min="0.001"
+                                />
+                                <span style={{ fontWeight: "600" }}>WETH</span>
+                              </div>
+                            </div>
+
+                            <div style={{ borderTop: "1px dashed var(--line)", paddingTop: "8px", marginTop: "2px", fontSize: "0.75rem", fontFamily: "Geist Mono, monospace", color: "var(--ink-soft)" }}>
+                              <span style={{ color: "var(--muted)" }}>Agent Log:</span>{" "}
+                              <span style={{ color: isAgentActive ? "var(--coral-deep)" : "var(--ink)" }}>{agentLog}</span>
+                            </div>
                           </div>
                         </div>
-
-                        <div style={{ borderTop: "1px dashed var(--line)", paddingTop: "8px", marginTop: "2px", fontSize: "0.75rem", fontFamily: "Geist Mono, monospace", color: "var(--ink-soft)" }}>
-                          <span style={{ color: "var(--muted)" }}>Agent Log:</span>{" "}
-                          <span style={{ color: isAgentActive ? "var(--coral-deep)" : "var(--ink)" }}>{agentLog}</span>
-                        </div>
-                      </div>
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
