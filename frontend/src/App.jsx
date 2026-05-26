@@ -300,6 +300,7 @@ export default function App() {
     timeElapsed,
     executeSwap,
     claimRoyalties,
+    claimRoyaltiesMainnet,
     claimRoyaltiesAutonomously,
     pendingTxHash,
     isTxPending,
@@ -328,6 +329,7 @@ export default function App() {
   const [view, setView] = useState("landing"); // 'landing' | 'console'
   const [consoleTab, setConsoleTab] = useState("portal"); // 'portal' | 'swap' | 'launchpad'
   const [swapAmount, setSwapAmount] = useState("0.1");
+  const [lpNftTokenId, setLpNftTokenId] = useState("");
   const [statusMsg, setStatusMsg] = useState(null); // { text, type }
   const [isAgentActive, setIsAgentActive] = useState(false);
   const [agentThreshold, setAgentThreshold] = useState("0.02");
@@ -704,6 +706,43 @@ export default function App() {
         status: "error",
         txHash: "",
         message: "Failed to harvest royalties.",
+        errorReason: res.reason
+      });
+    }
+  };
+
+  const handleClaimMainnet = async () => {
+    setStatusMsg({ text: "Submitting claimFeesMainnet transaction…", type: "pending" });
+    setTxModal({
+      isOpen: true,
+      title: "Harvest LP Fees & Swap-Burn",
+      status: "pending",
+      txHash: "",
+      message: `Harvesting LP fees from Uniswap V4 Position Manager for NFT #${lpNftTokenId}... Please confirm the transaction in your wallet.`,
+      errorReason: ""
+    });
+    const res = await claimRoyaltiesMainnet(lpNftTokenId);
+    if (res.success) {
+      setStatusMsg({
+        text: `Claim submitted! Tx: ${res.txHash?.slice(0, 10)}…`,
+        type: "success",
+      });
+      setTxModal({
+        isOpen: true,
+        title: "Harvest LP Fees & Swap-Burn",
+        status: "success",
+        txHash: res.txHash || "",
+        message: "Fees successfully harvested, split 50/50, and project tokens bought back and burned!",
+        errorReason: ""
+      });
+    } else {
+      setStatusMsg({ text: res.reason || "Claim failed.", type: "error" });
+      setTxModal({
+        isOpen: true,
+        title: "Harvest LP Fees & Swap-Burn",
+        status: "error",
+        txHash: "",
+        message: "Failed to harvest royalties and execute swap-burn.",
         errorReason: res.reason
       });
     }
@@ -2291,10 +2330,70 @@ export default function App() {
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--success)", fontWeight: "700", marginBottom: "8px" }}>
                           <ShieldIcon size={16} color="var(--success)" /> Official V4 Fee Harvest
                         </div>
-                        On X Layer Mainnet, the dynamic swap fee (launch protection fee) behaves as an LP fee override. Fees accrue directly to your liquidity provider position NFT.
-                        <div style={{ marginTop: "10px" }}>
-                          Use the official Uniswap V4 Position Manager (<a href={`${explorerUrl}/address/${contracts.positionManager}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", fontWeight: "600", textDecoration: "underline" }}>{contracts.positionManager?.slice(0, 8)}...</a>) to claim fees.
+                        <p style={{ margin: "0 0 10px 0" }}>
+                          To automate fee splitting & buyback-burn on-chain, transfer your Uniswap V4 LP NFT to the 
+                          <strong> HatchHook</strong> address:
+                        </p>
+                        <div style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "space-between", 
+                          background: "var(--bg-soft)", 
+                          padding: "6px 10px", 
+                          borderRadius: "4px", 
+                          marginBottom: "12px",
+                          fontFamily: "monospace",
+                          border: "1px solid var(--line)"
+                        }}>
+                          <span style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>{contracts.hatchHook}</span>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(contracts.hatchHook);
+                              addLog("System", "HatchHook address copied to clipboard", "success");
+                            }}
+                            style={{ 
+                              background: "none", 
+                              border: "none", 
+                              color: "var(--coral)", 
+                              cursor: "pointer", 
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              marginLeft: "8px"
+                            }}
+                          >
+                            Copy
+                          </button>
                         </div>
+                        
+                        <div style={{ marginBottom: "12px" }}>
+                          <label style={{ display: "block", fontWeight: "700", marginBottom: "4px", fontSize: "0.8rem", color: "var(--ink)" }}>
+                            Uniswap V4 LP NFT Token ID:
+                          </label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. 4819" 
+                            value={lpNftTokenId}
+                            onChange={(e) => setLpNftTokenId(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "8px 12px",
+                              borderRadius: "4px",
+                              border: "1px solid var(--line)",
+                              background: "var(--bg)",
+                              color: "var(--ink)",
+                              boxSizing: "border-box"
+                            }}
+                          />
+                        </div>
+
+                        <button
+                          onClick={handleClaimMainnet}
+                          disabled={!lpNftTokenId || isTxPending || !isConnected || !isOnCorrectChain}
+                          className="btn-neon"
+                          style={{ width: "100%" }}
+                        >
+                          {isTxPending ? "Confirming..." : "Harvest LP Fees & Swap-Burn"}
+                        </button>
                       </div>
                     ) : (
                       <>

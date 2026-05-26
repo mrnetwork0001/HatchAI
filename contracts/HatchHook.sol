@@ -10,7 +10,24 @@ interface IERC20 {
     function approve(address spender, uint256 amount) external returns (bool);
 }
 
-contract HatchHook is BaseHook {
+interface IERC721 {
+    function ownerOf(uint256 tokenId) external view returns (address);
+}
+
+interface IERC721Receiver {
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
+}
+
+interface IPositionManager {
+    function modifyLiquidities(bytes calldata unlockData, uint256 deadline) external;
+}
+
+contract HatchHook is BaseHook, IERC721Receiver {
     using PoolIdLibrary for PoolKey;
 
     struct LaunchConfig {
@@ -223,6 +240,112 @@ contract HatchHook is BaseHook {
             // 4. Burn the bought project tokens
             if (boughtAmount > 0) {
                 IERC20(config.projectToken).transfer(address(0x000000000000000000000000000000000000dEaD), boughtAmount);
+                totalTokensBurned[poolId] += boughtAmount;
+            }
+
+            emit FeesDistributed(poolId, creatorShare, buybackShare, boughtAmount);
+        }
+    }
+
+    /**
+     * @notice Handle incoming ERC-721 token transfers (e.g. from the Uniswap V4 PositionManager)
+     */
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    /**
+     * @notice Claim accrued swap fees from Uniswap V4 PositionManager on Mainnet, sending 50% to the creator and using 50% to buyback & burn the project token.
+     * @param key The Uniswap V4 PoolKey
+     * @param positionManager The official Uniswap V4 PositionManager contract address
+     * @param tokenId The LP NFT position ID owned by this Hook contract
+     */
+    function claimFeesMainnet(PoolKey calldata key, address positionManager, uint256 tokenId) external {
+        bytes32 poolId = key.toId();
+        LaunchConfig memory config = poolConfigs[poolId];
+        require(config.creator != address(0), "Pool not configured");
+        
+        // Verify this Hook contract owns the position NFT
+        require(
+            IERC721(positionManager).ownerOf(tokenId) == address(this),
+            "HatchHook: not owner of LP NFT"
+        );
+
+        address baseToken = (key.currency0 == config.projectToken) ? key.currency1 : key.currency0;
+        address projectToken = config.projectToken;
+
+        uint256 baseBalanceBefore = IERC20(baseToken).balanceOf(address(this));
+        uint256 projectBalanceBefore = IERC20(projectToken).balanceOf(address(this));
+
+        // 1. Encode Uniswap V4 PositionManager command to decrease liquidity by 0 (collects fees)
+        // Actions.DECREASE_LIQUIDITY is 0x01
+        // Actions.TAKE_PAIR is 0x11 (decimal 17)
+        bytes memory actions = abi.encodePacked(uint8(1), uint8(17));
+        bytes[] memory params = new bytes[](2);
+        
+        // params[0] = abi.encode(tokenId, liquidity, amount0Min, amount1Min, hookData)
+        params[0] = abi.encode(tokenId, 0, 0, 0, new bytes(0));
+        // params[1] = abi.encode(currency0, currency1, recipient)
+        params[1] = abi.encode(key.currency0, key.currency1, address(this));
+
+        // Call PositionManager with the batched actions
+        IPositionManager(positionManager).modifyLiquidities(
+            abi.encode(actions, params),
+            block.timestamp + 600
+        );
+
+        uint256 baseFeeAmount = IERC20(baseToken).balanceOf(address(this)) - baseBalanceBefore;
+        uint256 projectFeeAmount = IERC20(projectToken).balanceOf(address(this)) - projectBalanceBefore;
+
+        // Handle any project tokens directly collected as fees by burning them
+        if (projectFeeAmount > 0) {
+            IERC20(projectToken).transfer(address(0x000000000000000000000000000000000000dEaD), projectFeeAmount);
+            totalTokensBurned[poolId] += projectFeeAmount;
+        }
+
+        if (baseFeeAmount > 0) {
+            uint256 creatorShare = baseFeeAmount / 2;
+            uint256 buybackShare = baseFeeAmount - creatorShare;
+
+            // 2. Transfer 50% base fee to creator
+            IERC20(baseToken).transfer(config.creator, creatorShare);
+            totalCreatorFeesClaimed[poolId] += creatorShare;
+
+            // 3. Swap 50% base fee to buyback project token
+            IERC20(baseToken).approve(address(manager), buybackShare);
+            
+            // Execute swap on PoolManager: baseToken -> projectToken
+            bool zeroForOne = (baseToken == key.currency0);
+            
+            // We call manager swap which sends the output projectToken to the Hook
+            BalanceDelta swapDelta = manager.swap(
+                key,
+                IPoolManager.SwapParams({
+                    zeroForOne: zeroForOne,
+                    amountSpecified: int256(buybackShare),
+                    sqrtPriceLimitX96: zeroForOne ? 4295128739 + 1 : 1461446703485210103287273052203988822378723970342 - 1
+                }),
+                new bytes(0)
+            );
+
+            // Get amount of projectToken bought (which is the output)
+            uint256 boughtAmount;
+            if (zeroForOne) {
+                int128 amount1 = BalanceDeltaLibrary.amount1(swapDelta);
+                boughtAmount = amount1 < 0 ? uint256(int256(-amount1)) : 0;
+            } else {
+                int128 amount0 = BalanceDeltaLibrary.amount0(swapDelta);
+                boughtAmount = amount0 < 0 ? uint256(int256(-amount0)) : 0;
+            }
+
+            // 4. Burn the bought project tokens
+            if (boughtAmount > 0) {
+                IERC20(projectToken).transfer(address(0x000000000000000000000000000000000000dEaD), boughtAmount);
                 totalTokensBurned[poolId] += boughtAmount;
             }
 
