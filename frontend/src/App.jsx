@@ -1888,8 +1888,21 @@ export default function App() {
           {/* TAB 1: SWAP CONSOLE */}
           {consoleTab === "swap" && (
             <div>
-              {/* Stats Grid */}
-              <div className="stats-grid">
+              {(!poolIdHex || poolIdHex === ethers.ZeroHash || poolIdHex === "0x0000000000000000000000000000000000000000000000000000000000000000") ? (
+                <div className="glass-card" style={{ padding: "48px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px", minHeight: "250px", animation: "fadeIn 0.4s ease" }}>
+                  <RocketIcon size={32} color="var(--muted)" />
+                  <div style={{ fontWeight: "700", color: "var(--ink)", fontSize: "1.25rem" }}>No Launch pools selected</div>
+                  <div style={{ fontSize: "0.85rem", color: "var(--muted)", maxWidth: "450px", lineHeight: "1.5" }}>
+                    There are no active launch pools selected. Go to the <strong style={{ cursor: "pointer", color: "var(--coral)", textDecoration: "underline" }} onClick={() => setConsoleTab("portal")}>Token Launchpad/Launch Portal</strong> tab to select a pool!
+                  </div>
+                  <button onClick={() => setConsoleTab("portal")} className="btn-neon" style={{ marginTop: "12px", padding: "10px 24px" }}>
+                    Go to Launch Portal
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {/* Stats Grid */}
+                  <div className="stats-grid">
                 <div
                   className="stat-box"
                   style={{
@@ -2576,6 +2589,8 @@ export default function App() {
                 </div>
 
               </div>
+            </div>
+          )}
             </div>
           )}
 
