@@ -280,11 +280,11 @@ h2 .serif, h1 .serif, .serif {
   transform: scale(1);
 }
 .flow-item.active {
-  background: var(--ink);
-  color: var(--bg-primary);
-  border-color: var(--ink);
+  background: #D36412;
+  color: #ffffff;
+  border-color: #D36412;
   transform: scale(1.06);
-  box-shadow: 0 4px 15px rgba(50, 52, 58, 0.12);
+  box-shadow: 0 6px 20px rgba(211, 100, 18, 0.4);
 }
 .flow-arrow {
   color: var(--muted);
@@ -294,9 +294,9 @@ h2 .serif, h1 .serif, .serif {
   display: inline-block;
 }
 .flow-arrow.active {
-  color: var(--coral);
+  color: #D36412;
   transform: translateX(4px) scale(1.25);
-  filter: drop-shadow(0 0 4px rgba(210, 130, 90, 0.3));
+  filter: drop-shadow(0 0 6px rgba(211, 100, 18, 0.45));
 }
 
 /* Orbiting Rings Graphics */

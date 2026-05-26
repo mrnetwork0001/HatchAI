@@ -334,7 +334,7 @@ export default function App() {
   const [isAgentActive, setIsAgentActive] = useState(false);
   const [agentThreshold, setAgentThreshold] = useState("0.02");
   const [agentLog, setAgentLog] = useState("Standing by...");
-  const terminalEndRef = useRef(null);
+  const terminalRef = useRef(null);
 
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -602,10 +602,15 @@ export default function App() {
     setIsFaucetPending(false);
   };
 
-  // Auto-scroll terminal
+  // Auto-scroll terminal (with overflow protection and user scroll lock)
   useEffect(() => {
-    if (terminalEndRef.current) {
-      terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
+    const el = terminalRef.current;
+    if (el) {
+      // If the user has scrolled up to inspect history, don't drag them to the bottom
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+      if (isNearBottom || logs.length <= 1) {
+        el.scrollTop = el.scrollHeight;
+      }
     }
   }, [logs]);
 
@@ -1233,12 +1238,30 @@ export default function App() {
                 HatchAI is the premier Uniswap V4 Hook-powered Safe-Launch &amp; Deflationary Buyback Suite on X Layer. Protect your token launches in seconds with dynamic decay taxes, anti-whale caps, and wallet cooldowns, while feeding swap fees directly back into an onchain buyback-and-burn engine.
               </p>
 
-              <div className="flow">
-                <div className={`flow-item ${activeStep === 0 ? "active" : ""}`}>your token</div>
+              <div className="flow" style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap", marginBottom: "36px" }}>
+                <div 
+                  className={`flow-item ${activeStep === 0 ? "active" : ""}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+                >
+                  <EggIcon size={14} color={activeStep === 0 ? "#ffffff" : "var(--coral)"} />
+                  <span>your token</span>
+                </div>
                 <span className={`flow-arrow ${activeStep === 1 ? "active" : ""}`}>→</span>
-                <div className={`flow-item ${activeStep === 1 ? "active" : ""}`}>hook protection</div>
+                <div 
+                  className={`flow-item ${activeStep === 1 ? "active" : ""}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+                >
+                  <ShieldIcon size={14} color={activeStep === 1 ? "#ffffff" : "var(--coral)"} />
+                  <span>hook protection</span>
+                </div>
                 <span className={`flow-arrow ${activeStep === 2 ? "active" : ""}`}>→</span>
-                <div className={`flow-item ${activeStep === 2 ? "active" : ""}`}>live trading</div>
+                <div 
+                  className={`flow-item ${activeStep === 2 ? "active" : ""}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+                >
+                  <RocketIcon size={14} color={activeStep === 2 ? "#ffffff" : "var(--coral)"} />
+                  <span>live trading</span>
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: "16px" }}>
@@ -2516,7 +2539,7 @@ export default function App() {
 
                 {/* Blockchain Console */}
                 <div style={{ gridColumn: "span 6" }}>
-                  <div className="terminal-panel">
+                  <div ref={terminalRef} className="terminal-panel">
                     <div className="terminal-header">
                       <div className="terminal-dots">
                         <span className="terminal-dot dot-red" />
@@ -2548,7 +2571,6 @@ export default function App() {
                           </span>
                         </div>
                       ))}
-                      <div ref={terminalEndRef} />
                     </div>
                   </div>
                 </div>
@@ -2602,30 +2624,32 @@ export default function App() {
                       <p style={{ margin: 0, color: "var(--ink-soft)" }}>
                         Deploying contracts and seeding pools on {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"} requires native OKB tokens to cover gas fees. If your balance is insufficient, gas estimation will fail and transactions will revert.
                       </p>
-                      <div style={{ marginTop: "12px" }}>
-                        <a
-                          href="https://www.okx.com/web3/faucet"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-outline"
-                          style={{
-                            padding: "6px 14px",
-                            fontSize: "0.78rem",
-                            textDecoration: "none",
-                            display: "inline-block",
-                            border: "1px solid var(--error)",
-                            color: "var(--error)",
-                            borderRadius: "100px",
-                            fontWeight: "600"
-                          }}
-                        >
-                          Request Testnet OKB from OKX Faucet →
-                        </a>
-                      </div>
+                      {targetChainId !== 196 && (
+                        <div style={{ marginTop: "12px" }}>
+                          <a
+                            href="https://www.okx.com/web3/faucet"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-outline"
+                            style={{
+                              padding: "6px 14px",
+                              fontSize: "0.78rem",
+                              textDecoration: "none",
+                              display: "inline-block",
+                              border: "1px solid var(--error)",
+                              color: "var(--error)",
+                              borderRadius: "100px",
+                              fontWeight: "600"
+                            }}
+                          >
+                            Request Testnet OKB from OKX Faucet →
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {parseFloat(wethBalance) < (parseFloat(launchSeedWeth) || 0.5) && (
+                  {targetChainId !== 196 && parseFloat(wethBalance) < (parseFloat(launchSeedWeth) || 0.5) && (
                     <div
                       style={{
                         padding: "16px 20px",

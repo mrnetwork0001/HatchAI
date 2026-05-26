@@ -309,6 +309,17 @@ export function WalletProvider({ children }) {
     setPoolIdHex(defaultPoolId);
     setIsCustomPoolActive(false);
 
+    // Reset balances & reserves on network switch
+    setWethBalance("0.0000");
+    setHatchBalance("0.00");
+    setPoolReserves({ weth: 0, hatch: 0 });
+    setPoolConfig(null);
+    setTotalCreatorFeesClaimed("0");
+    setTotalTokensBurned("0");
+    setAccumulatedFees(0);
+    setLastSwapTs(0n);
+    setWethAllowance(0n);
+
     if (targetChainId === 196) {
       setCustomTokenDetails({
         symbol: "USDT0",
@@ -323,6 +334,16 @@ export function WalletProvider({ children }) {
       });
     }
   }, [targetChainId]);
+
+  // Reset pool-specific states when the active pool changes
+  useEffect(() => {
+    setPoolReserves({ weth: 0, hatch: 0 });
+    setPoolConfig(null);
+    setTotalCreatorFeesClaimed("0");
+    setTotalTokensBurned("0");
+    setAccumulatedFees(0);
+    setLastSwapTs(0n);
+  }, [poolIdHex]);
 
   // ── Custom Pool Registrations ───────────────────────────────────────────────
   const [customPools, setCustomPools] = useState(() => {
@@ -356,36 +377,25 @@ export function WalletProvider({ children }) {
   const [wethAllowance, setWethAllowance] = useState(0n);
 
   const fetchOnChainData = useCallback(async (currentWallet) => {
-    const { connected, address, provider } = currentWallet;
-    if (!connected || !address || !provider) {
-      setOkbBalance("0");
-      setWethBalance("0");
-      setHatchBalance("0");
-      setPoolReserves({ weth: 0, hatch: 0 });
-      setPoolConfig(null);
-      setTotalCreatorFeesClaimed("0");
-      setTotalTokensBurned("0");
-      setAccumulatedFees(0);
-      setLastSwapTs(0n);
-      setWethAllowance(0n);
-      return;
-    }
+    const { connected, address } = currentWallet || {};
+    
+    // Always use public RPC provider for read operations to prevent wallet extension rate limiting/network mismatches
+    const rpcUrl = targetChainId === 196 ? "https://rpc.xlayer.tech" : "https://testrpc.xlayer.tech";
+    const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
 
     try {
-      const balanceWei = await provider.getBalance(address);
-      setOkbBalance(Number(ethers.formatEther(balanceWei)).toFixed(4));
-      provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
-
-      // Reset default states to avoid displaying stale data from other networks
-      setWethBalance("0.0000");
-      setHatchBalance("0.00");
-      setPoolReserves({ weth: 0, hatch: 0 });
-      setPoolConfig(null);
-      setTotalCreatorFeesClaimed("0");
-      setTotalTokensBurned("0");
-      setAccumulatedFees(0);
-      setLastSwapTs(0n);
-      setWethAllowance(0n);
+      // Fetch native gas balance if connected using publicProvider
+      if (connected && address) {
+        publicProvider.getBalance(address).then((balanceWei) => {
+          setOkbBalance(Number(ethers.formatEther(balanceWei)).toFixed(4));
+        }).catch(() => {});
+        publicProvider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
+      } else {
+        setOkbBalance("0");
+        setWethBalance("0");
+        setHatchBalance("0");
+        setWethAllowance(0n);
+      }
 
       if (!isDeployed) return;
 
@@ -395,25 +405,22 @@ export function WalletProvider({ children }) {
       const hasHatchHook = isValidAddress(CONTRACTS.hatchHook);
       const hasValidPool = poolIdHex && poolIdHex !== ethers.ZeroHash && poolIdHex !== "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-      const wethContract = hasWeth ? new ethers.Contract(CONTRACTS.weth, ERC20_ABI, provider) : null;
-      const hatchTokenContract = hasHatch ? new ethers.Contract(customTokenDetails.projectTokenAddress, ERC20_ABI, provider) : null;
-      const poolManagerContract = hasPoolManager ? new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, provider) : null;
-      const hatchHookContract = hasHatchHook ? new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, provider) : null;
+      const wethContract = hasWeth ? new ethers.Contract(CONTRACTS.weth, ERC20_ABI, publicProvider) : null;
+      const hatchTokenContract = hasHatch ? new ethers.Contract(customTokenDetails.projectTokenAddress, ERC20_ABI, publicProvider) : null;
+      const poolManagerContract = hasPoolManager ? new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, publicProvider) : null;
+      const hatchHookContract = hasHatchHook ? new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, publicProvider) : null;
 
-      const [
-        wethBalRes,
-        hatchBalRes,
-        poolStateRes,
-        poolConfigRes,
-        claimedRes,
-        burnedRes,
-        fees0Res,
-        fees1Res,
-        lastSwapRes,
-        allowanceRes
-      ] = await Promise.allSettled([
+      const userQueries = (connected && address) ? [
         wethContract ? wethContract.balanceOf(address) : Promise.reject("No WETH"),
         hatchTokenContract ? hatchTokenContract.balanceOf(address).catch(() => 0n) : Promise.reject("No HATCH"),
+        (wethContract && hasPoolManager) ? wethContract.allowance(address, CONTRACTS.poolManager) : Promise.reject("No Allowance")
+      ] : [
+        Promise.reject("Disconnected"),
+        Promise.reject("Disconnected"),
+        Promise.reject("Disconnected")
+      ];
+
+      const poolQueries = [
         (poolManagerContract && hasValidPool) ? (
           targetChainId === 196 ? (
             Promise.all([
@@ -423,7 +430,7 @@ export function WalletProvider({ children }) {
                   "function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)",
                   "function getLiquidity(bytes32 poolId) external view returns (uint128 liquidity)"
                 ],
-                provider
+                publicProvider
               ).getSlot0(poolIdHex).catch(() => [{ sqrtPriceX96: 0n }]),
               new ethers.Contract(
                 "0x76fd297e2d437cd7f76d50f01afe6160f86e9990",
@@ -431,7 +438,7 @@ export function WalletProvider({ children }) {
                   "function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)",
                   "function getLiquidity(bytes32 poolId) external view returns (uint128 liquidity)"
                 ],
-                provider
+                publicProvider
               ).getLiquidity(poolIdHex).catch(() => 0n)
             ]).then(([slot0, liquidity]) => {
               return { isMainnet: true, slot0, liquidity };
@@ -443,9 +450,41 @@ export function WalletProvider({ children }) {
         (hatchHookContract && hasValidPool) ? hatchHookContract.totalTokensBurned(poolIdHex) : Promise.reject("No Burned"),
         (poolManagerContract && hasValidPool) ? poolManagerContract.hookFees0(poolIdHex) : Promise.reject("No Fees0"),
         (poolManagerContract && hasValidPool) ? poolManagerContract.hookFees1(poolIdHex) : Promise.reject("No Fees1"),
-        (hatchHookContract && hasValidPool) ? hatchHookContract.lastSwapTimestamp(poolIdHex, address) : Promise.reject("No LastSwap"),
-        (wethContract && hasPoolManager) ? wethContract.allowance(address, CONTRACTS.poolManager) : Promise.reject("No Allowance")
-      ]);
+        (hatchHookContract && hasValidPool && connected && address) ? hatchHookContract.lastSwapTimestamp(poolIdHex, address) : Promise.reject("No LastSwap")
+      ];
+
+      const [
+        wethBalRes,
+        hatchBalRes,
+        allowanceRes,
+        poolStateRes,
+        poolConfigRes,
+        claimedRes,
+        burnedRes,
+        fees0Res,
+        fees1Res,
+        lastSwapRes
+      ] = await Promise.allSettled([...userQueries, ...poolQueries]);
+
+      console.log("OnChainData Polled:", {
+        walletConnected: connected,
+        walletAddress: address,
+        poolIdHex,
+        projectTokenAddress: customTokenDetails.projectTokenAddress,
+        wethBalResStatus: wethBalRes.status,
+        wethBalResValue: wethBalRes.status === "fulfilled" ? wethBalRes.value.toString() : null,
+        hatchBalResStatus: hatchBalRes.status,
+        hatchBalResValue: hatchBalRes.status === "fulfilled" ? hatchBalRes.value.toString() : null,
+        poolStateResStatus: poolStateRes.status,
+        poolStateResValue: poolStateRes.status === "fulfilled" ? poolStateRes.value : null,
+        poolConfigResStatus: poolConfigRes.status,
+        poolConfigResValue: poolConfigRes.status === "fulfilled" ? poolConfigRes.value : null
+      });
+
+      addLog("Debug WETH Balance", `Status: ${wethBalRes.status}, Value: ${wethBalRes.status === "fulfilled" ? wethBalRes.value.toString() : wethBalRes.reason}`, "info");
+      addLog("Debug Token Balance", `Status: ${hatchBalRes.status}, Value: ${hatchBalRes.status === "fulfilled" ? hatchBalRes.value.toString() : hatchBalRes.reason}`, "info");
+      addLog("Debug Pool Reserves", `Status: ${poolStateRes.status}, Value: ${poolStateRes.status === "fulfilled" ? JSON.stringify(poolStateRes.value, (k, v) => typeof v === 'bigint' ? v.toString() : v) : poolStateRes.reason}`, "info");
+      addLog("Debug Pool Config", `Status: ${poolConfigRes.status}, Value: ${poolConfigRes.status === "fulfilled" ? JSON.stringify(poolConfigRes.value, (k, v) => typeof v === 'bigint' ? v.toString() : v) : poolConfigRes.reason}`, "info");
 
       if (wethBalRes.status === "fulfilled") {
         setWethBalance(Number(ethers.formatEther(wethBalRes.value)).toFixed(4));
@@ -463,20 +502,20 @@ export function WalletProvider({ children }) {
           const Q96 = 2n ** 96n;
           const sqrtPriceX96 = BigInt(slot0[0] !== undefined ? slot0[0] : slot0.sqrtPriceX96 || 0n);
           const L = BigInt(liquidity);
-          
+
           let wethRes = 0;
           let hatchRes = 0;
-          
+
           if (sqrtPriceX96 > 0n && L > 0n) {
             const x = (L * Q96) / sqrtPriceX96;
             const y = (L * sqrtPriceX96) / Q96;
-            
+
             const symbol = customTokenDetails.symbol;
             const decimalsHatch = (symbol === "USDT" || symbol === "USDT0") ? 6 : 18;
-            
+
             const r0 = Number(ethers.formatUnits(x, customTokenDetails.isHatchCurrency0 ? decimalsHatch : 18));
             const r1 = Number(ethers.formatUnits(y, customTokenDetails.isHatchCurrency0 ? 18 : decimalsHatch));
-            
+
             wethRes = customTokenDetails.isHatchCurrency0 ? r1 : r0;
             hatchRes = customTokenDetails.isHatchCurrency0 ? r0 : r1;
           }
@@ -530,25 +569,23 @@ export function WalletProvider({ children }) {
     }
   }, [poolIdHex, isDeployed, customTokenDetails, targetChainId]);
 
-  // Periodic polling for watch-like updates
+  // Periodic polling for watch-like updates (polls every 5s regardless of wallet connection status)
   useEffect(() => {
     fetchOnChainData(wallet);
 
-    if (wallet.connected && wallet.address) {
-      const interval = setInterval(() => {
-        fetchOnChainData(wallet);
-      }, 5000);
-      return () => clearInterval(interval);
-    }
+    const interval = setInterval(() => {
+      fetchOnChainData(wallet);
+    }, 5000);
+    return () => clearInterval(interval);
   }, [wallet, fetchOnChainData]);
 
   useEffect(() => {
     if (!wallet.connected) {
       const rpcUrl = targetChainId === 196 ? "https://rpc.xlayer.tech" : "https://testrpc.xlayer.tech";
       const provider = new ethers.JsonRpcProvider(rpcUrl);
-      provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
+      provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => { });
       const interval = setInterval(() => {
-        provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
+        provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => { });
       }, 10000);
       return () => clearInterval(interval);
     }
@@ -678,9 +715,9 @@ export function WalletProvider({ children }) {
     if (activeDecayMode === "block") {
       const blocksElapsed = blockNumber > activeStartBlock && activeStartBlock > 0 ? (blockNumber - activeStartBlock) : 0;
       const totalBlocks = Math.max(1, Math.floor(decayDuration / 2));
-      
+
       if (blocksElapsed >= totalBlocks) return endFee / 1_000_000;
-      
+
       const pct = (blocksElapsed / totalBlocks) * 100;
       if (pct < 10) {
         return 0.90;
@@ -762,7 +799,7 @@ export function WalletProvider({ children }) {
 
       const zeroForOne = !customTokenDetails.isHatchCurrency0;
       addLog("Swap", `Swapping ${wethAmountStr} WETH → ${customTokenDetails.symbol} onchain...`, "info");
-      
+
       const swapTx = await poolManagerContract.swap(
         activePoolKey,
         {
@@ -777,11 +814,11 @@ export function WalletProvider({ children }) {
 
       setPendingTxHash(swapTx.hash);
       addLog("SWAP SUBMITTED", `Tx hash: ${swapTx.hash}. Waiting for confirmation...`, "info");
-      
+
       await swapTx.wait();
       setIsTxSuccess(true);
       setPendingTxHash(null);
-      
+
       addLog(
         "SWAP SUCCESSFUL",
         `Tx hash: ${swapTx.hash} - View on OKLink: ${activeConfig.explorerUrl}/tx/${swapTx.hash}`,
@@ -823,7 +860,7 @@ export function WalletProvider({ children }) {
       const claimTx = await hatchHookContract.claimFees(activePoolKey);
       setPendingTxHash(claimTx.hash);
       addLog("Fee Harvest", `claimFees tx submitted: ${claimTx.hash}. Waiting for confirmation...`, "info");
-      
+
       await claimTx.wait();
       setIsTxSuccess(true);
       setPendingTxHash(null);
@@ -870,7 +907,7 @@ export function WalletProvider({ children }) {
       const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, signer);
 
       addLog("Fee Harvest", `Submitting claimFeesMainnet() to HatchHook for NFT ID: ${tokenId}...`, "info");
-      
+
       const claimTx = await hatchHookContract.claimFeesMainnet(
         activePoolKey,
         CONTRACTS.positionManager,
@@ -878,7 +915,7 @@ export function WalletProvider({ children }) {
       );
       setPendingTxHash(claimTx.hash);
       addLog("Fee Harvest", `claimFeesMainnet tx submitted: ${claimTx.hash}. Waiting for confirmation...`, "info");
-      
+
       await claimTx.wait();
       setIsTxSuccess(true);
       setPendingTxHash(null);
@@ -909,15 +946,15 @@ export function WalletProvider({ children }) {
       const rpcUrl = targetChainId === 196 ? "https://rpc.xlayer.tech" : "https://testrpc.xlayer.tech";
       const provider = new ethers.JsonRpcProvider(rpcUrl);
       const keeperWallet = new ethers.Wallet("0xe8630f3355506a81ca01f16d696d17add0826aea74de13f3202e8148d456e9fe", provider);
-      
+
       const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, keeperWallet);
 
       addLog("Agent AI", `Autonomous Agent triggering claimFees() via onchain Keeper: ${keeperWallet.address.slice(0, 8)}...`, "info");
-      
+
       const claimTx = await hatchHookContract.claimFees(activePoolKey);
       setPendingTxHash(claimTx.hash);
       addLog("Agent AI", `Autonomous transaction sent: ${claimTx.hash}. Waiting for block confirmation...`, "info");
-      
+
       await claimTx.wait();
       setIsTxSuccess(true);
       setPendingTxHash(null);
@@ -957,24 +994,24 @@ export function WalletProvider({ children }) {
 
     try {
       addLog("Deploy Token", `Deploying standard ERC20 token ${name} (${symbol})...`, "info");
-      
+
       const signer = wallet.signer;
       const factory = new ethers.ContractFactory(MOCK_ERC20_ABI, MOCK_ERC20_BYTECODE, signer);
-      
+
       const supply = BigInt(initialSupplyStr);
-      
+
       const contract = await factory.deploy(name, symbol, supply, { gasLimit: 3000000 });
       const deployTxHash = contract.deploymentTransaction().hash;
       setPendingTxHash(deployTxHash);
       addLog("Deploy Token", `Deployment transaction submitted. Hash: ${deployTxHash}. Waiting for confirmation...`, "info");
-      
+
       await contract.waitForDeployment();
       const address = await contract.getAddress();
-      
+
       setIsTxSuccess(true);
       setPendingTxHash(null);
       addLog("DEPLOY SUCCESSFUL", `Token deployed at address: ${address}. Initial supply: ${initialSupplyStr} ${symbol} minted to your wallet.`, "success");
-      
+
       fetchOnChainData(wallet);
       return { success: true, address, txHash: deployTxHash };
     } catch (err) {
@@ -999,29 +1036,34 @@ export function WalletProvider({ children }) {
       return { success: false, reason: "Wrong network" };
     }
 
+    if (targetChainId === 196) {
+      addLog("Faucet Error", "Mock WETH Faucet is not available on X Layer Mainnet.", "error");
+      return { success: false, reason: "Mock WETH Faucet is not available on X Layer Mainnet. Mainnet uses real WETH." };
+    }
+
     setIsTxPending(true);
     setIsTxSuccess(false);
 
     try {
       addLog("WETH Faucet", `Minting ${amountStr} Mock WETH to your wallet...`, "info");
-      
+
       if (!isValidAddress(CONTRACTS.weth)) {
         throw new Error("Mock WETH contract is not deployed on this network (Mainnet uses real WETH).");
       }
       const signer = wallet.signer;
       const wethContract = new ethers.Contract(CONTRACTS.weth, ERC20_ABI, signer);
-      
+
       const amountWei = ethers.parseEther(amountStr);
-      
+
       const mintTx = await wethContract.mint(wallet.address, amountWei, { gasLimit: 100000 });
       setPendingTxHash(mintTx.hash);
       addLog("WETH Faucet", `Transaction submitted. Hash: ${mintTx.hash}. Waiting for confirmation...`, "info");
-      
+
       await mintTx.wait();
       setIsTxSuccess(true);
       setPendingTxHash(null);
       addLog("WETH FAUCET SUCCESSFUL", `${amountStr} Mock WETH minted to your wallet!`, "success");
-      
+
       fetchOnChainData(wallet);
       return { success: true, txHash: mintTx.hash };
     } catch (err) {
@@ -1066,7 +1108,7 @@ export function WalletProvider({ children }) {
 
     try {
       addLog("Launchpad", "Preparing pool initialization parameters...", "info");
-      
+
       const currency0 = projectToken.toLowerCase() < baseToken.toLowerCase() ? projectToken : baseToken;
       const currency1 = projectToken.toLowerCase() < baseToken.toLowerCase() ? baseToken : projectToken;
       const isHatchCurrency0 = projectToken.toLowerCase() === currency0.toLowerCase();
@@ -1101,10 +1143,10 @@ export function WalletProvider({ children }) {
       };
 
       addLog("Launchpad", "Initializing Uniswap V4 Pool on PoolManager...", "info");
-      
+
       const signer = wallet.signer;
       const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, signer);
-      
+
       const newPoolId = computePoolId(poolKey);
 
       // Check if pool is already initialized
@@ -1113,10 +1155,12 @@ export function WalletProvider({ children }) {
       let poolState = null;
       if (targetChainId === 196) {
         try {
+          const rpcUrl = "https://rpc.xlayer.tech";
+          const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
           const stateViewContract = new ethers.Contract(
             "0x76fd297e2d437cd7f76d50f01afe6160f86e9990",
             ["function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)"],
-            provider
+            publicProvider
           );
           const slot0 = await stateViewContract.getSlot0(newPoolId);
           isAlreadyInitialized = slot0 && BigInt(slot0[0]) > 0n;
@@ -1277,8 +1321,9 @@ export function WalletProvider({ children }) {
       };
 
       const newPoolId = computePoolId(poolKey);
-      const provider = wallet.provider;
-      const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, provider);
+      const rpcUrl = targetChainId === 196 ? "https://rpc.xlayer.tech" : "https://testrpc.xlayer.tech";
+      const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
+      const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, publicProvider);
 
       addLog("Import Pool", "Fetching config from HatchHook contract...", "info");
       const config = await hatchHookContract.poolConfigs(newPoolId);
@@ -1289,7 +1334,7 @@ export function WalletProvider({ children }) {
       }
 
       // Query symbol of the project token
-      const projectTokenContract = new ethers.Contract(projectTokenAddress, ERC20_ABI, provider);
+      const projectTokenContract = new ethers.Contract(projectTokenAddress, ERC20_ABI, publicProvider);
       const symbol = await projectTokenContract.symbol().catch(() => "CUSTOM");
 
       // Extract details
@@ -1325,23 +1370,23 @@ export function WalletProvider({ children }) {
               "function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)",
               "function getLiquidity(bytes32 poolId) external view returns (uint128 liquidity)"
             ],
-            provider
+            publicProvider
           );
           const slot0 = await stateViewContract.getSlot0(newPoolId);
           const liquidity = await stateViewContract.getLiquidity(newPoolId);
-          
+
           const Q96 = 2n ** 96n;
           const sqrtPriceX96 = BigInt(slot0[0]);
           const L = BigInt(liquidity);
-          
+
           if (sqrtPriceX96 > 0n && L > 0n) {
             const x = (L * Q96) / sqrtPriceX96;
             const y = (L * sqrtPriceX96) / Q96;
-            
+
             const decimalsHatch = (symbol === "USDT" || symbol === "USDT0") ? 6 : 18;
             const r0 = Number(ethers.formatUnits(x, isHatchCurrency0 ? decimalsHatch : 18));
             const r1 = Number(ethers.formatUnits(y, isHatchCurrency0 ? 18 : decimalsHatch));
-            
+
             seedProjectAmount = (isHatchCurrency0 ? r0 : r1).toString();
             seedWethAmount = (isHatchCurrency0 ? r1 : r0).toString();
           }
@@ -1349,14 +1394,14 @@ export function WalletProvider({ children }) {
           console.error("Failed to fetch mainnet pool state in importPool", e);
         }
       } else {
-        const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, provider);
+        const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, publicProvider);
         poolState = await poolManagerContract.pools(newPoolId);
         seedProjectAmount = poolState ? ethers.formatEther(isHatchCurrency0 ? poolState[0] : poolState[1]) : "0";
         seedWethAmount = poolState ? ethers.formatEther(isHatchCurrency0 ? poolState[1] : poolState[0]) : "0";
       }
 
-      const priceRatio = parseFloat(seedWethAmount) > 0 
-        ? (parseFloat(seedProjectAmount) / parseFloat(seedWethAmount)).toString() 
+      const priceRatio = parseFloat(seedWethAmount) > 0
+        ? (parseFloat(seedProjectAmount) / parseFloat(seedWethAmount)).toString()
         : "10";
 
       const importedPool = {
