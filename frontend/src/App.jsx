@@ -1558,7 +1558,7 @@ export default function App() {
               <div>
                 <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--coral-deep)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px", display: "inline-flex", alignItems: "center" }}>
                   <StatusDot color="var(--success)" size={10} />
-                  Live Protection Pools ({(contracts?.hatchToken ? 1 : 0) + userPools.length + 1})
+                  Live Protection Pools ({(contracts?.hatchToken ? 2 : 0) + userPools.length})
                 </h3>
                 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
@@ -1707,104 +1707,106 @@ export default function App() {
               </div>
 
               {/* Section 2: Upcoming Launches */}
-              <div style={{ marginTop: "12px" }}>
-                <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--muted)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                  <ClockIcon size={16} color="var(--muted)" />
-                  Upcoming Protected Launches (2)
-                </h3>
-                
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
+              {contracts?.hatchToken && (
+                <div style={{ marginTop: "12px" }}>
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--muted)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <ClockIcon size={16} color="var(--muted)" />
+                    Upcoming Protected Launches (2)
+                  </h3>
                   
-                  {/* Mock SAFE */}
-                  <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "260px", background: "rgba(50, 52, 58, 0.02)", borderColor: "rgba(50, 52, 58, 0.05)" }}>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                        <div>
-                          <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--muted)" }}>SAFE</h4>
-                          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>SafeLaunch Protocol</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
+                    
+                    {/* Mock SAFE */}
+                    <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "260px", background: "rgba(50, 52, 58, 0.02)", borderColor: "rgba(50, 52, 58, 0.05)" }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                          <div>
+                            <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--muted)" }}>SAFE</h4>
+                            <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>SafeLaunch Protocol</span>
+                          </div>
+                          <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: "rgba(50, 52, 58, 0.05)", color: "var(--muted)", fontWeight: "600" }}>
+                            STARTS IN 2H
+                          </span>
                         </div>
-                        <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: "rgba(50, 52, 58, 0.05)", color: "var(--muted)", fontWeight: "600" }}>
-                          STARTS IN 2H
-                        </span>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0", opacity: 0.6 }}>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
+                            <strong style={{ color: "var(--ink)" }}>12.00% (starts)</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
+                            <strong style={{ color: "var(--ink)" }}>5,000 SAFE</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Price Ratio:</span>
+                            <strong style={{ color: "var(--ink)" }}>500 SAFE/WETH</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
+                            <strong style={{ color: "var(--ink)" }}>90s</strong>
+                          </div>
+                        </div>
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0", opacity: 0.6 }}>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
-                          <strong style={{ color: "var(--ink)" }}>12.00% (starts)</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
-                          <strong style={{ color: "var(--ink)" }}>5,000 SAFE</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Price Ratio:</span>
-                          <strong style={{ color: "var(--ink)" }}>500 SAFE/WETH</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
-                          <strong style={{ color: "var(--ink)" }}>90s</strong>
-                        </div>
-                      </div>
+                      <button 
+                        disabled
+                        className="btn-outline" 
+                        style={{ width: "100%", fontSize: "0.85rem", padding: "10px", cursor: "not-allowed", opacity: 0.5 }}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", justifyContent: "center" }}>
+                          Locked <LockIcon size={12} color="var(--muted)" />
+                        </span>
+                      </button>
                     </div>
 
-                    <button 
-                      disabled
-                      className="btn-outline" 
-                      style={{ width: "100%", fontSize: "0.85rem", padding: "10px", cursor: "not-allowed", opacity: 0.5 }}
-                    >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", justifyContent: "center" }}>
-                        Locked <LockIcon size={12} color="var(--muted)" />
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Mock MEME */}
-                  <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "260px", background: "rgba(50, 52, 58, 0.02)", borderColor: "rgba(50, 52, 58, 0.05)" }}>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                        <div>
-                          <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--muted)" }}>MEME</h4>
-                          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>PepeHatch Coin</span>
+                    {/* Mock MEME */}
+                    <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "260px", background: "rgba(50, 52, 58, 0.02)", borderColor: "rgba(50, 52, 58, 0.05)" }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                          <div>
+                            <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--muted)" }}>MEME</h4>
+                            <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>PepeHatch Coin</span>
+                          </div>
+                          <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: "rgba(50, 52, 58, 0.05)", color: "var(--muted)", fontWeight: "600" }}>
+                            STARTS IN 1D
+                          </span>
                         </div>
-                        <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: "rgba(50, 52, 58, 0.05)", color: "var(--muted)", fontWeight: "600" }}>
-                          STARTS IN 1D
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0", opacity: 0.6 }}>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
+                            <strong style={{ color: "var(--ink)" }}>20.00% (starts)</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
+                            <strong style={{ color: "var(--ink)" }}>1,000,000 MEME</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Price Ratio:</span>
+                            <strong style={{ color: "var(--ink)" }}>1M MEME/WETH</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
+                            <strong style={{ color: "var(--ink)" }}>45s</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        disabled
+                        className="btn-outline" 
+                        style={{ width: "100%", fontSize: "0.85rem", padding: "10px", cursor: "not-allowed", opacity: 0.5 }}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", justifyContent: "center" }}>
+                          Locked <LockIcon size={12} color="var(--muted)" />
                         </span>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0", opacity: 0.6 }}>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
-                          <strong style={{ color: "var(--ink)" }}>20.00% (starts)</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
-                          <strong style={{ color: "var(--ink)" }}>1,000,000 MEME</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Price Ratio:</span>
-                          <strong style={{ color: "var(--ink)" }}>1M MEME/WETH</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
-                          <strong style={{ color: "var(--ink)" }}>45s</strong>
-                        </div>
-                      </div>
+                      </button>
                     </div>
 
-                    <button 
-                      disabled
-                      className="btn-outline" 
-                      style={{ width: "100%", fontSize: "0.85rem", padding: "10px", cursor: "not-allowed", opacity: 0.5 }}
-                    >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", justifyContent: "center" }}>
-                        Locked <LockIcon size={12} color="var(--muted)" />
-                      </span>
-                    </button>
                   </div>
-
                 </div>
-              </div>
+              )}
             </div>
           )}
 
