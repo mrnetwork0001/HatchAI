@@ -1,28 +1,41 @@
 {
-  "chainId": 1952,
-  "network": "xlayer_testnet",
-  "deployedAt": "2026-05-25T06:15:46.422Z",
-  "deployer": "0x8131208c08AFe5187C41F7A04746d058600804b2",
-  "contracts": {
-    "poolManager": "0xe5392F2AF7f2DA3C386cB879C35ABfa2DAcdaE4D",
-    "hatchHook": "0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f",
-    "weth": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
-    "hatchToken": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71"
+  "196": {
+    "chainId": 196,
+    "network": "xlayer_mainnet",
+    "deployedAt": "2026-05-26T15:10:03.137Z",
+    "deployer": "0x8131208c08AFe5187C41F7A04746d058600804b2",
+    "contracts": {
+      "poolManager": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
+      "hatchHook": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71"
+    },
+    "explorerUrl": "https://www.oklink.com/xlayer"
   },
-  "poolKey": {
-    "currency0": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71",
-    "currency1": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
-    "fee": 3000,
-    "tickSpacing": 60,
-    "hooks": "0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f"
-  },
-  "poolConfig": {
-    "decayDuration": 86400,
-    "startFee": 100000,
-    "endFee": 3000,
-    "maxSwapAmountEther": "1000",
-    "cooldownSeconds": 60
-  },
-  "isHatchCurrency0": true,
-  "explorerUrl": "https://www.oklink.com/xlayer-test"
+  "1952": {
+    "chainId": 1952,
+    "network": "xlayer_testnet",
+    "deployedAt": "2026-05-25T06:15:46.422Z",
+    "deployer": "0x8131208c08AFe5187C41F7A04746d058600804b2",
+    "contracts": {
+      "poolManager": "0xe5392F2AF7f2DA3C386cB879C35ABfa2DAcdaE4D",
+      "hatchHook": "0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f",
+      "weth": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
+      "hatchToken": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71"
+    },
+    "poolKey": {
+      "currency0": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71",
+      "currency1": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
+      "fee": 3000,
+      "tickSpacing": 60,
+      "hooks": "0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f"
+    },
+    "poolConfig": {
+      "decayDuration": 86400,
+      "startFee": 100000,
+      "endFee": 3000,
+      "maxSwapAmountEther": "1000",
+      "cooldownSeconds": 60
+    },
+    "isHatchCurrency0": true,
+    "explorerUrl": "https://www.oklink.com/xlayer-test"
+  }
 }

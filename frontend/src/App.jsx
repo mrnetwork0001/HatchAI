@@ -303,6 +303,7 @@ export default function App() {
     claimRoyaltiesAutonomously,
     pendingTxHash,
     isTxPending,
+    contracts,
     isDeployed,
     explorerUrl,
     connect,
@@ -424,7 +425,15 @@ export default function App() {
   const [launchTokenAddress, setLaunchTokenAddress] = useState("");
   const [importAddress, setImportAddress] = useState("");
   const [isImporting, setIsImporting] = useState(false);
-  const [launchBaseAddress, setLaunchBaseAddress] = useState(deployments.contracts.weth || "");
+  const [launchBaseAddress, setLaunchBaseAddress] = useState(contracts?.weth || "");
+
+  useEffect(() => {
+    if (contracts && contracts.weth) {
+      setLaunchBaseAddress(contracts.weth);
+    } else {
+      setLaunchBaseAddress("");
+    }
+  }, [contracts]);
   const [launchPriceRatio, setLaunchPriceRatio] = useState("10");
   const [launchDecayHours, setLaunchDecayHours] = useState("24");
   const [launchStartFee, setLaunchStartFee] = useState("10");
@@ -1504,9 +1513,9 @@ export default function App() {
               <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>
                 <strong>{projectTokenDetails.symbol}:</strong> {hatchBalance}
               </span>
-              {isDeployed && (
+              {isDeployed && contracts?.hatchHook && (
                 <a
-                  href={`${explorerUrl}/address/${deployments.contracts.hatchHook}`}
+                  href={`${explorerUrl}/address/${contracts.hatchHook}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ fontSize: "0.85rem", color: "var(--coral)", marginLeft: "auto", textDecoration: "none", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "6px" }}
@@ -2962,26 +2971,34 @@ export default function App() {
               Smart Contracts
             </h4>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px", fontFamily: "Geist Mono, monospace", fontSize: "0.78rem" }}>
-              <li>
-                <a href={`${explorerUrl}/address/${deployments.contracts.hatchHook}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", textDecoration: "none", fontWeight: "600" }}>
-                  HatchHook ↗
-                </a>
-              </li>
-              <li>
-                <a href={`${explorerUrl}/address/${deployments.contracts.poolManager}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
-                  PoolManager ↗
-                </a>
-              </li>
-              <li>
-                <a href={`${explorerUrl}/address/${deployments.contracts.weth}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
-                  Mock WETH ↗
-                </a>
-              </li>
-              <li>
-                <a href={`${explorerUrl}/address/${deployments.contracts.hatchToken}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
-                  Mock HATCH ↗
-                </a>
-              </li>
+              {contracts?.hatchHook && (
+                <li>
+                  <a href={`${explorerUrl}/address/${contracts.hatchHook}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", textDecoration: "none", fontWeight: "600" }}>
+                    HatchHook ↗
+                  </a>
+                </li>
+              )}
+              {contracts?.poolManager && (
+                <li>
+                  <a href={`${explorerUrl}/address/${contracts.poolManager}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
+                    PoolManager ↗
+                  </a>
+                </li>
+              )}
+              {contracts?.weth && (
+                <li>
+                  <a href={`${explorerUrl}/address/${contracts.weth}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
+                    Mock WETH ↗
+                  </a>
+                </li>
+              )}
+              {contracts?.hatchToken && (
+                <li>
+                  <a href={`${explorerUrl}/address/${contracts.hatchToken}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink-soft)", textDecoration: "none" }}>
+                    Mock HATCH ↗
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 

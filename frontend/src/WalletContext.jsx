@@ -222,13 +222,14 @@ const ERC20_ABI = [
   },
 ];
 
-// ── Pool Key (from deployments.json) ─────────────────────────────────────────
-export const POOL_KEY = deployments.poolKey;
-export const CONTRACTS = deployments.contracts;
-export const CHAIN_ID = deployments.chainId;
+// Helper to validate EVM addresses
+const isValidAddress = (addr) => addr && addr !== ethers.ZeroAddress && ethers.isAddress(addr);
 
 // Compute pool ID (keccak256 of ABI-encoded PoolKey)
 function computePoolId(poolKey) {
+  if (!poolKey || !poolKey.currency0 || !poolKey.currency1) {
+    return "0x0000000000000000000000000000000000000000000000000000000000000000";
+  }
   try {
     const coder = ethers.AbiCoder.defaultAbiCoder();
     const encoded = coder.encode(
@@ -258,20 +259,49 @@ export function WalletProvider({ children }) {
   const [isTxPending, setIsTxPending] = useState(false);
   const [isTxSuccess, setIsTxSuccess] = useState(false);
 
-  const [targetChainId, setTargetChainId] = useState(CHAIN_ID);
+  // Dynamic chain ID configuration
+  const [targetChainId, setTargetChainId] = useState(() => {
+    if (deployments["1952"]) return 1952;
+    if (deployments["196"]) return 196;
+    const keys = Object.keys(deployments);
+    return Number(keys[0]) || 1952;
+  });
+
+  const activeConfig = deployments[targetChainId] || deployments["1952"] || deployments;
+  const CONTRACTS = activeConfig.contracts || {};
+  const POOL_KEY = activeConfig.poolKey || {};
+  const isDeployed = !!(CONTRACTS.hatchHook && CONTRACTS.hatchHook !== "0x0000000000000000000000000000000000000000");
+
   const isOnCorrectChain = wallet.chainId === targetChainId;
-  const isDeployed = CONTRACTS.hatchHook !== "0x0000000000000000000000000000000000000000";
 
   // ── Dynamic Pool State ──────────────────────────────────────────────────────
-  const defaultPoolId = isDeployed ? computePoolId(POOL_KEY) : "0x0000000000000000000000000000000000000000000000000000000000000000";
+  const defaultPoolId = (isDeployed && POOL_KEY.currency0) ? computePoolId(POOL_KEY) : "0x0000000000000000000000000000000000000000000000000000000000000000";
   const [activePoolKey, setActivePoolKey] = useState(POOL_KEY);
   const [poolIdHex, setPoolIdHex] = useState(defaultPoolId);
   const [isCustomPoolActive, setIsCustomPoolActive] = useState(false);
   const [customTokenDetails, setCustomTokenDetails] = useState({
-    symbol: "HATCH",
-    isHatchCurrency0: deployments.isHatchCurrency0,
-    projectTokenAddress: CONTRACTS.hatchToken
+    symbol: activeConfig.isHatchCurrency0 ? "HATCH" : "MATCH",
+    isHatchCurrency0: activeConfig.isHatchCurrency0 !== undefined ? activeConfig.isHatchCurrency0 : true,
+    projectTokenAddress: CONTRACTS.hatchToken || "0x0000000000000000000000000000000000000000"
   });
+
+  // Keep state in sync with network switches
+  useEffect(() => {
+    const activeConfig = deployments[targetChainId] || deployments["1952"] || deployments;
+    const CONTRACTS = activeConfig.contracts || {};
+    const POOL_KEY = activeConfig.poolKey || {};
+    const isDeployed = !!(CONTRACTS.hatchHook && CONTRACTS.hatchHook !== "0x0000000000000000000000000000000000000000");
+    const defaultPoolId = (isDeployed && POOL_KEY.currency0) ? computePoolId(POOL_KEY) : "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+    setActivePoolKey(POOL_KEY);
+    setPoolIdHex(defaultPoolId);
+    setIsCustomPoolActive(false);
+    setCustomTokenDetails({
+      symbol: activeConfig.isHatchCurrency0 ? "HATCH" : "MATCH",
+      isHatchCurrency0: activeConfig.isHatchCurrency0 !== undefined ? activeConfig.isHatchCurrency0 : true,
+      projectTokenAddress: CONTRACTS.hatchToken || "0x0000000000000000000000000000000000000000"
+    });
+  }, [targetChainId]);
 
   // ── Custom Pool Registrations ───────────────────────────────────────────────
   const [customPools, setCustomPools] = useState(() => {
@@ -327,10 +357,16 @@ export function WalletProvider({ children }) {
 
       if (!isDeployed) return;
 
-      const wethContract = new ethers.Contract(CONTRACTS.weth, ERC20_ABI, provider);
-      const hatchTokenContract = new ethers.Contract(customTokenDetails.projectTokenAddress, ERC20_ABI, provider);
-      const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, provider);
-      const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, provider);
+      const hasWeth = isValidAddress(CONTRACTS.weth);
+      const hasHatch = isValidAddress(customTokenDetails.projectTokenAddress);
+      const hasPoolManager = isValidAddress(CONTRACTS.poolManager);
+      const hasHatchHook = isValidAddress(CONTRACTS.hatchHook);
+      const hasValidPool = poolIdHex && poolIdHex !== ethers.ZeroHash && poolIdHex !== "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+      const wethContract = hasWeth ? new ethers.Contract(CONTRACTS.weth, ERC20_ABI, provider) : null;
+      const hatchTokenContract = hasHatch ? new ethers.Contract(customTokenDetails.projectTokenAddress, ERC20_ABI, provider) : null;
+      const poolManagerContract = hasPoolManager ? new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, provider) : null;
+      const hatchHookContract = hasHatchHook ? new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, provider) : null;
 
       const [
         wethBalRes,
@@ -344,16 +380,16 @@ export function WalletProvider({ children }) {
         lastSwapRes,
         allowanceRes
       ] = await Promise.allSettled([
-        wethContract.balanceOf(address),
-        hatchTokenContract.balanceOf(address).catch(() => 0n),
-        poolManagerContract.pools(poolIdHex),
-        hatchHookContract.poolConfigs(poolIdHex),
-        hatchHookContract.totalCreatorFeesClaimed(poolIdHex),
-        hatchHookContract.totalTokensBurned(poolIdHex),
-        poolManagerContract.hookFees0(poolIdHex),
-        poolManagerContract.hookFees1(poolIdHex),
-        hatchHookContract.lastSwapTimestamp(poolIdHex, address),
-        wethContract.allowance(address, CONTRACTS.poolManager)
+        wethContract ? wethContract.balanceOf(address) : Promise.reject("No WETH"),
+        hatchTokenContract ? hatchTokenContract.balanceOf(address).catch(() => 0n) : Promise.reject("No HATCH"),
+        (poolManagerContract && hasValidPool) ? poolManagerContract.pools(poolIdHex) : Promise.reject("No Pool"),
+        (hatchHookContract && hasValidPool) ? hatchHookContract.poolConfigs(poolIdHex) : Promise.reject("No Config"),
+        (hatchHookContract && hasValidPool) ? hatchHookContract.totalCreatorFeesClaimed(poolIdHex) : Promise.reject("No Claimed"),
+        (hatchHookContract && hasValidPool) ? hatchHookContract.totalTokensBurned(poolIdHex) : Promise.reject("No Burned"),
+        (poolManagerContract && hasValidPool) ? poolManagerContract.hookFees0(poolIdHex) : Promise.reject("No Fees0"),
+        (poolManagerContract && hasValidPool) ? poolManagerContract.hookFees1(poolIdHex) : Promise.reject("No Fees1"),
+        (hatchHookContract && hasValidPool) ? hatchHookContract.lastSwapTimestamp(poolIdHex, address) : Promise.reject("No LastSwap"),
+        (wethContract && hasPoolManager) ? wethContract.allowance(address, CONTRACTS.poolManager) : Promise.reject("No Allowance")
       ]);
 
       if (wethBalRes.status === "fulfilled") {
@@ -409,7 +445,7 @@ export function WalletProvider({ children }) {
     } catch (err) {
       console.error("Error fetching onchain data:", err);
     }
-  }, [poolIdHex, isDeployed, customTokenDetails]);
+  }, [poolIdHex, isDeployed, customTokenDetails, targetChainId]);
 
   // Periodic polling for watch-like updates
   useEffect(() => {
@@ -623,6 +659,9 @@ export function WalletProvider({ children }) {
     setIsTxSuccess(false);
 
     try {
+      if (!isValidAddress(CONTRACTS.weth) || !isValidAddress(CONTRACTS.poolManager)) {
+        throw new Error("Required contracts (WETH or PoolManager) are not deployed on this network.");
+      }
       const signer = wallet.signer;
       const wethContract = new ethers.Contract(CONTRACTS.weth, ERC20_ABI, signer);
       const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, signer);
@@ -662,7 +701,7 @@ export function WalletProvider({ children }) {
       
       addLog(
         "SWAP SUCCESSFUL",
-        `Tx hash: ${swapTx.hash} - View on OKLink: ${deployments.explorerUrl}/tx/${swapTx.hash}`,
+        `Tx hash: ${swapTx.hash} - View on OKLink: ${activeConfig.explorerUrl}/tx/${swapTx.hash}`,
         "success"
       );
 
@@ -708,7 +747,7 @@ export function WalletProvider({ children }) {
 
       addLog(
         "FEE HARVEST SUCCESSFUL",
-        `claimFees tx confirmed! View: ${deployments.explorerUrl}/tx/${claimTx.hash}`,
+        `claimFees tx confirmed! View: ${activeConfig.explorerUrl}/tx/${claimTx.hash}`,
         "success"
       );
 
@@ -828,6 +867,9 @@ export function WalletProvider({ children }) {
     try {
       addLog("WETH Faucet", `Minting ${amountStr} Mock WETH to your wallet...`, "info");
       
+      if (!isValidAddress(CONTRACTS.weth)) {
+        throw new Error("Mock WETH contract is not deployed on this network (Mainnet uses real WETH).");
+      }
       const signer = wallet.signer;
       const wethContract = new ethers.Contract(CONTRACTS.weth, ERC20_ABI, signer);
       
@@ -1256,6 +1298,7 @@ export function WalletProvider({ children }) {
         activeStartBlock,
 
         deployments,
+        contracts: CONTRACTS,
         isDeployed,
         explorerUrl: targetChainId === 196 ? "https://www.oklink.com/xlayer" : "https://www.oklink.com/xlayer-test",
         targetChainId,

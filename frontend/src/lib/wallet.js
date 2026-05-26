@@ -2,7 +2,8 @@ import { ethers } from "ethers";
 import { XLAYER_CHAIN, XLAYER_TESTNET, switchToChain } from "./xlayer";
 import deployments from "../deployments.json";
 
-const TARGET_CHAIN_ID = deployments.chainId;
+const SUPPORTED_CHAINS = Object.keys(deployments).map(Number);
+const DEFAULT_CHAIN_ID = deployments["1952"] ? 1952 : (SUPPORTED_CHAINS[0] || 1952);
 
 export const INITIAL_STATE = {
   connected: false,
@@ -35,11 +36,11 @@ export async function connectWallet() {
     const balance = ethers.formatEther(await provider.getBalance(address));
     
     // Check if the current chain is supported
-    const isSupported = chainId === TARGET_CHAIN_ID;
+    const isSupported = SUPPORTED_CHAINS.includes(chainId);
 
     if (!isSupported) {
-      // By default, switch to the target chain (e.g. 1952)
-      await switchToChain(TARGET_CHAIN_ID);
+      // By default, switch to the default chain (e.g. 1952)
+      await switchToChain(DEFAULT_CHAIN_ID);
       // Re-check after switch
       const updatedNetwork = await provider.getNetwork();
       const updatedChainId = Number(updatedNetwork.chainId);
@@ -48,7 +49,7 @@ export async function connectWallet() {
         address,
         chainId: updatedChainId,
         balance,
-        isXLayer: updatedChainId === XLAYER_CHAIN.chainId || updatedChainId === XLAYER_TESTNET.chainId || updatedChainId === TARGET_CHAIN_ID,
+        isXLayer: SUPPORTED_CHAINS.includes(updatedChainId),
         provider,
         signer,
       };
@@ -59,7 +60,7 @@ export async function connectWallet() {
       address,
       chainId,
       balance,
-      isXLayer: chainId === XLAYER_CHAIN.chainId || chainId === XLAYER_TESTNET.chainId || chainId === TARGET_CHAIN_ID,
+      isXLayer: true,
       provider,
       signer,
     };

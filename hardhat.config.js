@@ -36,12 +36,22 @@ export default {
       gasPrice: "auto",
       timeout: 120000, // 2 min timeout for slower testnet
     },
+
+    // X Layer Mainnet — EVM L2 by OKX
+    xlayer_mainnet: {
+      url: process.env.XLAYER_MAINNET_RPC || "https://rpc.xlayer.tech",
+      chainId: 196,
+      accounts: [PRIVATE_KEY],
+      gasPrice: "auto",
+      timeout: 120000,
+    },
   },
 
   // OKLink (X Layer's block explorer, Etherscan-compatible)
   etherscan: {
     apiKey: {
       xlayer_testnet: "NO_API_KEY_NEEDED", // OKLink public API
+      xlayer_mainnet: "NO_API_KEY_NEEDED",
     },
     customChains: [
       {
@@ -50,6 +60,14 @@ export default {
         urls: {
           apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET",
           browserURL: "https://www.oklink.com/xlayer-test",
+        },
+      },
+      {
+        network: "xlayer_mainnet",
+        chainId: 196,
+        urls: {
+          apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER",
+          browserURL: "https://www.oklink.com/xlayer",
         },
       },
     ],
