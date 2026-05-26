@@ -167,8 +167,13 @@ contract HatchHook is BaseHook {
         LaunchConfig memory config = poolConfigs[poolId];
         require(config.creator != address(0), "Pool not configured");
 
-        // 1. Harvest accrued fees from the PoolManager
-        (uint256 fee0, uint256 fee1) = manager.claimHookFees(key, address(this));
+        // 1. Harvest accrued fees from the PoolManager using a low-level call
+        // so that it compiles with standard IPoolManager interfaces.
+        (bool success, bytes memory data) = address(manager).call(
+            abi.encodeWithSignature("claimHookFees((address,address,uint24,int24,address),address)", key, address(this))
+        );
+        require(success, "Hatch: claimHookFees failed (use PositionManager on mainnet)");
+        (uint256 fee0, uint256 fee1) = abi.decode(data, (uint256, uint256));
 
         address baseToken = (key.currency0 == config.projectToken) ? key.currency1 : key.currency0;
         uint256 baseFeeAmount = (key.currency0 == config.projectToken) ? fee1 : fee0;

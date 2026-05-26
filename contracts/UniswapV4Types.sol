@@ -164,7 +164,4 @@ interface IPoolManager {
     ) external returns (BalanceDelta delta);
 
     function updateDynamicLPFee(PoolKey calldata key, uint24 newDynamicLPFee) external;
-
-    // Custom helper for our mock simulation to collect fees
-    function claimHookFees(PoolKey calldata key, address recipient) external returns (uint256 fee0, uint256 fee1);
 }

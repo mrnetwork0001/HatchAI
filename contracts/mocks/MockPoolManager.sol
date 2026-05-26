@@ -169,7 +169,7 @@ contract MockPoolManager is IPoolManager {
     function claimHookFees(
         PoolKey calldata key,
         address recipient
-    ) external override returns (uint256 fee0, uint256 fee1) {
+    ) external returns (uint256 fee0, uint256 fee1) {
         bytes32 poolId = key.toId();
         
         fee0 = hookFees0[poolId];
