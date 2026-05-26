@@ -1659,49 +1659,62 @@ export default function App() {
                   ))}
 
                   {/* Mock Live: OKXAI */}
-                  <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "280px", opacity: 0.9 }}>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                        <div>
-                          <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)" }}>OKXAI</h4>
-                          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>OKX Artificial Intelligence</span>
+                  {contracts?.hatchToken && (
+                    <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "280px", opacity: 0.9 }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                          <div>
+                            <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)" }}>OKXAI</h4>
+                            <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>OKX Artificial Intelligence</span>
+                          </div>
+                          <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: "rgba(95, 155, 108, 0.08)", color: "var(--success)", border: "1px solid rgba(95,155,108,0.18)", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <StatusDot color="var(--success)" size={6} animate={false} />
+                            FEATURED DEMO
+                          </span>
                         </div>
-                        <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: "rgba(95, 155, 108, 0.08)", color: "var(--success)", border: "1px solid rgba(95,155,108,0.18)", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                          <StatusDot color="var(--success)" size={6} animate={false} />
-                          FEATURED DEMO
-                        </span>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0" }}>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
+                            <strong style={{ color: "var(--ink)" }}>6.40%</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
+                            <strong style={{ color: "var(--ink)" }}>2,000 OKXAI</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Liquidity:</span>
+                            <strong style={{ color: "var(--ink)" }}>15.5 WETH</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
+                            <strong style={{ color: "var(--ink)" }}>30s</strong>
+                          </div>
+                        </div>
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0" }}>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
-                          <strong style={{ color: "var(--ink)" }}>6.40%</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
-                          <strong style={{ color: "var(--ink)" }}>2,000 OKXAI</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Liquidity:</span>
-                          <strong style={{ color: "var(--ink)" }}>15.5 WETH</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
-                          <strong style={{ color: "var(--ink)" }}>30s</strong>
-                        </div>
+                      <button 
+                        onClick={() => {
+                          setStatusMsg({ text: "This is a demo project pool. Switch to standard HATCH or deploy your own real custom pool!", type: "info" });
+                        }}
+                        className="btn-outline" 
+                        style={{ width: "100%", fontSize: "0.85rem", padding: "10px" }}
+                      >
+                        Featured Demo (Protected)
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {(!contracts?.hatchToken && userPools.length === 0) && (
+                    <div className="glass-card" style={{ gridColumn: "1 / -1", padding: "48px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px", minHeight: "200px" }}>
+                      <RocketIcon size={32} color="var(--muted)" />
+                      <div style={{ fontWeight: "700", color: "var(--ink)" }}>No Active Pools Deployed</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--muted)", maxWidth: "400px" }}>
+                        There are no active launch protection pools on this network. Go to the <strong>Token Launchpad</strong> tab to launch your custom pool!
                       </div>
                     </div>
-
-                    <button 
-                      onClick={() => {
-                        setStatusMsg({ text: "This is a demo project pool. Switch to standard HATCH or deploy your own real custom pool!", type: "info" });
-                      }}
-                      className="btn-outline" 
-                      style={{ width: "100%", fontSize: "0.85rem", padding: "10px" }}
-                    >
-                      Featured Demo (Protected)
-                    </button>
-                  </div>
+                  )}
 
                 </div>
               </div>
