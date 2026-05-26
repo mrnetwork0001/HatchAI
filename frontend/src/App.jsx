@@ -954,7 +954,12 @@ export default function App() {
     return path;
   };
   // Combine custom user pools from context
-  const userPools = (customPools || []).map((p) => ({
+  const userPools = (customPools || [])
+    .filter((p) => {
+      const poolChainId = p.chainId || 1952;
+      return poolChainId === targetChainId;
+    })
+    .map((p) => ({
     symbol: p.symbol,
     name: `${p.symbol} Token`,
     projectTokenAddress: p.projectTokenAddress,
@@ -1553,55 +1558,57 @@ export default function App() {
               <div>
                 <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--coral-deep)", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px", display: "inline-flex", alignItems: "center" }}>
                   <StatusDot color="var(--success)" size={10} />
-                  Live Protection Pools ({1 + userPools.length + 1})
+                  Live Protection Pools ({(contracts?.hatchToken ? 1 : 0) + userPools.length + 1})
                 </h3>
                 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "24px" }}>
                   
                   {/* Real Default HATCH Pool */}
-                  <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "280px" }}>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                        <div>
-                          <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)" }}>HATCH</h4>
-                          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>Hatch Token</span>
+                  {contracts?.hatchToken && (
+                    <div className="glass-card" style={{ padding: "24px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "280px" }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                          <div>
+                            <h4 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)" }}>HATCH</h4>
+                            <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>Hatch Token</span>
+                          </div>
+                          <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: isProtectionActive ? "rgba(210, 130, 90, 0.08)" : "rgba(95, 155, 108, 0.08)", color: isProtectionActive ? "var(--coral-deep)" : "var(--success)", border: `1px solid ${isProtectionActive ? "rgba(210, 130, 90, 0.18)" : "rgba(95,155,108,0.18)"}`, fontWeight: "600" }}>
+                            {isProtectionActive ? "ACTIVE PROTECTION" : "MATURE TRADING"}
+                          </span>
                         </div>
-                        <span style={{ fontSize: "10px", padding: "4px 10px", borderRadius: "100px", background: isProtectionActive ? "rgba(210, 130, 90, 0.08)" : "rgba(95, 155, 108, 0.08)", color: isProtectionActive ? "var(--coral-deep)" : "var(--success)", border: `1px solid ${isProtectionActive ? "rgba(210, 130, 90, 0.18)" : "rgba(95,155,108,0.18)"}`, fontWeight: "600" }}>
-                          {isProtectionActive ? "ACTIVE PROTECTION" : "MATURE TRADING"}
-                        </span>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0" }}>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
+                            <strong style={{ color: "var(--ink)" }}>{(currentFeeRate * 100).toFixed(2)}%</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
+                            <strong style={{ color: "var(--ink)" }}>{isProtectionActive ? `${Number(maxSwapAmount).toLocaleString()} HATCH` : "Disabled"}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>WETH Reserve:</span>
+                            <strong style={{ color: "var(--ink)" }}>{poolReserves.weth.toFixed(3)} WETH</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
+                            <strong style={{ color: "var(--ink)" }}>{isProtectionActive ? `${cooldownDuration}s` : "Disabled"}</strong>
+                          </div>
+                        </div>
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", fontSize: "0.82rem", margin: "20px 0" }}>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Dynamic Tax:</span>
-                          <strong style={{ color: "var(--ink)" }}>{(currentFeeRate * 100).toFixed(2)}%</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Anti-Whale Cap:</span>
-                          <strong style={{ color: "var(--ink)" }}>{isProtectionActive ? `${Number(maxSwapAmount).toLocaleString()} HATCH` : "Disabled"}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>WETH Reserve:</span>
-                          <strong style={{ color: "var(--ink)" }}>{poolReserves.weth.toFixed(3)} WETH</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: "var(--muted)", display: "block" }}>Cooldown:</span>
-                          <strong style={{ color: "var(--ink)" }}>{isProtectionActive ? `${cooldownDuration}s` : "Disabled"}</strong>
-                        </div>
-                      </div>
+                      <button 
+                        onClick={() => {
+                          resetToDefaultPool();
+                          setConsoleTab("swap");
+                        }}
+                        className="btn-neon" 
+                        style={{ width: "100%", fontSize: "0.85rem", padding: "10px" }}
+                      >
+                        Enter Swap Terminal →
+                      </button>
                     </div>
-
-                    <button 
-                      onClick={() => {
-                        resetToDefaultPool();
-                        setConsoleTab("swap");
-                      }}
-                      className="btn-neon" 
-                      style={{ width: "100%", fontSize: "0.85rem", padding: "10px" }}
-                    >
-                      Enter Swap Terminal →
-                    </button>
-                  </div>
+                  )}
 
                   {/* Custom User Pools (Real Onchain) */}
                   {userPools.map((pool, idx) => (

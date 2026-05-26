@@ -1067,7 +1067,8 @@ export function WalletProvider({ children }) {
         seedProjectAmount,
         seedWethAmount,
         decayMode,
-        startBlock: blockNumber || 0
+        startBlock: blockNumber || 0,
+        chainId: targetChainId
       };
 
       setCustomPools((prev) => {
@@ -1178,7 +1179,8 @@ export function WalletProvider({ children }) {
         seedProjectAmount,
         seedWethAmount,
         decayMode,
-        startBlock: 0
+        startBlock: 0,
+        chainId: targetChainId
       };
 
       // Add to custom pools list if it's not already there
