@@ -308,6 +308,7 @@ export default function App() {
     connect,
     disconnect,
     initializePool,
+    importPool,
     deployToken,
     mintWeth,
     resetToDefaultPool,
@@ -421,6 +422,8 @@ export default function App() {
 
   // Developer Launchpad Form State
   const [launchTokenAddress, setLaunchTokenAddress] = useState("");
+  const [importAddress, setImportAddress] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
   const [launchBaseAddress, setLaunchBaseAddress] = useState(deployments.contracts.weth || "");
   const [launchPriceRatio, setLaunchPriceRatio] = useState("10");
   const [launchDecayHours, setLaunchDecayHours] = useState("24");
@@ -811,6 +814,65 @@ export default function App() {
       });
     }
   };
+ 
+  const handleImport = async (e) => {
+    e.preventDefault();
+    if (!importAddress || !importAddress.startsWith("0x") || importAddress.length !== 42) {
+      setLaunchStatus({ text: "Please enter a valid token contract address.", type: "error" });
+      return;
+    }
+ 
+    setIsImporting(true);
+    setTxModal({
+      isOpen: true,
+      title: "Importing Custom Pool",
+      status: "pending",
+      txHash: "",
+      message: `Fetching pool key, parameters, and reserve data for token ${importAddress} from the X Layer contracts...`,
+      errorReason: ""
+    });
+ 
+    try {
+      const res = await importPool(importAddress);
+      if (res.success) {
+        setImportAddress("");
+        setLaunchStatus({ text: `Pool for ${res.symbol} successfully imported!`, type: "success" });
+        setTxModal({
+          isOpen: true,
+          title: "Importing Custom Pool",
+          status: "success",
+          txHash: "",
+          message: `Successfully loaded pool for ${res.symbol} (${importAddress}) into your local terminal!`,
+          errorReason: ""
+        });
+        setTimeout(() => {
+          setConsoleTab("portal");
+        }, 2000);
+      } else {
+        setLaunchStatus({ text: res.reason || "Failed to import pool.", type: "error" });
+        setTxModal({
+          isOpen: true,
+          title: "Importing Custom Pool",
+          status: "error",
+          txHash: "",
+          message: "Failed to import custom pool config.",
+          errorReason: res.reason
+        });
+      }
+    } catch (err) {
+      setLaunchStatus({ text: err.message || "Failed to import pool.", type: "error" });
+      setTxModal({
+        isOpen: true,
+        title: "Importing Custom Pool",
+        status: "error",
+        txHash: "",
+        message: "Failed to import custom pool config.",
+        errorReason: err.message
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   // Decay chart math
   const blocksElapsed = (blockNumber > activeStartBlock && activeStartBlock > 0) ? (blockNumber - activeStartBlock) : 0;
@@ -900,17 +962,24 @@ export default function App() {
   }));
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "32px 24px", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px 32px 24px", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1000,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "40px",
           borderBottom: "1px solid var(--line)",
+          paddingTop: "32px",
           paddingBottom: "20px",
+          backgroundColor: "rgba(240, 236, 228, 0.8)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
         }}
       >
         <div style={{ cursor: "pointer" }} onClick={() => setView("landing")}>
@@ -919,42 +988,11 @@ export default function App() {
               src="/logo.png" 
               alt="HatchAI logo" 
               style={{ 
-                width: "36px", 
-                height: "36px", 
-                borderRadius: "50%", 
-                objectFit: "cover", 
-                border: "1.5px solid var(--ink)",
-                boxShadow: "0 2px 8px rgba(210, 130, 90, 0.15)"
+                height: "76px", 
+                width: "auto", 
+                objectFit: "contain",
               }} 
             />
-            <h1
-              style={{
-                fontSize: "1.8rem",
-                fontWeight: "800",
-                color: "var(--ink)",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              <span>h<span style={{ color: "var(--coral)" }}>a</span>tchAI</span>
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  verticalAlign: "middle",
-                  padding: "3px 10px",
-                  borderRadius: "100px",
-                  background: "rgba(210, 130, 90, 0.08)",
-                  color: "var(--coral-deep)",
-                  fontWeight: "600",
-                  border: "1px solid rgba(210, 130, 90, 0.18)",
-                  fontFamily: "Geist Mono, monospace",
-                }}
-              >
-                v4 Hook
-              </span>
-            </h1>
           </div>
         </div>
 
@@ -1174,80 +1212,19 @@ export default function App() {
               </div>
             </div>
 
-            {/* Right Column with Animated Hatching Egg */}
-            <div style={{ position: "relative", aspectRatio: "1", maxWidth: "450px", width: "100%", marginLeft: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {/* Common SVG defs for shell gradients */}
-              <svg style={{ position: "absolute", width: 0, height: 0 }}>
-                <defs>
-                  <linearGradient id="eggGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#FFFDFC" />
-                    <stop offset="100%" stopColor="#EFECE6" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              {/* Outer Orbiting Rings */}
-              <div className="ring"></div>
-              <div className="ring" style={{ transform: "rotate(45deg)", animationDuration: "30s", borderStyle: "solid", opacity: 0.05 }}></div>
-              <div className="ring" style={{ transform: "rotate(-45deg)", animationDuration: "60s", opacity: 0.08 }}></div>
-              
-              <div className="egg-container">
-                <div className="egg-glow"></div>
-                
-                <div className="egg-interactive-wrapper">
-                  {/* Glowing Seam Sealer when closed */}
-                  <div className="egg-seam-glow">
-                    <svg viewBox="0 0 100 140">
-                      <path d="M 17,78 L 33,86 L 50,78 L 67,86 L 83,78" />
-                    </svg>
-                  </div>
-
-                  {/* Inner AI Hatching Core */}
-                  <div className="egg-core">
-                    <div className="egg-core-glow"></div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", zIndex: 10 }}>
-                      <ChickHatchingIcon size={52} style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15))" }} />
-                      <div className="core-badge">
-                        HATCH
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Top Shell */}
-                  <div className="egg-shell shell-top">
-                    <svg viewBox="0 0 100 140">
-                      <path 
-                        d="M 50,15 C 27,15 17,55 17,78 L 33,86 L 50,78 L 67,86 L 83,78 C 83,55 73,15 50,15 Z" 
-                        fill="url(#eggGrad)" 
-                        stroke="var(--ink)" 
-                        strokeWidth="2.5" 
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-
-                  {/* Bottom Shell */}
-                  <div className="egg-shell shell-bottom">
-                    <svg viewBox="0 0 100 140">
-                      <path 
-                        d="M 17,78 C 17,105 30,125 50,125 C 70,125 83,105 83,78 L 67,86 L 50,78 L 33,86 Z" 
-                        fill="url(#eggGrad)" 
-                        stroke="var(--ink)" 
-                        strokeWidth="2.5" 
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Floating Particles */}
-                <div className="egg-particles">
-                  <span className="particle p1"></span>
-                  <span className="particle p2"></span>
-                  <span className="particle p3"></span>
-                  <span className="particle p4"></span>
-                </div>
-              </div>
+            {/* Right Column with Animated Hero Image */}
+            <div style={{ position: "relative", maxWidth: "480px", width: "100%", marginLeft: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img 
+                src="/hero-egg.png" 
+                alt="HatchAI Incubation Egg" 
+                className="hero-levitate-image"
+                style={{ 
+                  width: "100%", 
+                  height: "auto", 
+                  borderRadius: "24px",
+                  objectFit: "contain"
+                }} 
+              />
             </div>
             
           </div>
@@ -2023,7 +2000,7 @@ export default function App() {
                       <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem", marginTop: "4px" }}>
                         {activeDecayMode === "block"
                           ? `Fee decays in 4 step-wise block phases over ${totalBlocks} blocks. Anti-whale & cooldown active during launch phase.`
-                          : `Fee declines from ${(startFeeDecimal * 100).toFixed(0)}% to {(endFeeDecimal * 100).toFixed(1)}% over ${decayDuration / 3600}h. Anti-whale & cooldown active during launch phase.`}
+                          : `Fee declines from ${(startFeeDecimal * 100).toFixed(0)}% to ${(endFeeDecimal * 100).toFixed(1)}% over ${decayDuration / 3600}h. Anti-whale & cooldown active during launch phase.`}
                       </p>
                     </div>
                     <div style={{ padding: "6px 12px", borderRadius: "20px", background: "rgba(95,155,108,0.08)", border: "1px solid rgba(95,155,108,0.18)", fontSize: "0.75rem", color: "var(--success)", fontWeight: "600", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "6px" }}>
@@ -2535,6 +2512,36 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* Import Existing Pool Box */}
+                  <div className="glass-card" style={{ padding: "20px", background: "rgba(210, 130, 90, 0.04)", border: "1px solid rgba(210, 130, 90, 0.15)", borderRadius: "12px" }}>
+                    <h3 style={{ fontSize: "1.0rem", fontWeight: "700", color: "var(--ink)", marginBottom: "6px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                      <RocketIcon size={18} color="var(--coral)" />
+                      Import Existing Pool
+                    </h3>
+                    <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "16px" }}>
+                      Already launched a pool yesterday or on another browser? Enter the token address below to import the configuration and trading logs directly from the X Layer network.
+                    </p>
+                    <form onSubmit={handleImport} style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <input
+                        type="text"
+                        className="glass-input"
+                        style={{ borderRadius: "8px", flex: 1, padding: "10px 16px" }}
+                        placeholder="Project Token Address (0x...)"
+                        value={importAddress}
+                        onChange={(e) => setImportAddress(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="submit"
+                        className="btn-outline"
+                        style={{ padding: "10px 24px", whiteSpace: "nowrap", border: "1px solid var(--ink)", color: "var(--ink)", fontWeight: "600", fontSize: "13px" }}
+                        disabled={isTxPending || isImporting}
+                      >
+                        {isImporting ? "Importing..." : "Import Pool"}
+                      </button>
+                    </form>
+                  </div>
+
                   {/* Phase 1: Deploy a Test ERC20 Token */}
                   <div style={{ borderBottom: "1.5px dashed var(--line)", paddingBottom: "32px" }}>
                     <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--coral-deep)", marginBottom: "16px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
@@ -2905,16 +2912,11 @@ export default function App() {
                 src="/logo.png" 
                 alt="HatchAI logo" 
                 style={{ 
-                  width: "28px", 
-                  height: "28px", 
-                  borderRadius: "50%", 
-                  border: "1.5px solid var(--ink)",
-                  objectFit: "cover"
+                  height: "60px", 
+                  width: "auto", 
+                  objectFit: "contain"
                 }} 
               />
-              <span style={{ fontSize: "1.2rem", fontWeight: "800", color: "var(--ink)" }}>
-                h<span style={{ color: "var(--coral)" }}>a</span>tchAI
-              </span>
             </div>
             <p style={{ color: "var(--ink-soft)", lineHeight: "1.5", fontSize: "0.82rem", marginBottom: "16px" }}>
               Next-generation token launchpad and swap terminal built on X Layer Network, powered by Uniswap V4 Hooks.

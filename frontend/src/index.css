@@ -897,3 +897,30 @@ h2 .serif, h1 .serif, .serif {
   from { transform: scale(0.92); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+/* Unique Hero Image Floating & Orbiting pulse animation */
+@keyframes hero-float-levitate {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+    filter: drop-shadow(0 15px 30px rgba(210, 130, 90, 0.15));
+  }
+  50% {
+    transform: translateY(-15px) rotate(1deg);
+    filter: drop-shadow(0 30px 45px rgba(210, 130, 90, 0.35));
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    filter: drop-shadow(0 15px 30px rgba(210, 130, 90, 0.15));
+  }
+}
+
+.hero-levitate-image {
+  animation: hero-float-levitate 6s ease-in-out infinite;
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.hero-levitate-image:hover {
+  filter: drop-shadow(0 40px 60px rgba(210, 130, 90, 0.45)) saturate(1.08);
+  transform: translateY(-20px) scale(1.02);
+}
+

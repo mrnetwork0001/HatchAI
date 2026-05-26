@@ -1050,6 +1050,128 @@ export function WalletProvider({ children }) {
   };
 
 
+  const importPool = async (projectTokenAddress) => {
+    if (!wallet.connected) {
+      addLog("Import Error", "Connect your wallet first.", "error");
+      return { success: false, reason: "Wallet not connected" };
+    }
+    if (!projectTokenAddress || !projectTokenAddress.startsWith("0x") || projectTokenAddress.length !== 42) {
+      addLog("Import Error", "Invalid project token address.", "error");
+      return { success: false, reason: "Invalid address" };
+    }
+
+    try {
+      addLog("Import Pool", `Importing pool for token: ${projectTokenAddress}...`, "info");
+      const baseToken = CONTRACTS.weth;
+      const currency0 = projectTokenAddress.toLowerCase() < baseToken.toLowerCase() ? projectTokenAddress : baseToken;
+      const currency1 = projectTokenAddress.toLowerCase() < baseToken.toLowerCase() ? baseToken : projectTokenAddress;
+      const isHatchCurrency0 = projectTokenAddress.toLowerCase() === currency0.toLowerCase();
+
+      const poolKey = {
+        currency0,
+        currency1,
+        fee: 3000,
+        tickSpacing: 60,
+        hooks: CONTRACTS.hatchHook
+      };
+
+      const newPoolId = computePoolId(poolKey);
+      const provider = wallet.provider;
+      const hatchHookContract = new ethers.Contract(CONTRACTS.hatchHook, HATCH_HOOK_ABI, provider);
+
+      addLog("Import Pool", "Fetching config from HatchHook contract...", "info");
+      const config = await hatchHookContract.poolConfigs(newPoolId);
+
+      if (!config || config.creator === "0x0000000000000000000000000000000000000000") {
+        addLog("Import Error", "This pool has not been initialized on-chain yet.", "error");
+        return { success: false, reason: "Pool not initialized on-chain" };
+      }
+
+      // Query symbol of the project token
+      const projectTokenContract = new ethers.Contract(projectTokenAddress, ERC20_ABI, provider);
+      const symbol = await projectTokenContract.symbol().catch(() => "CUSTOM");
+
+      // Extract details
+      const launchTime = Number(config.launchTime);
+      const decayDuration = Number(config.decayDuration);
+      const startFee = Number(config.startFee);
+      const endFee = Number(config.endFee);
+      const maxSwapAmount = config.maxSwapAmount;
+      const cooldownDuration = Number(config.cooldownDuration);
+
+      // Guess decayMode based on decayDuration. Typical time-based is e.g. 24 hours (86400s) or blocks (e.g. 48 blocks)
+      const decayMode = decayDuration < 10000 ? "block" : "time";
+      const decayDurationHours = decayMode === "block"
+        ? (decayDuration / 2).toString()
+        : (decayDuration / 3600).toString();
+
+      const startFeePercent = (startFee / 10000).toString();
+      const endFeePercent = (endFee / 10000).toString();
+      const maxSwapAmountTokens = ethers.formatEther(maxSwapAmount);
+      const cooldownSeconds = cooldownDuration.toString();
+
+      // Get pool reserves
+      const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, provider);
+      const poolState = await poolManagerContract.pools(newPoolId);
+      const seedProjectAmount = poolState ? ethers.formatEther(isHatchCurrency0 ? poolState[0] : poolState[1]) : "0";
+      const seedWethAmount = poolState ? ethers.formatEther(isHatchCurrency0 ? poolState[1] : poolState[0]) : "0";
+
+      const priceRatio = parseFloat(seedWethAmount) > 0 
+        ? (parseFloat(seedProjectAmount) / parseFloat(seedWethAmount)).toString() 
+        : "10";
+
+      const importedPool = {
+        poolKey,
+        poolId: newPoolId,
+        symbol,
+        isHatchCurrency0,
+        projectTokenAddress,
+        createdAt: Date.now(),
+        priceRatio,
+        decayDurationHours,
+        startFeePercent,
+        endFeePercent,
+        maxSwapAmountTokens,
+        cooldownSeconds,
+        seedProjectAmount,
+        seedWethAmount,
+        decayMode,
+        startBlock: 0
+      };
+
+      // Add to custom pools list if it's not already there
+      setCustomPools((prev) => {
+        const filtered = prev.filter(p => p.poolId !== newPoolId);
+        const updated = [importedPool, ...filtered];
+        try {
+          localStorage.setItem("hatch_custom_pools", JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to save pool to local storage", e);
+        }
+        return updated;
+      });
+
+      // Switch active pool context in UI
+      setActivePoolKey(poolKey);
+      setPoolIdHex(newPoolId);
+      setIsCustomPoolActive(true);
+      setCustomTokenDetails({
+        symbol,
+        isHatchCurrency0,
+        projectTokenAddress
+      });
+      setActiveDecayMode(decayMode);
+      setActiveStartBlock(0);
+
+      addLog("IMPORT SUCCESSFUL", `Pool for ${symbol} successfully imported and loaded!`, "success");
+      return { success: true, symbol };
+    } catch (err) {
+      console.error(err);
+      addLog("Import Error", err.message || "Failed to import pool", "error");
+      return { success: false, reason: err.message };
+    }
+  };
+
   const resetToDefaultPool = () => {
     setActivePoolKey(POOL_KEY);
     setPoolIdHex(defaultPoolId);
@@ -1117,6 +1239,7 @@ export function WalletProvider({ children }) {
         claimRoyalties,
         claimRoyaltiesAutonomously,
         initializePool,
+        importPool,
         deployToken,
         mintWeth,
         resetToDefaultPool,
