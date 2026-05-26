@@ -6,7 +6,8 @@
     "deployer": "0x8131208c08AFe5187C41F7A04746d058600804b2",
     "contracts": {
       "poolManager": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
-      "hatchHook": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71"
+      "hatchHook": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71",
+      "usdt0": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736"
     },
     "explorerUrl": "https://www.oklink.com/xlayer"
   },

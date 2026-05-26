@@ -279,10 +279,22 @@ export function WalletProvider({ children }) {
   const [activePoolKey, setActivePoolKey] = useState(POOL_KEY);
   const [poolIdHex, setPoolIdHex] = useState(defaultPoolId);
   const [isCustomPoolActive, setIsCustomPoolActive] = useState(false);
-  const [customTokenDetails, setCustomTokenDetails] = useState({
-    symbol: activeConfig.isHatchCurrency0 ? "HATCH" : "MATCH",
-    isHatchCurrency0: activeConfig.isHatchCurrency0 !== undefined ? activeConfig.isHatchCurrency0 : true,
-    projectTokenAddress: CONTRACTS.hatchToken || "0x0000000000000000000000000000000000000000"
+  const [customTokenDetails, setCustomTokenDetails] = useState(() => {
+    const defaultChainId = deployments["1952"] ? 1952 : (Object.keys(deployments)[0] || 1952);
+    if (defaultChainId === 196) {
+      return {
+        symbol: "USDT0",
+        isHatchCurrency0: true,
+        projectTokenAddress: "0x779Ded0c9e1022225f8E0630b35a9b54bE713736"
+      };
+    }
+    const activeConfig = deployments[defaultChainId] || deployments;
+    const CONTRACTS = activeConfig.contracts || {};
+    return {
+      symbol: activeConfig.isHatchCurrency0 ? "HATCH" : "MATCH",
+      isHatchCurrency0: activeConfig.isHatchCurrency0 !== undefined ? activeConfig.isHatchCurrency0 : true,
+      projectTokenAddress: CONTRACTS.hatchToken || "0x0000000000000000000000000000000000000000"
+    };
   });
 
   // Keep state in sync with network switches
@@ -296,11 +308,20 @@ export function WalletProvider({ children }) {
     setActivePoolKey(POOL_KEY);
     setPoolIdHex(defaultPoolId);
     setIsCustomPoolActive(false);
-    setCustomTokenDetails({
-      symbol: activeConfig.isHatchCurrency0 ? "HATCH" : "MATCH",
-      isHatchCurrency0: activeConfig.isHatchCurrency0 !== undefined ? activeConfig.isHatchCurrency0 : true,
-      projectTokenAddress: CONTRACTS.hatchToken || "0x0000000000000000000000000000000000000000"
-    });
+
+    if (targetChainId === 196) {
+      setCustomTokenDetails({
+        symbol: "USDT0",
+        isHatchCurrency0: true,
+        projectTokenAddress: CONTRACTS.usdt0 || "0x779Ded0c9e1022225f8E0630b35a9b54bE713736"
+      });
+    } else {
+      setCustomTokenDetails({
+        symbol: activeConfig.isHatchCurrency0 ? "HATCH" : "MATCH",
+        isHatchCurrency0: activeConfig.isHatchCurrency0 !== undefined ? activeConfig.isHatchCurrency0 : true,
+        projectTokenAddress: CONTRACTS.hatchToken || "0x0000000000000000000000000000000000000000"
+      });
+    }
   }, [targetChainId]);
 
   // ── Custom Pool Registrations ───────────────────────────────────────────────
@@ -355,6 +376,17 @@ export function WalletProvider({ children }) {
       setOkbBalance(Number(ethers.formatEther(balanceWei)).toFixed(4));
       provider.getBlockNumber().then((b) => setBlockNumber(Number(b))).catch(() => {});
 
+      // Reset default states to avoid displaying stale data from other networks
+      setWethBalance("0.0000");
+      setHatchBalance("0.00");
+      setPoolReserves({ weth: 0, hatch: 0 });
+      setPoolConfig(null);
+      setTotalCreatorFeesClaimed("0");
+      setTotalTokensBurned("0");
+      setAccumulatedFees(0);
+      setLastSwapTs(0n);
+      setWethAllowance(0n);
+
       if (!isDeployed) return;
 
       const hasWeth = isValidAddress(CONTRACTS.weth);
@@ -396,7 +428,9 @@ export function WalletProvider({ children }) {
         setWethBalance(Number(ethers.formatEther(wethBalRes.value)).toFixed(4));
       }
       if (hatchBalRes.status === "fulfilled") {
-        setHatchBalance(Number(ethers.formatEther(hatchBalRes.value)).toFixed(2));
+        const symbol = customTokenDetails.symbol;
+        const decimals = (symbol === "USDT" || symbol === "USDT0") ? 6 : 18;
+        setHatchBalance(Number(ethers.formatUnits(hatchBalRes.value, decimals)).toFixed(2));
       }
 
       if (poolStateRes.status === "fulfilled") {
