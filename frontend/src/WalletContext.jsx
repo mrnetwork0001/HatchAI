@@ -1533,6 +1533,7 @@ export function WalletProvider({ children }) {
         customPools,
         isCustomPoolActive,
         projectTokenDetails: customTokenDetails,
+        poolIdHex,
 
         logs,
         addLog,

@@ -318,6 +318,7 @@ export default function App() {
     isCustomPoolActive,
     projectTokenDetails,
     customPools,
+    poolIdHex,
     addLog,
     blockNumber,
     activeDecayMode,
