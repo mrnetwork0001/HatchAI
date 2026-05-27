@@ -1646,17 +1646,23 @@ export function WalletProvider({ children }) {
   };
 
   // ── Add Liquidity to existing pool (mainnet via PositionManager) ──────────
-  const addLiquidity = async (projectAmountStr, wethAmountStr) => {
+  const addLiquidity = async (projectAmountStr, wethAmountStr, onStatus) => {
+    const report = (step, status, msg, extra) => {
+      if (onStatus) onStatus({ step, status, message: msg, ...extra });
+      if (status === "error") addLog("Liquidity Error", msg, "error");
+      else addLog("Liquidity", msg, "info");
+    };
+
     if (!wallet.connected) {
-      addLog("Liquidity Error", "Connect your wallet first.", "error");
+      report("init", "error", "Connect your wallet first.");
       return { success: false, reason: "Wallet not connected" };
     }
     if (wallet.chainId !== targetChainId) {
-      addLog("Liquidity Error", "Switch to the correct network first.", "error");
+      report("init", "error", "Switch to the correct network first.");
       return { success: false, reason: "Wrong network" };
     }
     if (targetChainId !== 196) {
-      addLog("Liquidity Error", "Add Liquidity via PositionManager is only supported on Mainnet.", "error");
+      report("init", "error", "Add Liquidity via PositionManager is only supported on Mainnet.");
       return { success: false, reason: "Mainnet only" };
     }
 
@@ -1674,43 +1680,50 @@ export function WalletProvider({ children }) {
       const projectERC20 = new ethers.Contract(projectToken, ERC20_ABI, signer);
       const wethERC20 = new ethers.Contract(baseToken, ERC20_ABI, signer);
 
-      addLog("Liquidity", `Approving ${projectAmountStr} tokens for PositionManager...`, "info");
+      // Step 1: Approve project token
+      report("approve_token", "pending", `Approving ${projectAmountStr} ${customTokenDetails.symbol}...`);
       const appTx0 = await projectERC20.approve(positionManagerAddress, seedProjectWei, { gasLimit: 150000 });
+      report("approve_token", "pending", `Approval tx sent: ${appTx0.hash.slice(0,10)}... Confirming...`, { txHash: appTx0.hash });
       await appTx0.wait();
+      report("approve_token", "done", `${customTokenDetails.symbol} approved ✓`);
 
-      addLog("Liquidity", `Approving ${wethAmountStr} WETH for PositionManager...`, "info");
+      // Step 2: Approve WETH
+      report("approve_weth", "pending", `Approving ${wethAmountStr} WETH...`);
       const appTx1 = await wethERC20.approve(positionManagerAddress, seedWethWei, { gasLimit: 150000 });
+      report("approve_weth", "pending", `Approval tx sent: ${appTx1.hash.slice(0,10)}... Confirming...`, { txHash: appTx1.hash });
       await appTx1.wait();
+      report("approve_weth", "done", `WETH approved ✓`);
 
-      // Read sqrtPriceX96 from the pool to calculate correct liquidity L
-      addLog("Liquidity", "Reading pool price from on-chain...", "info");
-      const rpcUrl = "https://rpc.xlayer.tech";
-      const publicProvider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 1 });
+      // Step 3: Read sqrtPriceX96 from the pool
+      report("read_price", "pending", "Reading pool price from on-chain...");
+      const publicProvider = publicProviderRef.current || new ethers.JsonRpcProvider("https://rpc.xlayer.tech", undefined, { batchMaxCount: 1 });
       const stateViewAddress = CONTRACTS.stateView || "0x00000000005733cbd9009bc5f87bbd44093b855b";
-      const stateViewABI = [
-        "function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)"
-      ];
-      const stateView = new ethers.Contract(stateViewAddress, stateViewABI, publicProvider);
-      const poolId = poolIdHex;
-      const slot0 = await stateView.getSlot0(poolId);
-      const sqrtPriceX96 = slot0[0] || slot0.sqrtPriceX96;
+      const stateView = new ethers.Contract(
+        stateViewAddress,
+        ["function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)"],
+        publicProvider
+      );
+      const slot0 = await stateView.getSlot0(poolIdHex);
+      const sqrtPriceX96 = typeof slot0[0] === 'bigint' ? slot0[0] : BigInt(slot0[0]?.toString() || "0");
 
       if (!sqrtPriceX96 || sqrtPriceX96 === 0n) {
-        throw new Error("Pool has no price set (sqrtPriceX96 = 0). Is the pool initialized?");
+        report("read_price", "error", "Pool has no price set (sqrtPriceX96 = 0). Is the pool initialized?");
+        return { success: false, reason: "Pool not initialized" };
       }
+      report("read_price", "done", `Pool price read ✓`);
 
+      // Step 4: Build & submit liquidity position
+      report("add_liquidity", "pending", "Building liquidity transaction...");
       const tickLower = -887220;
       const tickUpper = 887220;
       const amount0Desired = isHatchCurrency0 ? seedProjectWei : seedWethWei;
       const amount1Desired = isHatchCurrency0 ? seedWethWei : seedProjectWei;
 
-      // Calculate correct Uniswap liquidity L from token amounts and sqrtPriceX96
       const Q96 = 2n ** 96n;
       const L0 = (amount0Desired * sqrtPriceX96) / Q96;
       const L1 = (amount1Desired * Q96) / sqrtPriceX96;
       const liquidityAmount = ((L0 < L1 ? L0 : L1) * 95n) / 100n;
 
-      // Allow 5% extra on max amounts for slippage
       const amount0Max = (amount0Desired * 105n) / 100n;
       const amount1Max = (amount1Desired * 105n) / 100n;
 
@@ -1730,19 +1743,20 @@ export function WalletProvider({ children }) {
 
       const pm = new ethers.Contract(positionManagerAddress, ["function modifyLiquidities(bytes calldata unlockData, uint256 deadline) external payable"], signer);
 
-      addLog("Liquidity", "Submitting liquidity position...", "info");
+      report("add_liquidity", "pending", "Waiting for wallet confirmation...");
       const liqTx = await pm.modifyLiquidities(unlockData, deadline, { gasLimit: 5000000 });
       setPendingTxHash(liqTx.hash);
-      addLog("Liquidity", `Tx submitted: ${liqTx.hash}. Waiting...`, "info");
+      report("add_liquidity", "pending", `Tx submitted: ${liqTx.hash.slice(0,10)}... Confirming on-chain...`, { txHash: liqTx.hash });
       await liqTx.wait();
       setPendingTxHash(null);
-      addLog("Liquidity", `Liquidity added successfully! Tx: ${liqTx.hash}`, "success");
-      return { success: true };
+      report("add_liquidity", "success", `Liquidity added successfully!`, { txHash: liqTx.hash });
+      return { success: true, txHash: liqTx.hash };
     } catch (err) {
       console.error("Add liquidity error:", err);
-      addLog("Liquidity Error", err.reason || err.shortMessage || err.message, "error");
+      const reason = err.reason || err.shortMessage || err.message;
+      report("error", "error", `Failed: ${reason}`, { errorReason: reason });
       setPendingTxHash(null);
-      return { success: false, reason: err.message };
+      return { success: false, reason };
     }
   };
 

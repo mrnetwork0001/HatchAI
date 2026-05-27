@@ -342,6 +342,7 @@ export default function App() {
   const [liqProjectAmount, setLiqProjectAmount] = useState("");
   const [liqWethAmount, setLiqWethAmount] = useState("");
   const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
+  const [liqSteps, setLiqSteps] = useState(null); // { step, status, message, txHash, errorReason }
 
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -1985,20 +1986,98 @@ export default function App() {
                           <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginBottom: "12px" }}>
                             This pool was initialized before auto-seeding was available. Enter the amounts you want to deposit to enable trading. New pools will auto-seed during launch.
                           </p>
+
+                          {/* Transaction Progress Card */}
+                          {liqSteps && (
+                            <div style={{
+                              marginBottom: "12px",
+                              padding: "12px",
+                              borderRadius: "10px",
+                              background: "rgba(255,255,255,0.5)",
+                              border: "1px solid var(--line)",
+                              fontSize: "0.82rem"
+                            }}>
+                              {[
+                                { key: "approve_token", label: `Approve ${projectTokenDetails.symbol}` },
+                                { key: "approve_weth", label: "Approve WETH" },
+                                { key: "read_price", label: "Read pool price" },
+                                { key: "add_liquidity", label: "Add liquidity" }
+                              ].map((s, i) => {
+                                const stepOrder = ["approve_token", "approve_weth", "read_price", "add_liquidity"];
+                                const currentIdx = stepOrder.indexOf(liqSteps.step);
+                                const thisIdx = stepOrder.indexOf(s.key);
+                                let icon = "○";
+                                let color = "var(--muted)";
+                                if (liqSteps.step === s.key && liqSteps.status === "pending") {
+                                  icon = "◎"; color = "var(--coral)";
+                                } else if (liqSteps.step === s.key && liqSteps.status === "done") {
+                                  icon = "✓"; color = "var(--success)";
+                                } else if (liqSteps.step === s.key && liqSteps.status === "success") {
+                                  icon = "✓"; color = "var(--success)";
+                                } else if (thisIdx < currentIdx || (liqSteps.status === "success" && thisIdx <= currentIdx)) {
+                                  icon = "✓"; color = "var(--success)";
+                                } else if (liqSteps.status === "error" && liqSteps.step === s.key) {
+                                  icon = "✕"; color = "var(--error)";
+                                } else if (liqSteps.status === "error" && s.key === "error") {
+                                  icon = "✕"; color = "var(--error)";
+                                }
+                                return (
+                                  <div key={s.key} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0", color }}>
+                                    <span style={{ fontWeight: "700", fontSize: "0.9rem", width: "18px", textAlign: "center" }}>{icon}</span>
+                                    <span>{s.label}</span>
+                                    {liqSteps.step === s.key && liqSteps.status === "pending" && (
+                                      <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: "var(--coral)", fontStyle: "italic" }}>processing...</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+
+                              {/* Status message */}
+                              {liqSteps.message && (
+                                <div style={{
+                                  marginTop: "8px",
+                                  padding: "8px 10px",
+                                  borderRadius: "6px",
+                                  background: liqSteps.status === "error" ? "rgba(194,91,91,0.06)" : liqSteps.status === "success" ? "rgba(95,155,108,0.06)" : "rgba(210,130,90,0.06)",
+                                  border: `1px solid ${liqSteps.status === "error" ? "rgba(194,91,91,0.15)" : liqSteps.status === "success" ? "rgba(95,155,108,0.15)" : "rgba(210,130,90,0.15)"}`,
+                                  fontSize: "0.78rem",
+                                  color: liqSteps.status === "error" ? "var(--error)" : liqSteps.status === "success" ? "var(--success)" : "var(--ink-soft)",
+                                  wordBreak: "break-word"
+                                }}>
+                                  {liqSteps.message}
+                                </div>
+                              )}
+
+                              {/* Explorer link */}
+                              {liqSteps.txHash && (
+                                <a
+                                  href={`${explorerUrl}/tx/${liqSteps.txHash}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ display: "block", marginTop: "6px", fontSize: "0.78rem", color: "var(--coral-deep)", fontWeight: "600", textDecoration: "underline" }}
+                                >
+                                  View on Explorer →
+                                </a>
+                              )}
+                            </div>
+                          )}
+
                           <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
                             <input
                               type="number"
                               placeholder={`${projectTokenDetails.symbol} amount`}
                               value={liqProjectAmount}
                               onChange={(e) => setLiqProjectAmount(e.target.value)}
-                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: "var(--sand-light)" }}
+                              disabled={isAddingLiquidity}
+                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: isAddingLiquidity ? "var(--bg-secondary)" : "var(--sand-light)" }}
                             />
                             <input
                               type="number"
                               placeholder="WETH amount"
                               value={liqWethAmount}
                               onChange={(e) => setLiqWethAmount(e.target.value)}
-                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: "var(--sand-light)" }}
+                              disabled={isAddingLiquidity}
+                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: isAddingLiquidity ? "var(--bg-secondary)" : "var(--sand-light)" }}
                             />
                           </div>
                           <button
@@ -2008,8 +2087,16 @@ export default function App() {
                             style={{ width: "100%", fontSize: "0.85rem", padding: "10px" }}
                             onClick={async () => {
                               setIsAddingLiquidity(true);
+                              setLiqSteps({ step: "approve_token", status: "pending", message: "Starting..." });
                               try {
-                                await addLiquidity(liqProjectAmount, liqWethAmount);
+                                const result = await addLiquidity(liqProjectAmount, liqWethAmount, (update) => {
+                                  setLiqSteps(update);
+                                });
+                                if (!result.success) {
+                                  setLiqSteps(prev => ({ ...prev, status: "error", message: result.reason || "Transaction failed" }));
+                                }
+                              } catch (e) {
+                                setLiqSteps({ step: "error", status: "error", message: e.message || "Unexpected error" });
                               } finally {
                                 setIsAddingLiquidity(false);
                               }
