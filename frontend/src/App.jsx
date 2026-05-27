@@ -3752,27 +3752,6 @@ export default function App() {
             </ul>
           </div>
 
-          {/* Column 4: System Specs */}
-          <div>
-            <h4 style={{ fontWeight: "700", color: "var(--ink)", marginBottom: "16px", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "1px" }}>
-              System Specs
-            </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontFamily: "Geist Mono, monospace", fontSize: "0.78rem" }}>
-              <div>
-                <span style={{ color: "var(--muted)" }}>Chain ID:</span> 1952
-              </div>
-              <div>
-                <span style={{ color: "var(--muted)" }}>Tick Spacing:</span> 60
-              </div>
-              <div>
-                <span style={{ color: "var(--muted)" }}>Fee Decay:</span> Linear
-              </div>
-              <div>
-                <span style={{ color: "var(--muted)" }}>Uniswap V4:</span> Hook Active
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Bottom Row */}
@@ -3781,7 +3760,7 @@ export default function App() {
             &copy; {new Date().getFullYear()} HatchAI. Built for Hook the Future Hackathon.
           </div>
           <div>
-            Uniswap V4 x {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}
+            HatchAI × Uniswap V4 × Flap.sh
           </div>
         </div>
       </footer>
