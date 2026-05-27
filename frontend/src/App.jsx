@@ -1731,7 +1731,7 @@ export default function App() {
               </div>
               <div className={`faq-answer ${openFaqIndex === 5 ? 'open' : ''}`}>
                 <p style={{ paddingBottom: "10px" }}>
-                  HatchAI is live on X Layer Mainnet (Chain ID 196) and X Layer Testnet (Chain ID 1952). You can switch networks from the header. Connect MetaMask or any Web3 wallet and the app will prompt you to add the network if needed.
+                  HatchAI is live on X Layer Mainnet (Chain ID 196) and X Layer Testnet (Chain ID 1952). You can switch networks from the header. Connect OKX Wallet or any EVM-compatible wallet and the app will prompt you to add the network if needed.
                 </p>
               </div>
             </div>

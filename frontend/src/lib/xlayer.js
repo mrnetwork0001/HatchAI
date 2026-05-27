@@ -35,7 +35,7 @@ export function getExplorerUrl(type, value, chainId = 1952) {
   return `${base}/${type}/${value}`;
 }
 
-/** Add chain to MetaMask / wallet */
+/** Add chain to OKX Wallet / EVM wallet */
 export async function addChainToWallet(chainId) {
   if (!window.ethereum) return false;
 

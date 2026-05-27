@@ -15,10 +15,10 @@ export const INITIAL_STATE = {
   signer: null,
 };
 
-/** Connect to MetaMask or injected wallet */
+/** Connect to OKX Wallet or injected EVM wallet */
 export async function connectWallet() {
   if (!window.ethereum) {
-    throw new Error("No wallet detected. Please install MetaMask or OKX Wallet.");
+    throw new Error("No wallet detected. Please install OKX Wallet or another EVM wallet.");
   }
 
   try {

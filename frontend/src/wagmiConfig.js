@@ -2,7 +2,7 @@
  * wagmiConfig.js - Wagmi + RainbowKit configuration for Hatch
  *
  * Defines the X Layer Testnet chain and sets up wallet connection providers.
- * Supports MetaMask, OKX Wallet, and WalletConnect.
+ * Supports OKX Wallet, MetaMask, and WalletConnect.
  */
 
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";

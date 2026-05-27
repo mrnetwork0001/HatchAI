@@ -2,7 +2,7 @@
  * WalletContext.jsx
  *
  * Provides live blockchain state to all Hatch UI components.
- * Replaces the previous wagmi hooks with real MetaMask / OKX Wallet direct provider connections.
+ * Replaces the previous wagmi hooks with real OKX Wallet / EVM wallet direct provider connections.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
