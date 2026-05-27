@@ -337,6 +337,7 @@ export default function App() {
   const [agentThreshold, setAgentThreshold] = useState("0.02");
   const [agentLog, setAgentLog] = useState("Standing by...");
   const terminalRef = useRef(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Add Liquidity state
   const [liqProjectAmount, setLiqProjectAmount] = useState("");
@@ -1132,30 +1133,14 @@ export default function App() {
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px 32px 24px", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 1000,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "40px",
-          borderBottom: "1px solid var(--line)",
-          paddingTop: "32px",
-          paddingBottom: "20px",
-          backgroundColor: "rgba(240, 236, 228, 0.8)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}
-      >
-        <div style={{ cursor: "pointer" }} onClick={() => setView("landing")}>
+      <header className="app-header">
+        <div style={{ cursor: "pointer" }} onClick={() => { setView("landing"); setMobileMenuOpen(false); }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <img 
               src="/logo.png" 
               alt="HatchAI logo" 
               style={{ 
-                height: "76px", 
+                height: "56px", 
                 width: "auto", 
                 objectFit: "contain",
               }} 
@@ -1163,7 +1148,8 @@ export default function App() {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        {/* Desktop nav items */}
+        <div className="header-nav-desktop">
           {view === "landing" ? (
             <button
               onClick={() => {
@@ -1185,19 +1171,7 @@ export default function App() {
                 Landing Page
               </button>
               {/* Network badge */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  background: "rgba(50, 52, 58, 0.03)",
-                  border: "1px solid var(--line)",
-                  padding: "6px 10px 6px 14px",
-                  borderRadius: "100px",
-                  fontSize: "11px",
-                  fontFamily: "Geist Mono, monospace",
-                }}
-              >
+              <div className="network-badge">
                 <span
                   style={{
                     width: "6px",
@@ -1209,10 +1183,7 @@ export default function App() {
                 />
                 <select
                   value={targetChainId}
-                  onChange={(e) => {
-                    const selectedId = Number(e.target.value);
-                    setTargetChainId(selectedId);
-                  }}
+                  onChange={(e) => setTargetChainId(Number(e.target.value))}
                   style={{
                     border: "none",
                     background: "transparent",
@@ -1225,12 +1196,12 @@ export default function App() {
                     paddingRight: "4px"
                   }}
                 >
-                  <option value={1952} style={{ background: "var(--sand)", color: "var(--ink)" }}>X Layer Testnet</option>
                   <option value={196} style={{ background: "var(--sand)", color: "var(--ink)" }}>X Layer Mainnet</option>
+                  <option value={1952} style={{ background: "var(--sand)", color: "var(--ink)" }}>X Layer Testnet</option>
                 </select>
               </div>
 
-              {/* Custom Connect Button */}
+              {/* Connect Button */}
               {isConnected ? (
                 <button
                   onClick={disconnect}
@@ -1259,7 +1230,83 @@ export default function App() {
             </>
           )}
         </div>
+
+        {/* Hamburger button — mobile only */}
+        <button
+          className="hamburger-btn"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span className={`hamburger-line ${mobileMenuOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${mobileMenuOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${mobileMenuOpen ? "open" : ""}`} />
+        </button>
       </header>
+
+      {/* Mobile drawer */}
+      {mobileMenuOpen && (
+        <div className="mobile-drawer">
+          {view === "landing" ? (
+            <button
+              onClick={() => { setView("console"); setConsoleTab("portal"); setMobileMenuOpen(false); }}
+              className="btn-neon"
+              style={{ width: "100%", padding: "14px", fontSize: "15px" }}
+            >
+              Launch App →
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => { setView("landing"); setMobileMenuOpen(false); }}
+                className="btn-outline"
+                style={{ width: "100%", padding: "14px", fontSize: "15px" }}
+              >
+                Landing Page
+              </button>
+
+              <div className="network-badge" style={{ width: "100%", justifyContent: "center" }}>
+                <span
+                  style={{
+                    width: "6px", height: "6px", borderRadius: "50%",
+                    background: isConnected && isOnCorrectChain ? "var(--success)" : "var(--error)",
+                    animation: "pulse 1.5s ease infinite",
+                  }}
+                />
+                <select
+                  value={targetChainId}
+                  onChange={(e) => setTargetChainId(Number(e.target.value))}
+                  style={{
+                    border: "none", background: "transparent", color: "var(--ink)",
+                    fontWeight: "700", fontSize: "13px", fontFamily: "Geist Mono, monospace",
+                    cursor: "pointer", outline: "none",
+                  }}
+                >
+                  <option value={196}>X Layer Mainnet</option>
+                  <option value={1952}>X Layer Testnet</option>
+                </select>
+              </div>
+
+              {isConnected ? (
+                <button
+                  onClick={() => { disconnect(); setMobileMenuOpen(false); }}
+                  className="btn-outline"
+                  style={{ width: "100%", padding: "14px", fontSize: "15px", borderColor: "rgba(194,91,91,0.4)", color: "var(--error)" }}
+                >
+                  Disconnect ({address?.slice(0, 6)}...{address?.slice(-4)})
+                </button>
+              ) : (
+                <button
+                  onClick={() => { connect(); setMobileMenuOpen(false); }}
+                  className="btn-neon"
+                  style={{ width: "100%", padding: "14px", fontSize: "15px" }}
+                >
+                  Connect Wallet
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Wrong Network Banner ────────────────────────────────────────────── */}
       {view === "console" && isConnected && !isOnCorrectChain && (
@@ -1328,7 +1375,7 @@ export default function App() {
         <div style={{ animation: "fadeIn 0.5s ease", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           
           {/* Main Hero grid layout */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "80px", alignItems: "center", padding: "40px 0 60px 0" }}>
+          <div className="hero-grid-2col" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "80px", alignItems: "center", padding: "40px 0 60px 0" }}>
             
             {/* Left Column */}
             <div>
@@ -3386,7 +3433,7 @@ export default function App() {
           fontSize: "0.85rem",
         }}
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "40px", marginBottom: "40px", textAlign: "left" }}>
+        <div className="app-footer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "40px", marginBottom: "40px", textAlign: "left" }}>
           
           {/* Column 1: Branding & Info */}
           <div>
