@@ -1610,26 +1610,47 @@ export default function App() {
             </div>
           </section>
 
-          {/* Deflationary Yield Loop Card */}
-          <section className="glass-card" style={{ padding: "40px", marginBottom: "60px", textAlign: "center" }}>
-            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "16px", color: "var(--coral-deep)" }}>
-              The Deflationary Yield Loop
+          {/* Deflationary Yield Loop */}
+          <section style={{ marginBottom: "60px" }}>
+            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "12px", textAlign: "center", color: "var(--ink)" }}>
+              The Yield Loop
             </h3>
-            <p style={{ color: "var(--ink-soft)", fontSize: "1.05rem", maxWidth: "800px", margin: "0 auto 32px auto", lineHeight: "1.6" }}>
-              Instead of fees disappearing into LP pockets, the `HatchHook` intercepts pool fees, holding them in the contract. Once harvested, fees are automatically split onchain to fuel the project ecosystem.
+            <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.9rem", maxWidth: "440px", margin: "0 auto 36px auto" }}>
+              Swap fees don't disappear - they power the ecosystem
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", maxWidth: "900px", margin: "0 auto" }}>
-              <div style={{ background: "rgba(95, 155, 108, 0.04)", border: "1px solid rgba(95, 155, 108, 0.18)", padding: "24px", borderRadius: "12px", textAlign: "left" }}>
-                <h4 style={{ color: "var(--success)", fontSize: "1.2rem", fontWeight: "700", marginBottom: "8px" }}>50% Creator Yield</h4>
-                <p style={{ color: "var(--ink-soft)", fontSize: "0.88rem", lineHeight: "1.5" }}>
-                  Sent directly to the project creator's address. Earn passive royalties from trading activity to sustainably fund ongoing development.
-                </p>
+
+            <div className="yield-flow">
+              {/* Source */}
+              <div className="yield-flow-source">
+                <div className="yield-flow-source-icon">💰</div>
+                <div>
+                  <div style={{ fontWeight: "700", fontSize: "0.95rem", color: "var(--ink)" }}>Swap Fees Collected</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--muted)" }}>HatchHook intercepts every trade fee onchain</div>
+                </div>
               </div>
-              <div style={{ background: "rgba(194, 91, 91, 0.04)", border: "1px solid rgba(194, 91, 91, 0.18)", padding: "24px", borderRadius: "12px", textAlign: "left" }}>
-                <h4 style={{ color: "var(--error)", fontSize: "1.2rem", fontWeight: "700", marginBottom: "8px" }}>50% Buyback &amp; Burn</h4>
-                <p style={{ color: "var(--ink-soft)", fontSize: "0.88rem", lineHeight: "1.5" }}>
-                  Used to buy back project tokens directly from the Uniswap pool and burn them instantly, applying constant buy pressure and reducing the token supply.
-                </p>
+
+              {/* Arrow */}
+              <div className="yield-flow-arrow">
+                <svg width="24" height="40" viewBox="0 0 24 40" fill="none">
+                  <path d="M12 0 L12 30 M4 24 L12 34 L20 24" stroke="var(--coral)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span style={{ fontSize: "0.7rem", color: "var(--muted)", fontFamily: "Geist Mono, monospace", letterSpacing: "1px" }}>SPLIT</span>
+              </div>
+
+              {/* Destinations */}
+              <div className="yield-flow-destinations">
+                <div className="yield-dest-card yield-dest-green">
+                  <div className="yield-dest-badge" style={{ background: "var(--success)" }}>50%</div>
+                  <div className="yield-dest-emoji">🏦</div>
+                  <h4 className="yield-dest-title">Creator Royalties</h4>
+                  <p className="yield-dest-desc">Sent to the creator wallet. Passive income from every swap to fund development.</p>
+                </div>
+                <div className="yield-dest-card yield-dest-red">
+                  <div className="yield-dest-badge" style={{ background: "var(--error)" }}>50%</div>
+                  <div className="yield-dest-emoji">🔥</div>
+                  <h4 className="yield-dest-title">Buyback & Burn</h4>
+                  <p className="yield-dest-desc">Buys tokens from the pool and burns them. Constant buy pressure, shrinking supply.</p>
+                </div>
               </div>
             </div>
           </section>

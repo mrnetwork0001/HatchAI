@@ -822,6 +822,104 @@ h2 .serif, h1 .serif, .serif {
   margin: 0;
 }
 
+/* Yield Flow Diagram */
+.yield-flow {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.yield-flow-source {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 18px 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.yield-flow-source-icon {
+  font-size: 1.6rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(210, 130, 90, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.yield-flow-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.yield-flow-destinations {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: 100%;
+}
+
+.yield-dest-card {
+  border-radius: 16px;
+  padding: 22px 18px 20px 18px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.yield-dest-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+.yield-dest-green {
+  background: rgba(95, 155, 108, 0.06);
+  border: 1px solid rgba(95, 155, 108, 0.2);
+}
+.yield-dest-red {
+  background: rgba(194, 91, 91, 0.06);
+  border: 1px solid rgba(194, 91, 91, 0.2);
+}
+
+.yield-dest-badge {
+  display: inline-block;
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.yield-dest-emoji {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.yield-dest-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.yield-dest-desc {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* FAQ Accordions */
 .faq-section {
   max-width: 800px;
