@@ -3760,7 +3760,7 @@ export default function App() {
             &copy; {new Date().getFullYear()} HatchAI. Built for Hook the Future Hackathon.
           </div>
           <div>
-            HatchAI × Uniswap V4 × Flap.sh
+            X Layer × Uniswap V4 × Flap.sh
           </div>
         </div>
       </footer>
