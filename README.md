@@ -349,7 +349,7 @@ The backend provides two simple endpoints for global pool synchronization:
 |--------|----------|-------------|
 | `GET` | `/pools` | Returns all registered pools as JSON |
 | `POST` | `/pools` | Register a new pool (requires `poolId` and `chainId`) |
-| `GET` | `/` | Health check — returns status and pool count |
+| `GET` | `/` | Health check - returns status and pool count |
 
 ### Example
 
@@ -369,7 +369,7 @@ curl -X POST https://hatchai-production.up.railway.app/pools \
 
 ### Fork-Based E2E Test
 
-Runs a full lifecycle simulation against a forked mainnet state — deploys HatchHook via CREATE2, initializes a pool on the official PoolManager, and configures launch parameters:
+Runs a full lifecycle simulation against a forked mainnet state - deploys HatchHook via CREATE2, initializes a pool on the official PoolManager, and configures launch parameters:
 
 ```bash
 npx hardhat test test/SimulateInitialize.js
@@ -395,11 +395,11 @@ npx hardhat run scripts/simulate.js
 4. Click **+ Create Your Token Sale**
 5. Enter your ERC20 token contract address
 6. Configure launch parameters:
-   - **Decay Duration** — How long the fee decay lasts (e.g., 24 hours)
-   - **Start Fee** — Initial high fee to deter bots (e.g., 10%)
-   - **End Fee** — Baseline fee after decay completes (e.g., 0.3%)
-   - **Anti-Whale Cap** — Max tokens per swap during launch phase
-   - **Cooldown** — Seconds between swaps per wallet
+   - **Decay Duration** - How long the fee decay lasts (e.g., 24 hours)
+   - **Start Fee** - Initial high fee to deter bots (e.g., 10%)
+   - **End Fee** - Baseline fee after decay completes (e.g., 0.3%)
+   - **Anti-Whale Cap** - Max tokens per swap during launch phase
+   - **Cooldown** - Seconds between swaps per wallet
 7. Click **Initialize Launch Pool** to deploy on-chain
 
 ### 2. Trade on a Protected Pool
