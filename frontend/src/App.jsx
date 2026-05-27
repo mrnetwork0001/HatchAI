@@ -1386,7 +1386,7 @@ export default function App() {
 
               <h1 style={{ fontWeight: "800", fontSize: "clamp(42px, 7vw, 76px)", lineHeight: "1.05", letterSpacing: "-0.035em", marginBottom: "28px", color: "var(--ink)" }}>
                 Launch pools <br />
-                the <span className="serif" style={{ minWidth: "150px", display: "inline-block" }}>{currentText}</span>
+                the <span className="serif" style={{ display: "inline" }}>{currentText}</span>
                 <span className="typewriter-cursor">|</span> way
               </h1>
 
