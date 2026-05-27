@@ -639,58 +639,118 @@ h2 .serif, h1 .serif, .serif {
   font-weight: 500;
 }
 
-/* "How it Works" Timeline */
-.timeline-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-bottom: 60px;
-}
-@media (max-width: 992px) {
-  .timeline-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 576px) {
-  .timeline-grid {
-    grid-template-columns: 1fr;
-  }
+/* "How it Works" Timeline V2 - Vertical connected dots */
+.timeline-v2 {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
 }
 
-.timeline-card {
+.timeline-v2-item {
+  display: flex;
+  gap: 20px;
+  position: relative;
+  padding-bottom: 36px;
+}
+.timeline-v2-item:last-child {
+  padding-bottom: 0;
+}
+
+/* Connecting line */
+.timeline-v2-item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 40px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(210, 130, 90, 0.35), rgba(210, 130, 90, 0.1));
+}
+
+/* Numbered circle */
+.timeline-v2-dot {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--coral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 0 6px rgba(210, 130, 90, 0.12);
+}
+.timeline-v2-dot span {
+  font-family: 'Geist Mono', monospace;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.timeline-v2-content {
+  flex: 1;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 24px;
-  position: relative;
+  border-radius: 14px;
+  padding: 20px 22px;
   transition: all 0.3s ease;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
-.timeline-card:hover {
-  border-color: var(--coral);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(210, 130, 90, 0.04);
+.timeline-v2-content:hover {
+  border-color: rgba(210, 130, 90, 0.3);
+  box-shadow: 0 6px 20px rgba(210, 130, 90, 0.05);
+  transform: translateX(4px);
 }
-.timeline-step {
+
+.timeline-v2-label {
   font-family: 'Geist Mono', monospace;
-  font-size: 11px;
-  color: var(--coral);
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  margin-bottom: 12px;
   letter-spacing: 2px;
+  color: var(--coral);
+  margin-bottom: 6px;
 }
-.timeline-title {
-  font-size: 1.1rem;
+.timeline-v2-title {
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--ink);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
-.timeline-desc {
-  font-size: 0.85rem;
+.timeline-v2-desc {
+  font-size: 0.83rem;
   color: var(--ink-soft);
-  line-height: 1.5;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Desktop: horizontal card grid */
+@media (min-width: 769px) {
+  .timeline-v2 {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 100%;
+  }
+  .timeline-v2-item {
+    flex-direction: column;
+    flex: 1 1 170px;
+    padding-bottom: 0;
+    gap: 14px;
+    align-items: center;
+    text-align: center;
+  }
+  .timeline-v2-item:not(:last-child)::before {
+    display: none;
+  }
+  .timeline-v2-content {
+    padding: 18px;
+  }
+  .timeline-v2-content:hover {
+    transform: translateY(-4px);
+  }
 }
 
 /* Core security features */

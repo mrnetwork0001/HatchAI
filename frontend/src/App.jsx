@@ -1514,37 +1514,62 @@ export default function App() {
 
           {/* Timeline Section */}
           <section style={{ marginBottom: "60px" }}>
-            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "32px", textAlign: "center", color: "var(--ink)" }}>
+            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "12px", textAlign: "center", color: "var(--ink)" }}>
               How it works
             </h3>
-            <div className="timeline-grid">
-              <div className="timeline-card">
-                <div className="timeline-step">01 / Setup</div>
-                <h4 className="timeline-title">Create Pool</h4>
-                <p className="timeline-desc">
-                  Developers register their project token and specify price ratios, whale caps, trade cooldowns, and tax decay duration.
-                </p>
+            <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.9rem", marginBottom: "40px", maxWidth: "500px", margin: "0 auto 40px auto" }}>
+              From token deployment to open trading in five steps
+            </p>
+            <div className="timeline-v2">
+              <div className="timeline-v2-item">
+                <div className="timeline-v2-dot"><span>1</span></div>
+                <div className="timeline-v2-content">
+                  <div className="timeline-v2-label">Deploy</div>
+                  <h4 className="timeline-v2-title">Create & Seed Pool</h4>
+                  <p className="timeline-v2-desc">
+                    Deploy your ERC-20 token, set price ratio, anti-whale caps, cooldowns, and decay window. Seed initial liquidity via Permit2 in one flow.
+                  </p>
+                </div>
               </div>
-              <div className="timeline-card">
-                <div className="timeline-step">02 / Secure</div>
-                <h4 className="timeline-title">Launch Phase</h4>
-                <p className="timeline-desc">
-                  Trading opens under protection. Auto-taxes block bot snipers, and transaction caps stop whale dumpers.
-                </p>
+              <div className="timeline-v2-item">
+                <div className="timeline-v2-dot"><span>2</span></div>
+                <div className="timeline-v2-content">
+                  <div className="timeline-v2-label">Protect</div>
+                  <h4 className="timeline-v2-title">Launch Phase</h4>
+                  <p className="timeline-v2-desc">
+                    Trading opens with high swap fees (up to 10%), max transaction caps, and per-wallet cooldowns. Bot snipers pay maximum tax.
+                  </p>
+                </div>
               </div>
-              <div className="timeline-card">
-                <div className="timeline-step">03 / Decay</div>
-                <h4 className="timeline-title">Decay Period</h4>
-                <p className="timeline-desc">
-                  Over the configured window (e.g. 24 hours), the swap taxes decay linearly from the start rate down to the baseline.
-                </p>
+              <div className="timeline-v2-item">
+                <div className="timeline-v2-dot"><span>3</span></div>
+                <div className="timeline-v2-content">
+                  <div className="timeline-v2-label">Decay</div>
+                  <h4 className="timeline-v2-title">Fee Decay Period</h4>
+                  <p className="timeline-v2-desc">
+                    Fees decay linearly from the start rate to baseline over your configured window (e.g. 24h). Live decay chart tracks progress in real time.
+                  </p>
+                </div>
               </div>
-              <div className="timeline-card">
-                <div className="timeline-step">04 / Mature</div>
-                <h4 className="timeline-title">Open Trading</h4>
-                <p className="timeline-desc">
-                  Protection limits automatically expire, while the contract continues collecting standard fees for the yield loop.
-                </p>
+              <div className="timeline-v2-item">
+                <div className="timeline-v2-dot"><span>4</span></div>
+                <div className="timeline-v2-content">
+                  <div className="timeline-v2-label">Earn</div>
+                  <h4 className="timeline-v2-title">Creator Royalties</h4>
+                  <p className="timeline-v2-desc">
+                    A portion of every swap fee is routed to the pool creator. Claim accumulated royalties directly from the hook contract at any time.
+                  </p>
+                </div>
+              </div>
+              <div className="timeline-v2-item">
+                <div className="timeline-v2-dot"><span>5</span></div>
+                <div className="timeline-v2-content">
+                  <div className="timeline-v2-label">Mature</div>
+                  <h4 className="timeline-v2-title">Open Trading</h4>
+                  <p className="timeline-v2-desc">
+                    Protections expire automatically. The pool operates at baseline fees with no caps or cooldowns. Anyone can import and trade the pool.
+                  </p>
+                </div>
               </div>
             </div>
           </section>
