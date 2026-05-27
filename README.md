@@ -3,15 +3,15 @@
 <p align="center">
   <strong>Uniswap V4 Hook-Protected Token Launchpad on X Layer</strong>
 </p>
----
+
 
 <img width="1577" height="988" alt="27 05 2026_12 38 24_REC" src="https://github.com/user-attachments/assets/9c4f9d42-033b-4089-9bab-3297053879d4"/>
 
 
 <p align="center">
-  <a href="https://hatchai.online">🌐 Live App</a> ·
-  <a href="https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0">📜 Mainnet Contract</a> ·
-  <a href="https://flasp.sh">⚡ Flasp.sh</a>
+  <a href="https://hatchai.online">Live App</a> ·
+  <a href="https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0">Mainnet Contract</a> ·
+  <a href="https://flasp.sh">Flasp.sh</a>
 </p>
 
 
@@ -40,19 +40,19 @@
 
 ## Overview
 
-HatchAI is a decentralized token launchpad built on **X Layer** (OKX's EVM L2), powered by **Uniswap V4 Hooks** and integrated with **[Flasp.sh](https://flasp.sh)** for flash loan-resistant pool mechanics. It provides institutional-grade launch protection through on-chain dynamic fee decay, anti-whale swap caps, and wallet cooldown timers — all enforced natively inside the Uniswap V4 pool, with zero off-chain dependencies.
+HatchAI is a decentralized token launchpad built on **X Layer** (OKX's EVM L2), powered by **Uniswap V4 Hooks** and integrated with **[Flasp.sh](https://flasp.sh)** for flash loan-resistant pool mechanics. It provides institutional-grade launch protection through on-chain dynamic fee decay, anti-whale swap caps, and wallet cooldown timers - all enforced natively inside the Uniswap V4 pool, with zero off-chain dependencies.
 
 Projects can launch tokens directly into protected Uniswap V4 pools where bot frontrunning is financially disincentivized, whale manipulation is capped, and creator yield is automatically generated through a deflationary buyback-and-burn loop.
 
 ### Key Features
 
-- 🛡️ **Dynamic Fee Decay** — Fees start high (10%) and linearly decay to baseline (0.3%) over a configurable window
-- 🐋 **Anti-Whale Caps** — Per-transaction swap limits enforced on-chain during the launch phase
-- ⏱️ **Wallet Cooldowns** — Configurable delay between consecutive swaps from the same address
-- 🔥 **Buyback & Burn** — 50% of collected fees auto-buy project tokens and burn them
-- 💰 **Creator Yield** — 50% of fees go directly to the project creator
-- ⚡ **Flasp.sh Integration** — Flash loan-aware hook mechanics for additional pool security
-- 🔄 **Multi-Network** — Supports X Layer Mainnet (196) and Testnet (1952) with automatic network switching
+- **Dynamic Fee Decay** - Fees start high (10%) and linearly decay to baseline (0.3%) over a configurable window
+- **Anti-Whale Caps** - Per-transaction swap limits enforced on-chain during the launch phase
+- **Wallet Cooldowns** - Configurable delay between consecutive swaps from the same address
+- **Buyback & Burn** - 50% of collected fees auto-buy project tokens and burn them
+- **Creator Yield** - 50% of fees go directly to the project creator
+- **Flasp.sh Integration** - Flash loan-aware hook mechanics for additional pool security
+- **Multi-Network** - Supports X Layer Mainnet (196) and Testnet (1952) with automatic network switching
 
 ---
 
@@ -89,9 +89,9 @@ Existing launchpad models (bonding curves, fair launches) protect the pre-DEX ph
 
 ## How HatchAI Works
 
-HatchAI introduces the **`HatchHook`** — a Uniswap V4 hook contract that intercepts swap operations to enforce a configurable launch protection window.
+HatchAI introduces the **`HatchHook`** - a Uniswap V4 hook contract that intercepts swap operations to enforce a configurable launch protection window.
 
-### 🛡️ Dynamic Fee Decay
+### Dynamic Fee Decay
 
 Swap fees start high (e.g., **10%**) at launch, making bot frontrunning financially non-viable. Over a configurable decay duration (e.g., 24 hours), the fee decays **linearly on-chain** to the project's baseline rate (e.g., **0.3%**).
 
@@ -101,22 +101,22 @@ Launch          12h (~5.2%)         24h (0.3%)
  10% fee         decaying...       standard fee
 ```
 
-### 🐋 Anti-Whale Swap Caps
+### Anti-Whale Swap Caps
 
 Individual transaction sizes are capped during the launch phase, enforcing a maximum swap amount per trade. This ensures decentralized and fair token distribution among early participants.
 
-### ⏱️ Wallet Cooldown Timers
+### Wallet Cooldown Timers
 
 A configurable delay (in seconds) is enforced between consecutive trades from the same wallet address, neutralizing high-frequency trading algorithms.
 
-### 🔥 Deflationary Yield Loop
+### Deflationary Yield Loop
 
 Collected trading fees (in WETH) are harvested and split on-chain:
 
 - **50% → Creator Yield**: Sent directly to the project creator wallet
 - **50% → Buyback & Burn**: Used to buy project tokens from the pool and burn them, applying constant buy pressure and reducing circulating supply
 
-### ⚡ Flasp.sh Integration
+### Flasp.sh Integration
 
 [Flasp.sh](https://flasp.sh) provides flash loan-aware hooks that add an additional layer of security to HatchAI pools, preventing flash loan attacks during the critical launch window.
 
