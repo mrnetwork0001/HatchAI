@@ -1704,18 +1704,15 @@ export default function App() {
             <div className="roadmap-grid">
               {/* Flap.sh graduation - the highlight */}
               <div className="roadmap-card roadmap-highlight">
-                <div className="roadmap-badge roadmap-badge-soon">Coming Soon</div>
+                <div className="roadmap-badge" style={{ background: "rgba(210, 130, 90, 0.15)", color: "var(--coral-deep)" }}>Integrated</div>
                 <div className="roadmap-emoji"><GraduateIcon size={32} color="var(--coral)" /></div>
                 <h4 className="roadmap-title">Flap.sh Token Graduation</h4>
                 <p className="roadmap-desc">
-                  Tokens launched through HatchAI can graduate to <a href="https://flap.sh" target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", fontWeight: "600" }}>Flap.sh</a> for
-                  broader social trading and discovery. Once the HatchAI decay period ends and protections expire, creators
-                  can migrate their token to Flap.sh's fair-launch marketplace - unlocking social trading feeds, community analytics,
-                  and exposure to Flap's active trader base on X Layer.
+                  When decay completes, a "Graduate to Flap.sh" button appears in the Launch Portal.
+                  Creators deep-link to <a href="https://flap.sh" target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", fontWeight: "600" }}>Flap.sh</a> with
+                  their token address pre-filled - unlocking social trading feeds, community analytics,
+                  and Flap's active trader base on X Layer.
                 </p>
-                <div style={{ marginTop: "14px", fontSize: "0.75rem", color: "var(--muted)", fontFamily: "Geist Mono, monospace" }}>
-                  HATCHAI SAFE-LAUNCH → FLAP.SH SOCIAL TRADING
-                </div>
               </div>
 
               {/* Uniswap V4 */}
@@ -1736,6 +1733,44 @@ export default function App() {
                 <p className="roadmap-desc">
                   Deployed on OKX's X Layer (zkEVM L2). Low gas fees, fast finality, and full EVM compatibility. Supports OKX Wallet natively.
                 </p>
+              </div>
+            </div>
+
+            {/* Integration Architecture */}
+            <div style={{ maxWidth: "680px", margin: "32px auto 0 auto" }}>
+              <div style={{
+                background: "var(--bg-card)", border: "1px solid var(--border-color)",
+                borderRadius: "14px", padding: "22px 24px"
+              }}>
+                <div style={{ fontSize: "0.75rem", fontFamily: "Geist Mono, monospace", color: "var(--coral)", fontWeight: "700", letterSpacing: "1px", marginBottom: "14px", textTransform: "uppercase" }}>
+                  Integration Architecture
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+                  {/* Phase 1 */}
+                  <div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "var(--coral)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Geist Mono, monospace", fontSize: "0.7rem", fontWeight: "800", flexShrink: 0 }}>1</div>
+                    <div style={{ paddingBottom: "16px", borderLeft: "2px solid rgba(210,130,90,0.15)", paddingLeft: "14px", marginLeft: "-28px", marginTop: "28px" }}>
+                      <div style={{ marginTop: "-28px", fontWeight: "700", fontSize: "0.85rem", color: "var(--ink)" }}>HatchAI Safe-Launch</div>
+                      <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: "2px" }}>Deploy token, seed pool via Permit2, activate V4 Hook protections (anti-whale caps, cooldowns, decay fees)</div>
+                    </div>
+                  </div>
+                  {/* Phase 2 */}
+                  <div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "var(--success)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Geist Mono, monospace", fontSize: "0.7rem", fontWeight: "800", flexShrink: 0 }}>2</div>
+                    <div style={{ paddingBottom: "16px", borderLeft: "2px solid rgba(95,155,108,0.15)", paddingLeft: "14px", marginLeft: "-28px", marginTop: "28px" }}>
+                      <div style={{ marginTop: "-28px", fontWeight: "700", fontSize: "0.85rem", color: "var(--ink)" }}>Decay Complete</div>
+                      <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: "2px" }}>Fees decay to baseline, protections expire. Pool operates freely. "Graduate" button unlocks in the Launch Portal</div>
+                    </div>
+                  </div>
+                  {/* Phase 3 */}
+                  <div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#7c6dd8", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Geist Mono, monospace", fontSize: "0.7rem", fontWeight: "800", flexShrink: 0 }}>3</div>
+                    <div>
+                      <div style={{ fontWeight: "700", fontSize: "0.85rem", color: "var(--ink)" }}>Flap.sh Social Trading</div>
+                      <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: "2px" }}>Deep-link to Flap.sh with token address. Access social feeds, community analytics, OKX Wallet integration, and Flap's X Layer trader base</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -2702,6 +2737,51 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {/* Flap.sh Graduation Banner - shows when decay is complete */}
+              {progressRatio >= 1 && projectTokenDetails?.projectTokenAddress && (
+                <div className="glass-card" style={{
+                  padding: "20px 24px",
+                  marginTop: "16px",
+                  border: "1px solid rgba(210, 130, 90, 0.25)",
+                  background: "linear-gradient(135deg, rgba(210, 130, 90, 0.04), rgba(210, 130, 90, 0.01))",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  flexWrap: "wrap"
+                }}>
+                  <div style={{
+                    width: "44px", height: "44px", borderRadius: "12px",
+                    background: "var(--coral)", display: "flex", alignItems: "center",
+                    justifyContent: "center", flexShrink: 0
+                  }}>
+                    <GraduateIcon size={24} color="#fff" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: "200px" }}>
+                    <div style={{ fontWeight: "700", fontSize: "0.95rem", color: "var(--ink)", marginBottom: "2px" }}>
+                      Ready to Graduate
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--ink-soft)" }}>
+                      Decay complete. {projectTokenDetails.symbol} protections have expired. Launch on Flap.sh for broader social trading and discovery on X Layer.
+                    </div>
+                  </div>
+                  <a
+                    href={`https://flap.sh/token/${projectTokenDetails.projectTokenAddress}?chain=xlayer`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-neon"
+                    style={{
+                      padding: "10px 22px", fontSize: "0.85rem",
+                      borderRadius: "100px", textDecoration: "none",
+                      display: "inline-flex", alignItems: "center", gap: "8px",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    <GraduateIcon size={16} color="var(--sand)" />
+                    Graduate to Flap.sh
+                  </a>
+                </div>
+              )}
 
               {/* Bottom Grid */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "24px" }}>
