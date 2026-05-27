@@ -3186,7 +3186,7 @@ export default function App() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
                   
-                  {parseFloat(okbBalance) < 0.05 && (
+                  {targetChainId !== 196 && parseFloat(okbBalance) < 0.05 && (
                     <div
                       style={{
                         padding: "16px 20px",
