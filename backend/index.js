@@ -15,8 +15,17 @@ app.use(express.json());
 let db;
 
 async function initDB() {
+  let dbPath = "./pools.db";
+  
+  if (process.env.NODE_ENV === "production") {
+    // If running in production (e.g. Railway) check if a persistent volume is mounted
+    if (fs.existsSync("/data")) {
+      dbPath = "/data/pools.db";
+    }
+  }
+
   db = await open({
-    filename: process.env.NODE_ENV === "production" ? "/data/pools.db" : "./pools.db",
+    filename: dbPath,
     driver: sqlite3.Database
   });
 
