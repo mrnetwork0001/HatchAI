@@ -753,61 +753,73 @@ h2 .serif, h1 .serif, .serif {
   }
 }
 
-/* Core security features */
-.features-grid {
+/* Bento Grid - Security Features */
+.bento-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  margin-bottom: 60px;
+  gap: 20px;
 }
 @media (max-width: 768px) {
-  .features-grid {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+@media (max-width: 420px) {
+  .bento-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.feature-card {
-  display: flex;
-  gap: 20px;
+.bento-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 24px;
-  align-items: flex-start;
+  padding: 24px 20px 22px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
   transition: all 0.3s ease;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
-.feature-card:hover {
-  border-color: rgba(210, 130, 90, 0.2);
-  box-shadow: 0 8px 30px rgba(210, 130, 90, 0.04);
+.bento-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+  border-color: rgba(210, 130, 90, 0.25);
 }
-.feature-icon {
-  font-size: 1.8rem;
-  background: rgba(210, 130, 90, 0.08);
-  border: 1px solid rgba(210, 130, 90, 0.18);
+
+/* Colored accent bar at top */
+.bento-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--coral);
+  border-radius: 16px 16px 0 0;
+}
+
+.bento-icon {
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  padding: 12px;
-  width: 54px;
-  height: 54px;
+  background: var(--coral);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--coral-deep);
+  margin: 0 auto 14px auto;
 }
-.feature-info {
-  flex: 1;
-}
-.feature-title {
-  font-size: 1.15rem;
+
+.bento-title {
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--ink);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
-.feature-desc {
-  font-size: 0.88rem;
+.bento-desc {
+  font-size: 0.8rem;
   color: var(--ink-soft);
-  line-height: 1.5;
+  line-height: 1.55;
+  margin: 0;
 }
 
 /* FAQ Accordions */

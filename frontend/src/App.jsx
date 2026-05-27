@@ -1576,45 +1576,36 @@ export default function App() {
 
           {/* Security Features Grid */}
           <section style={{ marginBottom: "60px" }}>
-            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "32px", textAlign: "center", color: "var(--ink)" }}>
-              Core Security Features
+            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "12px", textAlign: "center", color: "var(--ink)" }}>
+              Built-in Protections
             </h3>
-            <div className="features-grid">
-              <div className="feature-card">
-                <div className="feature-icon"><ShieldIcon size={28} color="var(--coral)" /></div>
-                <div className="feature-info">
-                  <h4 className="feature-title">Anti-Whale Swap Caps</h4>
-                  <p className="feature-desc">
-                    Limits individual swap sizes during the launch phase, preventing any single entity from buying up and monopolizing the token supply.
-                  </p>
-                </div>
+            <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.9rem", maxWidth: "420px", margin: "0 auto 36px auto" }}>
+              Every pool ships with these onchain safeguards
+            </p>
+            <div className="bento-grid">
+              <div className="bento-card">
+                <div className="bento-accent" />
+                <div className="bento-icon"><ShieldIcon size={22} color="#fff" /></div>
+                <h4 className="bento-title">Anti-Whale Caps</h4>
+                <p className="bento-desc">Max swap size per transaction during launch. No single wallet can corner the supply.</p>
               </div>
-              <div className="feature-card">
-                <div className="feature-icon"><TimerIcon size={28} color="var(--coral)" /></div>
-                <div className="feature-info">
-                  <h4 className="feature-title">Wallet Cooldown Timers</h4>
-                  <p className="feature-desc">
-                    Blocks rapid-fire transactions from the same wallet in consecutive blocks, effectively disabling high-speed arbitrage and sniper bots.
-                  </p>
-                </div>
+              <div className="bento-card">
+                <div className="bento-accent" style={{ background: "var(--success)" }} />
+                <div className="bento-icon" style={{ background: "var(--success)" }}><TimerIcon size={22} color="#fff" /></div>
+                <h4 className="bento-title">Wallet Cooldowns</h4>
+                <p className="bento-desc">60-second minimum between swaps per wallet. Kills sniper bots and rapid-fire arbitrage.</p>
               </div>
-              <div className="feature-card">
-                <div className="feature-icon"><ChartIcon size={28} color="var(--coral)" /></div>
-                <div className="feature-info">
-                  <h4 className="feature-title">Time &amp; Block Decay Modes</h4>
-                  <p className="feature-desc">
-                    Uniswap V4 hook dynamically decays swap fees based on either smooth time-based linear decay or step-wise block height milestones.
-                  </p>
-                </div>
+              <div className="bento-card">
+                <div className="bento-accent" style={{ background: "#7c6dd8" }} />
+                <div className="bento-icon" style={{ background: "#7c6dd8" }}><ChartIcon size={22} color="#fff" /></div>
+                <h4 className="bento-title">Dynamic Fee Decay</h4>
+                <p className="bento-desc">Fees start high and decay to baseline over your configured window. Live chart tracks it in real time.</p>
               </div>
-              <div className="feature-card">
-                <div className="feature-icon"><LoopIcon size={28} color="var(--coral)" /></div>
-                <div className="feature-info">
-                  <h4 className="feature-title">Native V4 Hooks</h4>
-                  <p className="feature-desc">
-                    Zero wrapper overhead. Native Hook integration intercepts Uniswap V4 pool callbacks directly, guaranteeing secure transaction bounds.
-                  </p>
-                </div>
+              <div className="bento-card">
+                <div className="bento-accent" style={{ background: "#d4943c" }} />
+                <div className="bento-icon" style={{ background: "#d4943c" }}><LoopIcon size={22} color="#fff" /></div>
+                <h4 className="bento-title">Native V4 Hooks</h4>
+                <p className="bento-desc">Zero wrapper overhead. Direct Uniswap V4 beforeSwap callback enforces all rules atomically.</p>
               </div>
             </div>
           </section>
