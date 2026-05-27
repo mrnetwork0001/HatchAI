@@ -1697,7 +1697,7 @@ export function WalletProvider({ children }) {
       // Step 3: Read sqrtPriceX96 from the pool
       report("read_price", "pending", "Reading pool price from on-chain...");
       const publicProvider = publicProviderRef.current || new ethers.JsonRpcProvider("https://rpc.xlayer.tech", undefined, { batchMaxCount: 1 });
-      const stateViewAddress = CONTRACTS.stateView || "0x00000000005733cbd9009bc5f87bbd44093b855b";
+      const stateViewAddress = "0x76fd297e2d437cd7f76d50f01afe6160f86e9990";
       const stateView = new ethers.Contract(
         stateViewAddress,
         ["function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)"],
