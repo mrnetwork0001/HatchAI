@@ -412,10 +412,21 @@ export default function App() {
         const stateViewAddress = "0x76fd297e2d437cd7f76d50f01afe6160f86e9990";
 
         // Get all pools from localStorage
-        let allPools = [];
+        let allPools = [
+          { poolId: "0x1ea175ae9e7f075f8539de8f118f8407c7e046300ea3e94e2f3f318dc1229bdc", chainId: 196 }, // HAI
+          { poolId: "0x8fb70c677e4715d804e07a0a3f976e8e985b56a83fc5bcc8d076c31718ae2989", chainId: 196 }  // NTU
+        ];
         try {
           const saved = localStorage.getItem("hatch_custom_pools");
-          if (saved) allPools = JSON.parse(saved).filter(p => p.chainId === 196);
+          if (saved) {
+            const localPools = JSON.parse(saved).filter(p => p.chainId === 196);
+            // Merge without duplicates
+            localPools.forEach(lp => {
+              if (!allPools.find(p => p.poolId === lp.poolId)) {
+                allPools.push(lp);
+              }
+            });
+          }
         } catch {}
 
         const poolCount = allPools.length;
