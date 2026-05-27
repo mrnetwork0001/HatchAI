@@ -1867,11 +1867,10 @@ export default function App() {
         <div style={{ animation: "fadeIn 0.5s ease" }}>
 
           {/* Tab Selection */}
-          <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid var(--line)", paddingBottom: "12px" }}>
+          <div className="console-tabs">
             <button
               onClick={() => setConsoleTab("portal")}
               className={consoleTab === "portal" ? "btn-neon" : "btn-outline"}
-              style={{ padding: "8px 24px", display: "inline-flex", alignItems: "center", gap: "8px" }}
             >
               <RocketIcon size={16} color={consoleTab === "portal" ? "var(--sand)" : "var(--coral)"} />
               Launch Portal
@@ -1879,49 +1878,34 @@ export default function App() {
             <button
               onClick={() => setConsoleTab("swap")}
               className={consoleTab === "swap" ? "btn-neon" : "btn-outline"}
-              style={{ padding: "8px 24px" }}
             >
               Swap Terminal
             </button>
             <button
               onClick={() => setConsoleTab("launchpad")}
               className={consoleTab === "launchpad" ? "btn-neon" : "btn-outline"}
-              style={{ padding: "8px 24px" }}
             >
               Token Launchpad
             </button>
           </div>
 
 
-
-
           {/* ── Wallet Info Row (when connected) ────────────────────────────────── */}
           {isConnected && (
-            <div
-              style={{
-                display: "flex",
-                gap: "16px",
-                marginBottom: "20px",
-                padding: "12px 20px",
-                borderRadius: "12px",
-                background: "rgba(255, 255, 255, 0.2)",
-                border: "1px solid var(--line)",
-                flexWrap: "wrap",
-              }}
-            >
-              <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>
+            <div className="wallet-info-row">
+              <span className="wallet-info-item">
                 <strong style={{ color: "var(--coral-deep)" }}>Wallet:</strong>{" "}
                 <code style={{ fontFamily: "Geist Mono, monospace" }}>
                   {address?.slice(0, 6)}…{address?.slice(-4)}
                 </code>
               </span>
-              <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>
+              <span className="wallet-info-item">
                 <strong>OKB:</strong> {okbBalance}
               </span>
-              <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>
+              <span className="wallet-info-item">
                 <strong>WETH:</strong> {wethBalance}
               </span>
-              <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>
+              <span className="wallet-info-item">
                 <strong>{projectTokenDetails.symbol}:</strong> {hatchBalance}
               </span>
               {isDeployed && contracts?.hatchHook && (
@@ -1929,10 +1913,10 @@ export default function App() {
                   href={`${explorerUrl}/address/${contracts.hatchHook}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: "0.85rem", color: "var(--coral)", marginLeft: "auto", textDecoration: "none", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  className="wallet-info-link"
                 >
                   <SearchIcon size={14} color="var(--coral)" />
-                  HatchHook on OKLink →
+                  HatchHook on OKLink
                 </a>
               )}
             </div>

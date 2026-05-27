@@ -920,6 +920,87 @@ h2 .serif, h1 .serif, .serif {
   margin: 0;
 }
 
+/* Console Tabs */
+.console-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.console-tabs::-webkit-scrollbar { display: none; }
+.console-tabs button {
+  padding: 8px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+@media (max-width: 520px) {
+  .console-tabs {
+    gap: 6px;
+  }
+  .console-tabs button {
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
+}
+
+/* Wallet Info Row */
+.wallet-info-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--line);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.wallet-info-item {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.wallet-info-link {
+  font-size: 0.85rem;
+  color: var(--coral);
+  margin-left: auto;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 520px) {
+  .wallet-info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    padding: 14px 16px;
+  }
+  .wallet-info-item:first-child {
+    grid-column: 1 / -1;
+  }
+  .wallet-info-link {
+    grid-column: 1 / -1;
+    margin-left: 0;
+    justify-content: center;
+    background: rgba(210, 130, 90, 0.08);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-top: 4px;
+  }
+}
+
 /* Roadmap / Ecosystem Grid */
 .roadmap-grid {
   display: grid;
