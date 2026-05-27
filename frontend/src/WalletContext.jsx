@@ -1289,7 +1289,7 @@ export function WalletProvider({ children }) {
 
             // Action codes for Uniswap V4 PositionManager
             const MINT_POSITION = 0x02;
-            const SETTLE_PAIR = 0x13; // 19 decimal
+            const SETTLE_PAIR = 0x0d; // 13 decimal
 
             // Encode actions: MINT_POSITION + SETTLE_PAIR
             const actions = ethers.solidityPacked(
@@ -1718,7 +1718,7 @@ export function WalletProvider({ children }) {
       const deadline = Math.floor(Date.now() / 1000) + 1800;
 
       const MINT_POSITION = 0x02;
-      const SETTLE_PAIR = 0x13;
+      const SETTLE_PAIR = 0x0d;
 
       const actions = ethers.solidityPacked(["uint8", "uint8"], [MINT_POSITION, SETTLE_PAIR]);
       const mintParams = ethers.AbiCoder.defaultAbiCoder().encode(
