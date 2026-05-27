@@ -479,9 +479,9 @@ export default function App() {
               if (sqrtPriceX96 > 0n && L > 0n) {
                 const x = (L * Q96) / sqrtPriceX96; // currency0 amount
                 const y = (L * sqrtPriceX96) / Q96; // currency1 amount
-                // Determine which side is WETH by comparing addresses
-                const c0 = (pool.poolKey?.currency0 || "").toLowerCase();
-                const isWethCurrency0 = c0 === wethAddr;
+                // Determine which side is WETH using address sorting (Uniswap V4: lower addr = currency0)
+                const projectToken = (pool.projectTokenAddress || "").toLowerCase();
+                const isWethCurrency0 = wethAddr && projectToken ? wethAddr.toLowerCase() < projectToken.toLowerCase() : false;
                 const wethAmount = isWethCurrency0 ? x : y;
                 totalWethReserve += parseFloat(ethers.formatEther(wethAmount));
               }

@@ -9,10 +9,17 @@
 </p>
 
 <p align="center">
+  <a href="https://hatchai.online">🌐 Live App</a> ·
+  <a href="https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0">📜 Mainnet Contract</a> ·
+  <a href="https://flasp.sh">⚡ Flasp.sh</a>
+</p>
+
+<p align="center">
   <a href="https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0"><img src="https://img.shields.io/badge/Mainnet-Live-brightgreen?style=flat-square" alt="Mainnet Status" /></a>
   <img src="https://img.shields.io/badge/Solidity-0.8.24-363636?style=flat-square&logo=solidity" alt="Solidity" />
   <img src="https://img.shields.io/badge/Uniswap-V4_Hooks-FF007A?style=flat-square" alt="Uniswap V4" />
   <img src="https://img.shields.io/badge/Chain-X_Layer_(196)-blue?style=flat-square" alt="X Layer" />
+  <img src="https://img.shields.io/badge/Flasp.sh-Integrated-orange?style=flat-square" alt="Flasp.sh" />
   <img src="https://img.shields.io/badge/License-ISC-yellow?style=flat-square" alt="License" />
 </p>
 
@@ -21,6 +28,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
+- [Live Demo](#live-demo)
 - [Problem Statement](#problem-statement)
 - [How HatchAI Works](#how-hatchai-works)
 - [Architecture](#architecture)
@@ -29,6 +37,7 @@
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [Deployment](#deployment)
+- [Backend API](#backend-api)
 - [Testing](#testing)
 - [Usage Guide](#usage-guide)
 - [Project Structure](#project-structure)
@@ -39,9 +48,36 @@
 
 ## Overview
 
-HatchAI is a decentralized token launchpad built on **X Layer** (OKX's EVM L2), powered by **Uniswap V4 Hooks**. It provides institutional-grade launch protection through on-chain dynamic fee decay, anti-whale swap caps, and wallet cooldown timers — all enforced natively inside the Uniswap V4 pool, with zero off-chain dependencies.
+HatchAI is a decentralized token launchpad built on **X Layer** (OKX's EVM L2), powered by **Uniswap V4 Hooks** and integrated with **[Flasp.sh](https://flasp.sh)** for flash loan-resistant pool mechanics. It provides institutional-grade launch protection through on-chain dynamic fee decay, anti-whale swap caps, and wallet cooldown timers — all enforced natively inside the Uniswap V4 pool, with zero off-chain dependencies.
 
 Projects can launch tokens directly into protected Uniswap V4 pools where bot frontrunning is financially disincentivized, whale manipulation is capped, and creator yield is automatically generated through a deflationary buyback-and-burn loop.
+
+### Key Features
+
+- 🛡️ **Dynamic Fee Decay** — Fees start high (10%) and linearly decay to baseline (0.3%) over a configurable window
+- 🐋 **Anti-Whale Caps** — Per-transaction swap limits enforced on-chain during the launch phase
+- ⏱️ **Wallet Cooldowns** — Configurable delay between consecutive swaps from the same address
+- 🔥 **Buyback & Burn** — 50% of collected fees auto-buy project tokens and burn them
+- 💰 **Creator Yield** — 50% of fees go directly to the project creator
+- ⚡ **Flasp.sh Integration** — Flash loan-aware hook mechanics for additional pool security
+- 🔄 **Multi-Network** — Supports X Layer Mainnet (196) and Testnet (1952) with automatic network switching
+
+---
+
+## Live Demo
+
+| Resource | Link |
+|----------|------|
+| **Live Application** | [https://hatchai.online](https://hatchai.online) |
+| **HatchHook on OKLink** | [View on Explorer →](https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0) |
+| **Flasp.sh** | [https://flasp.sh](https://flasp.sh) |
+
+### Showcase Pools (Mainnet)
+
+| Token | Contract Address | Pool ID |
+|-------|-----------------|---------|
+| **HAI** | [`0xef3a51df4761feab2ed21424f5123a793aea46dc`](https://www.oklink.com/xlayer/address/0xef3a51df4761feab2ed21424f5123a793aea46dc) | `0x1ea175ae...1229bdc` |
+| **NTU** | [`0x27f2373d532b94cd060da9303e8aeb1794a58d61`](https://www.oklink.com/xlayer/address/0x27f2373d532b94cd060da9303e8aeb1794a58d61) | `0x8fb70c67...ae2989` |
 
 ---
 
@@ -88,6 +124,10 @@ Collected trading fees (in WETH) are harvested and split on-chain:
 - **50% → Creator Yield**: Sent directly to the project creator wallet
 - **50% → Buyback & Burn**: Used to buy project tokens from the pool and burn them, applying constant buy pressure and reducing circulating supply
 
+### ⚡ Flasp.sh Integration
+
+[Flasp.sh](https://flasp.sh) provides flash loan-aware hooks that add an additional layer of security to HatchAI pools, preventing flash loan attacks during the critical launch window.
+
 ---
 
 ## Architecture
@@ -105,6 +145,8 @@ graph TD
     HH -->|8a. 50% creator yield| CreatorWallet[Creator Wallet]
     HH -->|8b. 50% buyback & burn| PM
     PM -->|9. Burn tokens| Burn[Zero Address 🔥]
+
+    Flasp([Flasp.sh]) -.->|Flash loan guard| HH
 ```
 
 ### Contract Interaction Flow
@@ -176,6 +218,8 @@ HatchHook requires the following Uniswap V4 hook permission flags encoded in the
 | **StateView** | `0x76fd297e2d437cd7f76d50f01afe6160f86e9990` | [View →](https://www.oklink.com/xlayer/address/0x76fd297e2d437cd7f76d50f01afe6160f86e9990) |
 | **PositionManager** | `0xcf1eafc6928dc385a342e7c6491d371d2871458b` | [View →](https://www.oklink.com/xlayer/address/0xcf1eafc6928dc385a342e7c6491d371d2871458b) |
 | **WETH** | `0x5A77f1443D16ee5761d310e38b62f77f726bC71c` | [View →](https://www.oklink.com/xlayer/address/0x5A77f1443D16ee5761d310e38b62f77f726bC71c) |
+| **USDT0** | `0x779Ded0c9e1022225f8E0630b35a9b54bE713736` | [View →](https://www.oklink.com/xlayer/address/0x779Ded0c9e1022225f8E0630b35a9b54bE713736) |
+| **CREATE2 Deployer** | `0x5C3322358C4F3e426870d2eF96cDEc2CF4252E19` | [View →](https://www.oklink.com/xlayer/address/0x5C3322358C4F3e426870d2eF96cDEc2CF4252E19) |
 
 ### X Layer Testnet (Chain ID: `1952`)
 
@@ -194,9 +238,12 @@ HatchHook requires the following Uniswap V4 hook permission flags encoded in the
 |-------|-----------|
 | **Smart Contracts** | Solidity 0.8.24, Hardhat, Ethers.js v6 |
 | **Hook Framework** | Uniswap V4 Core (IHooks, IPoolManager) |
+| **Flash Loan Security** | [Flasp.sh](https://flasp.sh) |
 | **Deployment** | CREATE2 deterministic deploy (for hook address mining) |
 | **Frontend** | React 19, Vite 8, Ethers.js v6 |
-| **Wallet Integration** | MetaMask, OKX Wallet (direct `BrowserProvider`) |
+| **Backend** | Node.js, Express, JSON file storage |
+| **Wallet Integration** | MetaMask, OKX Wallet (direct `BrowserProvider`) with auto network switching |
+| **Hosting** | Vercel (frontend), Railway (backend API) |
 | **Chain** | X Layer Mainnet (196) / Testnet (1952) |
 | **Block Explorer** | OKLink |
 | **Design System** | Sand `#F0ECE4`, Coral `#D2825A`, Ink `#32343A` |
@@ -216,7 +263,7 @@ HatchHook requires the following Uniswap V4 hook permission flags encoded in the
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/your-username/HatchAI.git
+git clone https://github.com/mrnetwork0001/HatchAI.git
 cd HatchAI
 npm install
 ```
@@ -247,11 +294,23 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+### 5. Launch Backend (Optional)
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+The backend API runs on [http://localhost:3001](http://localhost:3001) and provides global pool synchronization.
+
 ---
 
 ## Deployment
 
-### Testnet (X Layer Testnet)
+### Smart Contracts
+
+#### Testnet (X Layer Testnet)
 
 Deploys MockPoolManager, HatchHook, and mock tokens:
 
@@ -259,7 +318,7 @@ Deploys MockPoolManager, HatchHook, and mock tokens:
 npx hardhat run scripts/deploy.js --network xlayer_testnet
 ```
 
-### Mainnet (X Layer Mainnet)
+#### Mainnet (X Layer Mainnet)
 
 Deploys HatchHook via CREATE2 against the official Uniswap V4 PoolManager. The script mines a salt to produce an address whose lower 14 bits match the hook permission mask `0x10C0`:
 
@@ -268,6 +327,49 @@ npx hardhat run scripts/deploy_mainnet.js --network xlayer_mainnet
 ```
 
 > **Note:** The mainnet deployment script automatically updates `frontend/src/deployments.json` with the new contract addresses.
+
+### Frontend (Vercel)
+
+The frontend is deployed to **Vercel** and automatically rebuilds on every push to `main`:
+
+1. Connect your GitHub repo to [Vercel](https://vercel.com)
+2. Set **Root Directory** to `/frontend`
+3. Add environment variable: `VITE_BACKEND_URL` = your Railway backend URL
+4. Deploy
+
+### Backend (Railway)
+
+The backend API is deployed to **Railway** for global pool synchronization:
+
+1. Connect your GitHub repo to [Railway](https://railway.app)
+2. Set **Root Directory** to `/backend`
+3. Add environment variable: `PORT` = `3001`
+4. Generate a public domain
+5. The backend auto-starts with `npm start`
+
+---
+
+## Backend API
+
+The backend provides two simple endpoints for global pool synchronization:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/pools` | Returns all registered pools as JSON |
+| `POST` | `/pools` | Register a new pool (requires `poolId` and `chainId`) |
+| `GET` | `/` | Health check — returns status and pool count |
+
+### Example
+
+```bash
+# Get all pools
+curl https://hatchai-production.up.railway.app/pools
+
+# Register a new pool
+curl -X POST https://hatchai-production.up.railway.app/pools \
+  -H "Content-Type: application/json" \
+  -d '{"poolId": "0x...", "chainId": 196, "symbol": "TOKEN"}'
+```
 
 ---
 
@@ -296,16 +398,17 @@ npx hardhat run scripts/simulate.js
 ### 1. Launch a Token Pool
 
 1. Open the app and connect your wallet to **X Layer**
-2. Navigate to the **Hatch Pool Portal**
-3. Click **+ Create Your Token Sale**
-4. Enter your ERC20 token contract address
-5. Configure launch parameters:
+2. If your wallet doesn't have X Layer configured, the app will automatically prompt you to add the network and switch to it
+3. Navigate to the **Hatch Pool Portal**
+4. Click **+ Create Your Token Sale**
+5. Enter your ERC20 token contract address
+6. Configure launch parameters:
    - **Decay Duration** — How long the fee decay lasts (e.g., 24 hours)
    - **Start Fee** — Initial high fee to deter bots (e.g., 10%)
    - **End Fee** — Baseline fee after decay completes (e.g., 0.3%)
    - **Anti-Whale Cap** — Max tokens per swap during launch phase
    - **Cooldown** — Seconds between swaps per wallet
-6. Click **Initialize Launch Pool** to deploy on-chain
+7. Click **Initialize Launch Pool** to deploy on-chain
 
 ### 2. Trade on a Protected Pool
 
@@ -320,6 +423,13 @@ npx hardhat run scripts/simulate.js
 2. Click **Claim Creator Yield & Trigger Buyback-Burn**
 3. 50% of accumulated WETH fees are sent to your wallet
 4. The remaining 50% buys back project tokens and burns them
+
+### 4. Import an Existing Pool
+
+1. Go to the **Token Launchpad** tab
+2. Enter the project token's contract address
+3. The app will detect if a HatchHook pool already exists for that token
+4. Click **Import** to add it to your dashboard
 
 ---
 
@@ -344,13 +454,21 @@ HatchAI/
 ├── test/
 │   └── SimulateInitialize.js    # E2E fork-based integration test
 │
-├── frontend/                     # React SPA
+├── frontend/                     # React SPA (Vercel)
 │   ├── src/
 │   │   ├── App.jsx              # Main application UI
 │   │   ├── WalletContext.jsx    # On-chain state management & wallet provider
 │   │   ├── deployments.json     # Auto-updated contract addresses
 │   │   ├── index.css            # Design system & theme tokens
 │   │   └── lib/                 # Wallet connection & chain utilities
+│   ├── .env.development         # Local backend URL
+│   ├── .env.production          # Production backend URL (Railway)
+│   └── package.json
+│
+├── backend/                      # Express API (Railway)
+│   ├── index.js                 # Pool sync API server
+│   ├── pools.json               # JSON file database
+│   ├── railway.json             # Railway deployment config
 │   └── package.json
 │
 ├── hardhat.config.js             # Hardhat configuration (Solidity 0.8.24, viaIR)
@@ -381,5 +499,5 @@ This project is licensed under the [ISC License](LICENSE).
 ---
 
 <p align="center">
-  Built on <strong>X Layer</strong> · Powered by <strong>Uniswap V4 Hooks</strong>
+  Built on <strong>X Layer</strong> · Powered by <strong>Uniswap V4 Hooks</strong> · Secured by <strong><a href="https://flasp.sh">Flasp.sh</a></strong>
 </p>
