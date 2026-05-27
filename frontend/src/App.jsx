@@ -356,7 +356,7 @@ export default function App() {
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
-  // Protocol-wide stats from mainnet (real on-chain data)
+  // Protocol-wide stats from mainnet (real onchain data)
   const [protocolStats, setProtocolStats] = useState({
     poolsActive: 0,
     totalRoyaltiesWeth: 0,
@@ -1231,7 +1231,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Hamburger button — mobile only */}
+        {/* Hamburger button - mobile only */}
         <button
           className="hamburger-btn"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -1391,7 +1391,7 @@ export default function App() {
               </h1>
 
               <p style={{ fontSize: "17px", lineHeight: "1.6", color: "var(--ink-soft)", maxWidth: "520px", marginBottom: "36px" }}>
-                Safe-launch tokens on X Layer with Uniswap V4 Hooks — dynamic decay fees, anti-whale caps, wallet cooldowns, and creator royalties. All enforced on-chain.
+                Safe-launch tokens on X Layer with Uniswap V4 Hooks - dynamic decay fees, anti-whale caps, wallet cooldowns, and creator royalties. All enforced onchain.
               </p>
 
               <div className="flow" style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap", marginBottom: "36px" }}>
@@ -1461,7 +1461,7 @@ export default function App() {
             
           </div>
 
-          {/* Stats Ribbon — Real On-Chain Data */}
+          {/* Stats Ribbon - Real Onchain Data */}
           <div className="stats-ribbon">
             <div className="stat-ribbon-item">
               <div className="stat-ribbon-value">
@@ -1508,7 +1508,7 @@ export default function App() {
           </div>
           <div style={{ textAlign: "center", marginTop: "-8px", marginBottom: "24px" }}>
             <span style={{ fontSize: "0.65rem", color: "var(--muted)", fontStyle: "italic", letterSpacing: "0.5px" }}>
-              ● Live on-chain data from X Layer Mainnet — refreshes every 30s
+              ● Live onchain data from X Layer Mainnet - refreshes every 30s
             </span>
           </div>
 
@@ -2149,7 +2149,7 @@ export default function App() {
                     </div>
                   ) : (
                     <>
-                      {/* Add Liquidity panel — shown when pool has no liquidity on mainnet */}
+                      {/* Add Liquidity panel - shown when pool has no liquidity on mainnet */}
                       {poolReserves.weth === 0 && poolReserves.hatch === 0 && targetChainId === 196 && (
                         <div style={{
                           marginBottom: "16px",
@@ -2704,7 +2704,7 @@ export default function App() {
                           <ShieldIcon size={16} color="var(--success)" /> Official V4 Fee Harvest
                         </div>
                         <p style={{ margin: "0 0 10px 0" }}>
-                          To automate fee splitting & buyback-burn on-chain, transfer your Uniswap V4 LP NFT to the 
+                          To automate fee splitting & buyback-burn onchain, transfer your Uniswap V4 LP NFT to the 
                           <strong> HatchHook</strong> address:
                         </p>
                         <div style={{ 

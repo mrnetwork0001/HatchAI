@@ -1174,7 +1174,7 @@ export function WalletProvider({ children }) {
       const newPoolId = computePoolId(poolKey);
 
       // Check if pool is already initialized
-      addLog("Launchpad", "Checking pool status on-chain...", "info");
+      addLog("Launchpad", "Checking pool status onchain...", "info");
       let isAlreadyInitialized = false;
       let poolState = null;
       if (targetChainId === 196) {
@@ -1207,7 +1207,7 @@ export function WalletProvider({ children }) {
         setIsTxSuccess(true);
         setPendingTxHash(null);
       } else {
-        addLog("Launchpad", "Pool already initialized on-chain. Skipping initialize step.", "info");
+        addLog("Launchpad", "Pool already initialized onchain. Skipping initialize step.", "info");
       }
 
       // Configure the launch parameters on the Hook contract
@@ -1503,8 +1503,8 @@ export function WalletProvider({ children }) {
       const config = await hatchHookContract.poolConfigs(newPoolId);
 
       if (!config || config.creator === "0x0000000000000000000000000000000000000000") {
-        addLog("Import Error", "This pool has not been initialized on-chain yet.", "error");
-        return { success: false, reason: "Pool not initialized on-chain" };
+        addLog("Import Error", "This pool has not been initialized onchain yet.", "error");
+        return { success: false, reason: "Pool not initialized onchain" };
       }
 
       // Query symbol of the project token
@@ -1731,7 +1731,7 @@ export function WalletProvider({ children }) {
       report("approve_weth", "done", `WETH approved via Permit2 ✓`);
 
       // Step 3: Read sqrtPriceX96 from the pool
-      report("read_price", "pending", "Reading pool price from on-chain...");
+      report("read_price", "pending", "Reading pool price from onchain...");
       const publicProvider = publicProviderRef.current || new ethers.JsonRpcProvider("https://rpc.xlayer.tech", undefined, { batchMaxCount: 1 });
       const stateViewAddress = "0x76fd297e2d437cd7f76d50f01afe6160f86e9990";
       const stateView = new ethers.Contract(
@@ -1782,7 +1782,7 @@ export function WalletProvider({ children }) {
       report("add_liquidity", "pending", "Waiting for wallet confirmation...");
       const liqTx = await pm.modifyLiquidities(unlockData, deadline, { gasLimit: 5000000 });
       setPendingTxHash(liqTx.hash);
-      report("add_liquidity", "pending", `Tx submitted: ${liqTx.hash.slice(0,10)}... Confirming on-chain...`, { txHash: liqTx.hash });
+      report("add_liquidity", "pending", `Tx submitted: ${liqTx.hash.slice(0,10)}... Confirming onchain...`, { txHash: liqTx.hash });
       await liqTx.wait();
       setPendingTxHash(null);
       report("add_liquidity", "success", `Liquidity added successfully!`, { txHash: liqTx.hash });
