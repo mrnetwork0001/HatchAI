@@ -16,7 +16,7 @@ export const INITIAL_STATE = {
 };
 
 /** Connect to OKX Wallet or injected EVM wallet */
-export async function connectWallet() {
+export async function connectWallet(targetChainId = DEFAULT_CHAIN_ID) {
   if (!window.ethereum) {
     throw new Error("No wallet detected. Please install OKX Wallet or another EVM wallet.");
   }
@@ -38,9 +38,9 @@ export async function connectWallet() {
     // Check if the current chain is supported
     const isSupported = SUPPORTED_CHAINS.includes(chainId);
 
-    if (!isSupported) {
-      // By default, switch to the default chain (e.g. 1952)
-      await switchToChain(DEFAULT_CHAIN_ID);
+    if (!isSupported || chainId !== targetChainId) {
+      // Switch to the user's selected target chain
+      await switchToChain(targetChainId);
       // Re-check after switch
       const updatedNetwork = await provider.getNetwork();
       const updatedChainId = Number(updatedNetwork.chainId);

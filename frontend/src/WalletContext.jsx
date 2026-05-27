@@ -680,7 +680,7 @@ export function WalletProvider({ children }) {
   const handleConnect = async () => {
     try {
       addLog("Wallet", "Connecting wallet...", "info");
-      const state = await connectWallet();
+      const state = await connectWallet(targetChainId);
       setWallet(state);
       addLog("Wallet Connected", `Address: ${state.address?.slice(0, 10)}... Chain: ${state.chainId}`, "success");
       return state;
