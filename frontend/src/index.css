@@ -935,6 +935,53 @@ h2 .serif, h1 .serif, .serif {
   margin: 0;
 }
 
+/* Launchpad Card & Form */
+.launchpad-card {
+  padding: 32px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.launchpad-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.launchpad-full {
+  grid-column: span 2;
+}
+.import-form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+@media (max-width: 640px) {
+  .launchpad-card {
+    padding: 20px 16px;
+  }
+  .launchpad-card h2 {
+    font-size: 1.2rem !important;
+  }
+  .launchpad-card h3 {
+    font-size: 1rem !important;
+  }
+  .launchpad-form {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .launchpad-full {
+    grid-column: span 1;
+  }
+  .import-form {
+    flex-direction: column;
+  }
+  .import-form .glass-input {
+    width: 100%;
+  }
+  .import-form button {
+    width: 100%;
+  }
+}
+
 /* Simulator Compare Grid */
 .sim-compare-grid {
   display: grid;

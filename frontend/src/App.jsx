@@ -3162,7 +3162,7 @@ export default function App() {
 
           {/* TAB 2: DEVELOPER LAUNCHPAD */}
           {consoleTab === "launchpad" && (
-            <div className="glass-card" style={{ padding: "32px", maxWidth: "800px", margin: "0 auto" }}>
+            <div className="glass-card launchpad-card">
               <h2 style={{ fontSize: "1.5rem", fontWeight: "800", color: "var(--ink)", marginBottom: "8px", display: "inline-flex", alignItems: "center", gap: "8px" }}>
                 <EggIcon size={24} color="var(--coral)" />
                 Developer Token &amp; Pool Launchpad
@@ -3280,7 +3280,7 @@ export default function App() {
                     <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "16px" }}>
                       Already launched a pool yesterday or on another browser? Enter the token address below to import the configuration and trading logs directly from the X Layer network.
                     </p>
-                    <form onSubmit={handleImport} style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                    <form onSubmit={handleImport} className="import-form">
                       <input
                         type="text"
                         className="glass-input"
@@ -3311,7 +3311,7 @@ export default function App() {
                       Need a token to test the launchpad? Quick-deploy a Mock ERC20 contract directly onto {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}. The deployed address will automatically populate Phase 2.
                     </p>
 
-                    <form onSubmit={handleDeployToken} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <form onSubmit={handleDeployToken} className="launchpad-form">
                       <div>
                         <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
                           Token Name
@@ -3340,7 +3340,7 @@ export default function App() {
                           required
                         />
                       </div>
-                      <div style={{ gridColumn: "span 2" }}>
+                      <div className="launchpad-full">
                         <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
                           Total Supply (Tokens)
                         </label>
@@ -3355,7 +3355,7 @@ export default function App() {
                           required
                         />
                       </div>
-                      <div style={{ gridColumn: "span 2", marginTop: "4px" }}>
+                      <div className="launchpad-full" style={{ marginTop: "4px" }}>
                         <button
                           type="submit"
                           className="btn-outline"
@@ -3388,9 +3388,9 @@ export default function App() {
                       Configure and initialize the Uniswap v4 pool. Define your pricing, bot-protection parameters, and explicitly state how much of your token supply is put up for sale (seeded) alongside initial WETH reserves.
                     </p>
 
-                    <form onSubmit={handleLaunchPool} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                    <form onSubmit={handleLaunchPool} className="launchpad-form">
                       {/* Token Address */}
-                      <div style={{ gridColumn: "span 2" }}>
+                      <div className="launchpad-full">
                         <label style={{ display: "block", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
                           Project Token Contract Address (ERC20)
                         </label>
@@ -3513,7 +3513,7 @@ export default function App() {
                       </div>
 
                       {/* Decay Mode Selection */}
-                      <div style={{ gridColumn: "span 2", marginBottom: "4px" }}>
+                      <div className="launchpad-full" style={{ marginBottom: "4px" }}>
                         <label style={{ display: "flex", alignItems: "center", gap: "2px", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "8px", fontWeight: "600" }}>
                           Decay Mode (Protection Period Calculation)
                           <Tooltip text="Decides how the anti-sniper protection period decays. Time-Based decays linearly over hours. Block-Based decays in discrete steps over block height milestones (Blocks 1-30 face higher step rates) to defend against automated smart contract bots." />
@@ -3599,7 +3599,7 @@ export default function App() {
                       </div>
 
                       {/* Anti-Whale Limit */}
-                      <div style={{ gridColumn: "span 2" }}>
+                      <div className="launchpad-full">
                         <label style={{ display: "flex", alignItems: "center", gap: "2px", color: "var(--ink-soft)", fontSize: "0.82rem", marginBottom: "6px", fontWeight: "600" }}>
                           Anti-Whale Max Swap Cap (Tokens)
                           <Tooltip text="The maximum amount of tokens a single wallet can purchase in a single transaction/block during the protection decay period." />
@@ -3616,7 +3616,7 @@ export default function App() {
                       </div>
 
                       {/* Submit Button */}
-                      <div style={{ gridColumn: "span 2", marginTop: "12px" }}>
+                      <div className="launchpad-full" style={{ marginTop: "12px" }}>
                         <button
                           type="submit"
                           className="btn-neon"
