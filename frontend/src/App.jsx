@@ -1399,12 +1399,18 @@ export default function App() {
           <div className="stats-ribbon">
             <div className="stat-ribbon-item">
               <div className="stat-ribbon-value">
-                {protocolStats.totalLiquidityWeth > 0n
-                  ? parseFloat(ethers.formatEther(protocolStats.totalLiquidityWeth)).toLocaleString(undefined, { maximumFractionDigits: 2 })
-                  : "0"
-                }
+                {(() => {
+                  const val = protocolStats.totalLiquidityWeth > 0n
+                    ? parseFloat(ethers.formatEther(protocolStats.totalLiquidityWeth))
+                    : 0;
+                  if (val === 0) return "0 WETH";
+                  if (val < 0.0001) return `${val.toFixed(8)} WETH`;
+                  if (val < 0.01) return `${val.toFixed(6)} WETH`;
+                  if (val < 1) return `${val.toFixed(4)} WETH`;
+                  return `${val.toLocaleString(undefined, { maximumFractionDigits: 2 })} WETH`;
+                })()}
               </div>
-              <div className="stat-ribbon-label">Total Liquidity (L)</div>
+              <div className="stat-ribbon-label">Total Liquidity</div>
             </div>
             <div className="stat-ribbon-item">
               <div className="stat-ribbon-value">{protocolStats.poolsActive}</div>
@@ -1412,23 +1418,26 @@ export default function App() {
             </div>
             <div className="stat-ribbon-item">
               <div className="stat-ribbon-value">
-                {protocolStats.totalRoyaltiesWeth > 0
-                  ? `${protocolStats.totalRoyaltiesWeth < 0.001 ? protocolStats.totalRoyaltiesWeth.toFixed(6) : protocolStats.totalRoyaltiesWeth.toFixed(4)} WETH`
-                  : "0 WETH"
-                }
+                {(() => {
+                  const val = protocolStats.totalRoyaltiesWeth;
+                  if (val === 0) return "0 WETH";
+                  if (val < 0.0001) return `${val.toFixed(8)} WETH`;
+                  if (val < 0.01) return `${val.toFixed(6)} WETH`;
+                  if (val < 1) return `${val.toFixed(4)} WETH`;
+                  return `${val.toLocaleString(undefined, { maximumFractionDigits: 4 })} WETH`;
+                })()}
               </div>
               <div className="stat-ribbon-label">Creator Royalties</div>
             </div>
             <div className="stat-ribbon-item">
               <div className="stat-ribbon-value">
-                {protocolStats.totalBurned > 0
-                  ? protocolStats.totalBurned >= 1000000
-                    ? `${(protocolStats.totalBurned / 1000000).toFixed(2)}M`
-                    : protocolStats.totalBurned >= 1000
-                      ? `${(protocolStats.totalBurned / 1000).toFixed(1)}K`
-                      : protocolStats.totalBurned.toFixed(0)
-                  : "0"
-                }
+                {(() => {
+                  const val = protocolStats.totalBurned;
+                  if (val === 0) return "0 Tokens";
+                  if (val >= 1000000) return `${(val / 1000000).toFixed(2)}M Tokens`;
+                  if (val >= 1000) return `${(val / 1000).toFixed(1)}K Tokens`;
+                  return `${val.toLocaleString(undefined, { maximumFractionDigits: 0 })} Tokens`;
+                })()}
               </div>
               <div className="stat-ribbon-label">Tokens Burned</div>
             </div>
