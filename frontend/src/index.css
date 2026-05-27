@@ -935,6 +935,61 @@ h2 .serif, h1 .serif, .serif {
   margin: 0;
 }
 
+/* Simulator Compare Grid */
+.sim-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.sim-mobile-toggle {
+  display: none;
+}
+@media (max-width: 640px) {
+  .sim-compare-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .sim-mobile-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.3);
+  }
+  .sim-toggle-btn {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .sim-toggle-active-danger {
+    background: var(--error);
+    color: #fff;
+  }
+  .sim-toggle-active-success {
+    background: var(--success);
+    color: #fff;
+  }
+  .sim-panel-unprotected,
+  .sim-panel-protected {
+    display: none;
+  }
+  .sim-panel-visible {
+    display: block !important;
+  }
+}
+
 /* Decay Monitor Stats Grid */
 .decay-stats-grid {
   display: grid;

@@ -604,6 +604,7 @@ export default function App() {
 
   // Bot Simulation State
   const [simState, setSimState] = useState("idle"); // 'idle' | 'running' | 'completed'
+  const [simPanel, setSimPanel] = useState("unprotected"); // mobile toggle
   const [simStep, setSimStep] = useState(0);
   const [unprotectedLogs, setUnprotectedLogs] = useState([]);
   const [protectedLogs, setProtectedLogs] = useState([]);
@@ -2773,30 +2774,45 @@ export default function App() {
                 {/* Simulation Panel */}
                 {targetChainId !== 196 && (
                   <div className="glass-card portal-col-12" style={{ padding: "28px", marginBottom: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-                      <div>
-                        <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)", display: "flex", alignItems: "center", gap: "8px" }}>
-                          <ShieldIcon size={20} color="var(--coral)" /> Interactive Launch Protection Simulator
-                        </h2>
-                        <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginTop: "4px" }}>
-                          Compare a sniper bot attack on a standard pool vs HatchAI's protected Uniswap V4 pool.
-                        </p>
-                      </div>
-
+                    <div style={{ marginBottom: "20px" }}>
+                      <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <ShieldIcon size={20} color="var(--coral)" /> Launch Protection Simulator
+                      </h2>
+                      <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", marginTop: "4px" }}>
+                        Compare a sniper bot attack on a standard pool vs HatchAI's protected Uniswap V4 pool.
+                      </p>
                       <button
                         type="button"
                         onClick={runSniperSimulation}
                         disabled={simState === "running"}
                         className="btn-neon"
-                        style={{ padding: "10px 24px", minWidth: "200px" }}
+                        style={{ padding: "10px 24px", marginTop: "14px", width: "100%", maxWidth: "280px" }}
                       >
                         {simState === "running" ? "Running Attack..." : "Simulate Sniper Attack"}
                       </button>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                    {/* Mobile toggle */}
+                    <div className="sim-mobile-toggle">
+                      <button
+                        className={simPanel === "unprotected" ? "sim-toggle-btn sim-toggle-active-danger" : "sim-toggle-btn"}
+                        onClick={() => setSimPanel("unprotected")}
+                      >
+                        <AlertIcon size={14} color={simPanel === "unprotected" ? "#fff" : "var(--error)"} />
+                        Unprotected
+                      </button>
+                      <button
+                        className={simPanel === "protected" ? "sim-toggle-btn sim-toggle-active-success" : "sim-toggle-btn"}
+                        onClick={() => setSimPanel("protected")}
+                      >
+                        <ShieldIcon size={14} color={simPanel === "protected" ? "#fff" : "var(--success)"} />
+                        Protected
+                      </button>
+                    </div>
+
+                    <div className="sim-compare-grid">
                       {/* Left Column: Standard Pool */}
-                      <div style={{ background: "rgba(194, 91, 91, 0.02)", border: "1px solid rgba(194, 91, 91, 0.15)", borderRadius: "12px", padding: "20px" }}>
+                      <div className={`sim-panel-unprotected ${simPanel === "unprotected" ? "sim-panel-visible" : ""}`} style={{ background: "rgba(194, 91, 91, 0.02)", border: "1px solid rgba(194, 91, 91, 0.15)", borderRadius: "12px", padding: "20px" }}>
                         <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--error)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
                           <AlertIcon size={16} color="var(--error)" /> Standard Unprotected DEX Pool
                         </h3>
@@ -2824,7 +2840,7 @@ export default function App() {
                       </div>
 
                       {/* Right Column: Protected Pool */}
-                      <div style={{ background: "rgba(95, 155, 108, 0.02)", border: "1px solid rgba(95, 155, 108, 0.15)", borderRadius: "12px", padding: "20px" }}>
+                      <div className={`sim-panel-protected ${simPanel === "protected" ? "sim-panel-visible" : ""}`} style={{ background: "rgba(95, 155, 108, 0.02)", border: "1px solid rgba(95, 155, 108, 0.15)", borderRadius: "12px", padding: "20px" }}>
                         <h3 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--success)", display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
                           <ShieldIcon size={16} color="var(--success)" /> HatchAI Protected Hook Pool
                         </h3>
