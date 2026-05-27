@@ -1976,13 +1976,14 @@ export default function App() {
                           padding: "16px",
                           borderRadius: "12px",
                           border: "1px dashed var(--coral)",
-                          background: "rgba(210, 130, 90, 0.04)"
+                          background: "rgba(210, 130, 90, 0.04)",
+                          overflow: "hidden"
                         }}>
                           <div style={{ fontWeight: "600", fontSize: "0.9rem", color: "var(--coral-deep)", marginBottom: "8px" }}>
-                            ⚡ Pool needs liquidity
+                            🔧 Seed Liquidity (One-Time Setup)
                           </div>
                           <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginBottom: "12px" }}>
-                            This pool was initialized but has no liquidity yet. Add tokens to enable trading.
+                            This pool was initialized before auto-seeding was available. Enter the amounts you want to deposit to enable trading. New pools will auto-seed during launch.
                           </p>
                           <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
                             <input

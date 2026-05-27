@@ -43,6 +43,17 @@
   padding: 0;
 }
 
+/* Remove number input spinners globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  min-width: 0;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--color-text-primary);

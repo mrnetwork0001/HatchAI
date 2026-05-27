@@ -1269,15 +1269,20 @@ export function WalletProvider({ children }) {
             const tickLower = -887220;
             const tickUpper = 887220;
 
-            // Compute liquidity amount from desired token amounts
-            // For a full-range position, liquidity ≈ min(amount0 * sqrtPrice / Q96, amount1 * Q96 / sqrtPrice)
-            // We use a reasonable liquidity value derived from the smaller side
             const amount0Desired = isHatchCurrency0 ? seedProjectWei : seedWethWei;
             const amount1Desired = isHatchCurrency0 ? seedWethWei : seedProjectWei;
 
-            // Use amount0Desired as liquidity estimate (the PM will use what it needs)
-            // Setting liquidity to a large value and using max amounts lets the PM determine actual liquidity
-            const liquidityAmount = amount0Desired > amount1Desired ? amount0Desired : amount1Desired;
+            // Calculate correct Uniswap liquidity L from token amounts and sqrtPriceX96
+            // For full-range: L ≈ min(amount0 * sqrtPriceX96 / Q96, amount1 * Q96 / sqrtPriceX96)
+            const Q96 = 2n ** 96n;
+            const L0 = (amount0Desired * sqrtPriceX96) / Q96;
+            const L1 = (amount1Desired * Q96) / sqrtPriceX96;
+            // Use 95% of the smaller L to avoid rounding reverts
+            const liquidityAmount = ((L0 < L1 ? L0 : L1) * 95n) / 100n;
+
+            // Allow 5% extra on max amounts for slippage
+            const amount0Max = (amount0Desired * 105n) / 100n;
+            const amount1Max = (amount1Desired * 105n) / 100n;
 
             const recipient = await signer.getAddress();
             const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 minutes
@@ -1309,8 +1314,8 @@ export function WalletProvider({ children }) {
                 tickLower,
                 tickUpper,
                 liquidityAmount,
-                amount0Desired,
-                amount1Desired,
+                amount0Max,
+                amount1Max,
                 recipient,
                 "0x"
               ]
@@ -1677,11 +1682,38 @@ export function WalletProvider({ children }) {
       const appTx1 = await wethERC20.approve(positionManagerAddress, seedWethWei, { gasLimit: 150000 });
       await appTx1.wait();
 
+      // Read sqrtPriceX96 from the pool to calculate correct liquidity L
+      addLog("Liquidity", "Reading pool price from on-chain...", "info");
+      const rpcUrl = "https://rpc.xlayer.tech";
+      const publicProvider = new ethers.JsonRpcProvider(rpcUrl, undefined, { batchMaxCount: 1 });
+      const stateViewAddress = CONTRACTS.stateView || "0x00000000005733cbd9009bc5f87bbd44093b855b";
+      const stateViewABI = [
+        "function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)"
+      ];
+      const stateView = new ethers.Contract(stateViewAddress, stateViewABI, publicProvider);
+      const poolId = poolIdHex;
+      const slot0 = await stateView.getSlot0(poolId);
+      const sqrtPriceX96 = slot0[0] || slot0.sqrtPriceX96;
+
+      if (!sqrtPriceX96 || sqrtPriceX96 === 0n) {
+        throw new Error("Pool has no price set (sqrtPriceX96 = 0). Is the pool initialized?");
+      }
+
       const tickLower = -887220;
       const tickUpper = 887220;
       const amount0Desired = isHatchCurrency0 ? seedProjectWei : seedWethWei;
       const amount1Desired = isHatchCurrency0 ? seedWethWei : seedProjectWei;
-      const liquidityAmount = amount0Desired > amount1Desired ? amount0Desired : amount1Desired;
+
+      // Calculate correct Uniswap liquidity L from token amounts and sqrtPriceX96
+      const Q96 = 2n ** 96n;
+      const L0 = (amount0Desired * sqrtPriceX96) / Q96;
+      const L1 = (amount1Desired * Q96) / sqrtPriceX96;
+      const liquidityAmount = ((L0 < L1 ? L0 : L1) * 95n) / 100n;
+
+      // Allow 5% extra on max amounts for slippage
+      const amount0Max = (amount0Desired * 105n) / 100n;
+      const amount1Max = (amount1Desired * 105n) / 100n;
+
       const recipient = await signer.getAddress();
       const deadline = Math.floor(Date.now() / 1000) + 1800;
 
@@ -1691,7 +1723,7 @@ export function WalletProvider({ children }) {
       const actions = ethers.solidityPacked(["uint8", "uint8"], [MINT_POSITION, SETTLE_PAIR]);
       const mintParams = ethers.AbiCoder.defaultAbiCoder().encode(
         ["tuple(address,address,uint24,int24,address)", "int24", "int24", "uint256", "uint128", "uint128", "address", "bytes"],
-        [[poolKey.currency0, poolKey.currency1, poolKey.fee, poolKey.tickSpacing, poolKey.hooks], tickLower, tickUpper, liquidityAmount, amount0Desired, amount1Desired, recipient, "0x"]
+        [[poolKey.currency0, poolKey.currency1, poolKey.fee, poolKey.tickSpacing, poolKey.hooks], tickLower, tickUpper, liquidityAmount, amount0Max, amount1Max, recipient, "0x"]
       );
       const settleParams = ethers.AbiCoder.defaultAbiCoder().encode(["address", "address"], [poolKey.currency0, poolKey.currency1]);
       const unlockData = ethers.AbiCoder.defaultAbiCoder().encode(["bytes", "bytes[]"], [actions, [mintParams, settleParams]]);
