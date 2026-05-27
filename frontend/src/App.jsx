@@ -1657,9 +1657,12 @@ export default function App() {
 
           {/* FAQ Section */}
           <section className="faq-section">
-            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "32px", textAlign: "center", color: "var(--ink)" }}>
-              Frequently Asked Questions
+            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "12px", textAlign: "center", color: "var(--ink)" }}>
+              FAQ
             </h3>
+            <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto 32px auto" }}>
+              Common questions about HatchAI
+            </p>
             
             <div className="faq-item">
               <div className="faq-question" onClick={() => setOpenFaqIndex(openFaqIndex === 0 ? null : 0)}>
@@ -1668,43 +1671,67 @@ export default function App() {
               </div>
               <div className={`faq-answer ${openFaqIndex === 0 ? 'open' : ''}`}>
                 <p style={{ paddingBottom: "10px" }}>
-                  HatchAI is a secure launchpad and swap terminal built with Uniswap V4 Hooks on {targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet"}. It helps project developers launch liquidity pools containing automated defenses such as swap size caps, trade cooldowns, and dynamically decaying launch taxes.
+                  HatchAI is a safe-launch protocol built on Uniswap V4 Hooks on X Layer. It lets developers deploy tokens and create protected liquidity pools with anti-whale caps, wallet cooldowns, and dynamically decaying swap fees - all enforced onchain by a custom Hook contract.
                 </p>
               </div>
             </div>
 
             <div className="faq-item">
               <div className="faq-question" onClick={() => setOpenFaqIndex(openFaqIndex === 1 ? null : 1)}>
-                <span>How does the decaying tax protect token launches?</span>
+                <span>How does the decaying fee protect launches?</span>
                 <span className={`faq-toggle ${openFaqIndex === 1 ? 'open' : ''}`}>+</span>
               </div>
               <div className={`faq-answer ${openFaqIndex === 1 ? 'open' : ''}`}>
                 <p style={{ paddingBottom: "10px" }}>
-                  During the initial launch period, the fee is set high (e.g., 10%) to make automated frontrunning and sniper-bot scripts financially non-viable. Over the decay duration (e.g., 24 hours), the fee decays linearly onchain down to the project's standard baseline rate.
+                  At launch, swap fees start high (up to 10%) making bot sniping unprofitable. Over your configured window (e.g. 24 hours), fees decay linearly to the baseline rate. The live decay chart in the app tracks progress in real time.
                 </p>
               </div>
             </div>
 
             <div className="faq-item">
               <div className="faq-question" onClick={() => setOpenFaqIndex(openFaqIndex === 2 ? null : 2)}>
-                <span>What is the onchain fee splitting mechanism?</span>
+                <span>How do creator royalties work?</span>
                 <span className={`faq-toggle ${openFaqIndex === 2 ? 'open' : ''}`}>+</span>
               </div>
               <div className={`faq-answer ${openFaqIndex === 2 ? 'open' : ''}`}>
                 <p style={{ paddingBottom: "10px" }}>
-                  HatchHook intercepts trading fees directly inside the pool contract. When creator yield is claimed, the collected base tokens (e.g., WETH) are split 50/50: 50% is transferred to the developer's address as passive yield, and 50% is used to buy back project tokens from the pool and burn them, causing a deflationary supply shock.
+                  A portion of every swap fee is routed to the pool creator via the HatchHook contract. Royalties accumulate onchain and can be claimed at any time from the Launch Portal. The remaining fees fuel the buyback-and-burn engine to reduce token supply.
                 </p>
               </div>
             </div>
 
             <div className="faq-item">
               <div className="faq-question" onClick={() => setOpenFaqIndex(openFaqIndex === 3 ? null : 3)}>
-                <span>How can I test the platform?</span>
+                <span>Can I import and trade existing pools?</span>
                 <span className={`faq-toggle ${openFaqIndex === 3 ? 'open' : ''}`}>+</span>
               </div>
               <div className={`faq-answer ${openFaqIndex === 3 ? 'open' : ''}`}>
                 <p style={{ paddingBottom: "10px" }}>
-                  Simply connect your MetaMask or other Web3 wallet to {targetChainId === 196 ? "X Layer Mainnet (Chain ID 196)" : "X Layer Testnet (Chain ID 1952)"} using our top bar. You can swap WETH for project tokens in the Swap Terminal, monitor the decaying fees in real-time, or launch your own token sale under the Token Launchpad tab.
+                  Yes. Any pool created through HatchAI can be imported by other users using the token address. Once imported, you can swap, view pool reserves, and monitor the fee decay status - no need to be the pool creator.
+                </p>
+              </div>
+            </div>
+
+            <div className="faq-item">
+              <div className="faq-question" onClick={() => setOpenFaqIndex(openFaqIndex === 4 ? null : 4)}>
+                <span>How do I add liquidity to a pool?</span>
+                <span className={`faq-toggle ${openFaqIndex === 4 ? 'open' : ''}`}>+</span>
+              </div>
+              <div className={`faq-answer ${openFaqIndex === 4 ? 'open' : ''}`}>
+                <p style={{ paddingBottom: "10px" }}>
+                  During pool creation, you seed initial liquidity (project tokens + WETH) via Permit2 in one transaction. After launch, additional liquidity can be added through the Launch Portal. All token approvals use Uniswap's Permit2 system for security.
+                </p>
+              </div>
+            </div>
+
+            <div className="faq-item">
+              <div className="faq-question" onClick={() => setOpenFaqIndex(openFaqIndex === 5 ? null : 5)}>
+                <span>Which networks are supported?</span>
+                <span className={`faq-toggle ${openFaqIndex === 5 ? 'open' : ''}`}>+</span>
+              </div>
+              <div className={`faq-answer ${openFaqIndex === 5 ? 'open' : ''}`}>
+                <p style={{ paddingBottom: "10px" }}>
+                  HatchAI is live on X Layer Mainnet (Chain ID 196) and X Layer Testnet (Chain ID 1952). You can switch networks from the header. Connect MetaMask or any Web3 wallet and the app will prompt you to add the network if needed.
                 </p>
               </div>
             </div>
