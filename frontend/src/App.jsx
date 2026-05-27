@@ -1420,16 +1420,16 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: "16px" }}>
+              <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
                 <button
                   onClick={() => {
                     setView("console");
                     setConsoleTab("portal");
                   }}
                   className="btn-neon"
-                  style={{ padding: "15px 32px", fontSize: "14px", borderRadius: "100px" }}
+                  style={{ padding: "14px 28px", fontSize: "14px", borderRadius: "100px" }}
                 >
-                  Launch App Console →
+                  Launch App Console
                 </button>
                 <button
                   onClick={() => {
@@ -1437,7 +1437,7 @@ export default function App() {
                     setConsoleTab("launchpad");
                   }}
                   className="btn-outline"
-                  style={{ padding: "15px 32px", fontSize: "14px", borderRadius: "100px" }}
+                  style={{ padding: "14px 28px", fontSize: "14px", borderRadius: "100px" }}
                 >
                   Create Custom Sale
                 </button>
