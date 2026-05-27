@@ -1391,7 +1391,7 @@ export default function App() {
               </h1>
 
               <p style={{ fontSize: "17px", lineHeight: "1.6", color: "var(--ink-soft)", maxWidth: "520px", marginBottom: "36px" }}>
-                HatchAI is the premier Uniswap V4 Hook-powered Safe-Launch &amp; Deflationary Buyback Suite on X Layer. Protect your token launches in seconds with dynamic decay taxes, anti-whale caps, and wallet cooldowns, while feeding swap fees directly back into an onchain buyback-and-burn engine.
+                Safe-launch tokens on X Layer with Uniswap V4 Hooks — dynamic decay fees, anti-whale caps, wallet cooldowns, and creator royalties. All enforced on-chain.
               </p>
 
               <div className="flow" style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap", marginBottom: "36px" }}>
