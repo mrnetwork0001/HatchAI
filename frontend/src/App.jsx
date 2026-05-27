@@ -1241,7 +1241,7 @@ export default function App() {
             <div>
               <div className="status-badge">
                 <span className="dot"></span>
-                <span>Live on testnet</span>
+                <span>Live on X Layer Mainnet</span>
               </div>
 
               <h1 style={{ fontWeight: "800", fontSize: "clamp(42px, 7vw, 76px)", lineHeight: "1.05", letterSpacing: "-0.035em", marginBottom: "28px", color: "var(--ink)" }}>

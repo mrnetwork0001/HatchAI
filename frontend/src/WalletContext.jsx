@@ -264,13 +264,13 @@ export function WalletProvider({ children }) {
 
   // Dynamic chain ID configuration
   const [targetChainId, setTargetChainId] = useState(() => {
-    if (deployments["1952"]) return 1952;
     if (deployments["196"]) return 196;
+    if (deployments["1952"]) return 1952;
     const keys = Object.keys(deployments);
-    return Number(keys[0]) || 1952;
+    return Number(keys[0]) || 196;
   });
 
-  const activeConfig = deployments[targetChainId] || deployments["1952"] || deployments;
+  const activeConfig = deployments[targetChainId] || deployments["196"] || deployments;
   const CONTRACTS = activeConfig.contracts || {};
   const POOL_KEY = activeConfig.poolKey || {};
   const isDeployed = !!(CONTRACTS.hatchHook && CONTRACTS.hatchHook !== "0x0000000000000000000000000000000000000000");
@@ -302,7 +302,7 @@ export function WalletProvider({ children }) {
 
   // Keep state in sync with network switches
   useEffect(() => {
-    const activeConfig = deployments[targetChainId] || deployments["1952"] || deployments;
+    const activeConfig = deployments[targetChainId] || deployments["196"] || deployments;
     const CONTRACTS = activeConfig.contracts || {};
     const POOL_KEY = activeConfig.poolKey || {};
     const isDeployed = !!(CONTRACTS.hatchHook && CONTRACTS.hatchHook !== "0x0000000000000000000000000000000000000000");
