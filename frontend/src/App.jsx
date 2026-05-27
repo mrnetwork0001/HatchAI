@@ -1937,7 +1937,7 @@ export default function App() {
                   <div className="stat-value">
                     {poolReserves.weth === 0 && poolReserves.hatch === 0 && targetChainId === 196
                       ? <span style={{ color: "var(--color-text-secondary)", fontSize: "0.95rem" }}>No Liquidity</span>
-                      : <>{poolReserves.weth.toLocaleString(undefined, { maximumFractionDigits: 2 })} WETH</>
+                      : <>{poolReserves.weth < 0.01 ? poolReserves.weth.toFixed(6) : poolReserves.weth.toLocaleString(undefined, { maximumFractionDigits: 4 })} WETH</>
                     }
                   </div>
                 </div>
@@ -2070,23 +2070,58 @@ export default function App() {
                             </div>
                           )}
 
-                          <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-                            <input
-                              type="number"
-                              placeholder={`${projectTokenDetails.symbol} amount`}
-                              value={liqProjectAmount}
-                              onChange={(e) => setLiqProjectAmount(e.target.value)}
-                              disabled={isAddingLiquidity}
-                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: isAddingLiquidity ? "var(--bg-secondary)" : "var(--sand-light)" }}
-                            />
-                            <input
-                              type="number"
-                              placeholder="WETH amount"
-                              value={liqWethAmount}
-                              onChange={(e) => setLiqWethAmount(e.target.value)}
-                              disabled={isAddingLiquidity}
-                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: isAddingLiquidity ? "var(--bg-secondary)" : "var(--sand-light)" }}
-                            />
+                          {/* Price ratio hint */}
+                          {poolReserves.weth > 0 && poolReserves.hatch > 0 && (
+                            <div style={{ fontSize: "0.75rem", color: "var(--coral-deep)", marginBottom: "8px", fontWeight: "600" }}>
+                              Pool Price: 1 WETH = {(poolReserves.hatch / poolReserves.weth).toLocaleString(undefined, { maximumFractionDigits: 0 })} {projectTokenDetails.symbol}
+                            </div>
+                          )}
+                          <div style={{ display: "flex", gap: "8px", marginBottom: "4px" }}>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: "0.72rem", color: "var(--ink-soft)", display: "block", marginBottom: "4px" }}>{projectTokenDetails.symbol} Amount</label>
+                              <input
+                                type="number"
+                                placeholder={`${projectTokenDetails.symbol}`}
+                                value={liqProjectAmount}
+                                onChange={(e) => {
+                                  setLiqProjectAmount(e.target.value);
+                                  // Auto-calculate WETH from pool price
+                                  if (poolReserves.weth > 0 && poolReserves.hatch > 0 && e.target.value) {
+                                    const ratio = poolReserves.hatch / poolReserves.weth;
+                                    const pairedWeth = parseFloat(e.target.value) / ratio;
+                                    setLiqWethAmount(pairedWeth > 0 ? pairedWeth.toFixed(8) : "");
+                                  } else if (!e.target.value) {
+                                    setLiqWethAmount("");
+                                  }
+                                }}
+                                disabled={isAddingLiquidity}
+                                style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: isAddingLiquidity ? "var(--bg-secondary)" : "var(--sand-light)", boxSizing: "border-box" }}
+                              />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <label style={{ fontSize: "0.72rem", color: "var(--ink-soft)", display: "block", marginBottom: "4px" }}>WETH Amount</label>
+                              <input
+                                type="number"
+                                placeholder="WETH"
+                                value={liqWethAmount}
+                                onChange={(e) => {
+                                  setLiqWethAmount(e.target.value);
+                                  // Auto-calculate token from pool price
+                                  if (poolReserves.weth > 0 && poolReserves.hatch > 0 && e.target.value) {
+                                    const ratio = poolReserves.hatch / poolReserves.weth;
+                                    const pairedToken = parseFloat(e.target.value) * ratio;
+                                    setLiqProjectAmount(pairedToken > 0 ? Math.round(pairedToken).toString() : "");
+                                  } else if (!e.target.value) {
+                                    setLiqProjectAmount("");
+                                  }
+                                }}
+                                disabled={isAddingLiquidity}
+                                style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: isAddingLiquidity ? "var(--bg-secondary)" : "var(--sand-light)", boxSizing: "border-box" }}
+                              />
+                            </div>
+                          </div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--muted)", marginBottom: "8px", fontStyle: "italic" }}>
+                            ⚠ Both amounts must be proportional to the pool price. Editing one auto-fills the other.
                           </div>
                           <button
                             type="button"
