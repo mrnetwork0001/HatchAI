@@ -372,6 +372,13 @@ export function WalletProvider({ children }) {
             prev.forEach(lp => {
               if (!merged.find(p => p.poolId === lp.poolId)) {
                 merged.push(lp);
+                
+                // Silently push this missing local pool to the backend so everyone else sees it
+                fetch(`${backendUrl}/pools`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(lp)
+                }).catch(() => {});
               }
             });
             return merged;
@@ -736,19 +743,28 @@ export function WalletProvider({ children }) {
   useEffect(() => {
     if (wallet.connected && wallet.chainId && wallet.chainId !== targetChainId) {
       const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
-      addLog("Network", `Connected to wrong chain (${wallet.chainId}). Prompting to switch to correct network (${targetName}, Chain ID: ${targetChainId})...`, "info");
+      setTimeout(() => {
+        addLog("Network", `Connected to wrong chain (${wallet.chainId}). Prompting to switch to correct network (${targetName}, Chain ID: ${targetChainId})...`, "info");
+      }, 0);
       switchToChain(targetChainId).then((success) => {
         if (success) {
-          addLog("Network", `Successfully switched to ${targetName}.`, "success");
+          setTimeout(() => addLog("Network", `Successfully switched to ${targetName}.`, "success"), 0);
         } else {
-          addLog("Network Error", "Failed to switch network or switch rejected by user.", "error");
+          setTimeout(() => addLog("Network Error", "Failed to switch network or switch rejected by user.", "error"), 0);
         }
       });
     }
   }, [wallet.connected, wallet.chainId, targetChainId, addLog]);
 
   // ── Derived State ───────────────────────────────────────────────────────────
-  const nowSec = Math.floor(Date.now() / 1000);
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowSec(Math.floor(Date.now() / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
   const launchTime = poolConfig ? Number(poolConfig[2]) : 0;
   const decayDuration = poolConfig ? Number(poolConfig[3]) : 86400;
   const startFee = poolConfig ? Number(poolConfig[4]) : 100000;
