@@ -1254,15 +1254,29 @@ export function WalletProvider({ children }) {
             const projectERC20 = new ethers.Contract(projectToken, ERC20_ABI, signer);
             const wethERC20 = new ethers.Contract(baseToken, ERC20_ABI, signer);
 
-            // 1. Approve project token to PositionManager
-            addLog("Launchpad", `Approving ${seedProjectAmount} Project Tokens for PositionManager...`, "info");
-            const appTx0 = await projectERC20.approve(positionManagerAddress, seedProjectWei, { gasLimit: 150000 });
-            await appTx0.wait();
+            // V4 PositionManager uses Permit2 for token transfers
+            const PERMIT2_ADDRESS = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
+            const permit2Contract = new ethers.Contract(
+              PERMIT2_ADDRESS,
+              ["function approve(address token, address spender, uint160 amount, uint48 expiration) external"],
+              signer
+            );
+            const MAX_UINT160 = (2n ** 160n) - 1n;
+            const MAX_UINT48 = (2n ** 48n) - 1n;
 
-            // 2. Approve WETH to PositionManager
-            addLog("Launchpad", `Approving ${seedWethAmount} WETH for PositionManager...`, "info");
-            const appTx1 = await wethERC20.approve(positionManagerAddress, seedWethWei, { gasLimit: 150000 });
+            // 1. Approve project token → Permit2 → PositionManager
+            addLog("Launchpad", `Approving ${seedProjectAmount} Project Tokens via Permit2...`, "info");
+            const appTx0 = await projectERC20.approve(PERMIT2_ADDRESS, ethers.MaxUint256, { gasLimit: 150000 });
+            await appTx0.wait();
+            const p2App0 = await permit2Contract.approve(projectToken, positionManagerAddress, MAX_UINT160, MAX_UINT48, { gasLimit: 100000 });
+            await p2App0.wait();
+
+            // 2. Approve WETH → Permit2 → PositionManager
+            addLog("Launchpad", `Approving ${seedWethAmount} WETH via Permit2...`, "info");
+            const appTx1 = await wethERC20.approve(PERMIT2_ADDRESS, ethers.MaxUint256, { gasLimit: 150000 });
             await appTx1.wait();
+            const p2App1 = await permit2Contract.approve(baseToken, positionManagerAddress, MAX_UINT160, MAX_UINT48, { gasLimit: 100000 });
+            await p2App1.wait();
 
             // 3. Build modifyLiquidities calldata
             // Full-range position: tickLower = -887220, tickUpper = 887220 (nearest multiples of tickSpacing=60)
@@ -1680,19 +1694,41 @@ export function WalletProvider({ children }) {
       const projectERC20 = new ethers.Contract(projectToken, ERC20_ABI, signer);
       const wethERC20 = new ethers.Contract(baseToken, ERC20_ABI, signer);
 
-      // Step 1: Approve project token
-      report("approve_token", "pending", `Approving ${projectAmountStr} ${customTokenDetails.symbol}...`);
-      const appTx0 = await projectERC20.approve(positionManagerAddress, seedProjectWei, { gasLimit: 150000 });
-      report("approve_token", "pending", `Approval tx sent: ${appTx0.hash.slice(0,10)}... Confirming...`, { txHash: appTx0.hash });
-      await appTx0.wait();
-      report("approve_token", "done", `${customTokenDetails.symbol} approved ✓`);
+      // V4 PositionManager uses Permit2 for token transfers
+      const PERMIT2_ADDRESS = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
+      const permit2Contract = new ethers.Contract(
+        PERMIT2_ADDRESS,
+        [
+          "function approve(address token, address spender, uint160 amount, uint48 expiration) external",
+          "function allowance(address owner, address token, address spender) external view returns (uint160 amount, uint48 expiration, uint48 nonce)"
+        ],
+        signer
+      );
 
-      // Step 2: Approve WETH
-      report("approve_weth", "pending", `Approving ${wethAmountStr} WETH...`);
-      const appTx1 = await wethERC20.approve(positionManagerAddress, seedWethWei, { gasLimit: 150000 });
-      report("approve_weth", "pending", `Approval tx sent: ${appTx1.hash.slice(0,10)}... Confirming...`, { txHash: appTx1.hash });
+      // Permit2 needs uint160 max for amount, uint48 max for expiration
+      const MAX_UINT160 = (2n ** 160n) - 1n;
+      const MAX_UINT48 = (2n ** 48n) - 1n;
+
+      // Step 1: Approve project token → Permit2, then Permit2 → PositionManager
+      report("approve_token", "pending", `Approving ${customTokenDetails.symbol} to Permit2...`);
+      const appTx0 = await projectERC20.approve(PERMIT2_ADDRESS, ethers.MaxUint256, { gasLimit: 150000 });
+      report("approve_token", "pending", `ERC-20 approval tx: ${appTx0.hash.slice(0,10)}... Confirming...`, { txHash: appTx0.hash });
+      await appTx0.wait();
+      // Now approve PositionManager on Permit2
+      const p2AppTx0 = await permit2Contract.approve(projectToken, positionManagerAddress, MAX_UINT160, MAX_UINT48, { gasLimit: 100000 });
+      report("approve_token", "pending", `Permit2 approval tx: ${p2AppTx0.hash.slice(0,10)}... Confirming...`, { txHash: p2AppTx0.hash });
+      await p2AppTx0.wait();
+      report("approve_token", "done", `${customTokenDetails.symbol} approved via Permit2 ✓`);
+
+      // Step 2: Approve WETH → Permit2, then Permit2 → PositionManager
+      report("approve_weth", "pending", `Approving WETH to Permit2...`);
+      const appTx1 = await wethERC20.approve(PERMIT2_ADDRESS, ethers.MaxUint256, { gasLimit: 150000 });
+      report("approve_weth", "pending", `ERC-20 approval tx: ${appTx1.hash.slice(0,10)}... Confirming...`, { txHash: appTx1.hash });
       await appTx1.wait();
-      report("approve_weth", "done", `WETH approved ✓`);
+      const p2AppTx1 = await permit2Contract.approve(baseToken, positionManagerAddress, MAX_UINT160, MAX_UINT48, { gasLimit: 100000 });
+      report("approve_weth", "pending", `Permit2 approval tx: ${p2AppTx1.hash.slice(0,10)}... Confirming...`, { txHash: p2AppTx1.hash });
+      await p2AppTx1.wait();
+      report("approve_weth", "done", `WETH approved via Permit2 ✓`);
 
       // Step 3: Read sqrtPriceX96 from the pool
       report("read_price", "pending", "Reading pool price from on-chain...");
