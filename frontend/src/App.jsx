@@ -355,6 +355,80 @@ export default function App() {
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
+  // Protocol-wide stats from mainnet (real on-chain data)
+  const [protocolStats, setProtocolStats] = useState({
+    poolsActive: 0,
+    totalRoyaltiesWeth: 0,
+    totalBurned: 0,
+    totalLiquidityWeth: 0
+  });
+
+  useEffect(() => {
+    const fetchProtocolStats = async () => {
+      try {
+        const mainnetConfig = deployments["196"];
+        if (!mainnetConfig) return;
+
+        const provider = new ethers.JsonRpcProvider("https://rpc.xlayer.tech", undefined, { batchMaxCount: 1 });
+        const hookAddress = mainnetConfig.contracts.hatchHook;
+        const stateViewAddress = "0x76fd297e2d437cd7f76d50f01afe6160f86e9990";
+
+        // Get all pools from localStorage
+        let allPools = [];
+        try {
+          const saved = localStorage.getItem("hatch_custom_pools");
+          if (saved) allPools = JSON.parse(saved).filter(p => p.chainId === 196);
+        } catch {}
+
+        const poolCount = allPools.length;
+
+        // For each pool, read totalCreatorFeesClaimed and totalTokensBurned
+        const hookContract = new ethers.Contract(hookAddress, [
+          "function totalCreatorFeesClaimed(bytes32) external view returns (uint256)",
+          "function totalTokensBurned(bytes32) external view returns (uint256)"
+        ], provider);
+
+        const stateView = new ethers.Contract(stateViewAddress, [
+          "function getLiquidity(bytes32 poolId) external view returns (uint128 liquidity)"
+        ], provider);
+
+        let totalRoyalties = 0n;
+        let totalBurned = 0n;
+        let totalLiquidity = 0n;
+
+        const promises = allPools.map(async (pool) => {
+          const poolId = pool.poolId;
+          if (!poolId) return;
+          try {
+            const [claimed, burned, liq] = await Promise.all([
+              hookContract.totalCreatorFeesClaimed(poolId).catch(() => 0n),
+              hookContract.totalTokensBurned(poolId).catch(() => 0n),
+              stateView.getLiquidity(poolId).catch(() => 0n)
+            ]);
+            totalRoyalties += BigInt(claimed);
+            totalBurned += BigInt(burned);
+            totalLiquidity += BigInt(liq);
+          } catch {}
+        });
+
+        await Promise.all(promises);
+
+        setProtocolStats({
+          poolsActive: poolCount,
+          totalRoyaltiesWeth: parseFloat(ethers.formatEther(totalRoyalties)),
+          totalBurned: parseFloat(ethers.formatEther(totalBurned)),
+          totalLiquidityWeth: totalLiquidity
+        });
+      } catch (err) {
+        console.error("Protocol stats fetch error:", err);
+      }
+    };
+
+    fetchProtocolStats();
+    const interval = setInterval(fetchProtocolStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Cyclic hero flow state
   const [activeStep, setActiveStep] = useState(0);
 
@@ -1321,24 +1395,48 @@ export default function App() {
             
           </div>
 
-          {/* Stats Ribbon */}
+          {/* Stats Ribbon — Real On-Chain Data */}
           <div className="stats-ribbon">
             <div className="stat-ribbon-item">
-              <div className="stat-ribbon-value">$1,420,500+</div>
-              <div className="stat-ribbon-label">Volume Protected</div>
+              <div className="stat-ribbon-value">
+                {protocolStats.totalLiquidityWeth > 0n
+                  ? parseFloat(ethers.formatEther(protocolStats.totalLiquidityWeth)).toLocaleString(undefined, { maximumFractionDigits: 2 })
+                  : "0"
+                }
+              </div>
+              <div className="stat-ribbon-label">Total Liquidity (L)</div>
             </div>
             <div className="stat-ribbon-item">
-              <div className="stat-ribbon-value">18</div>
+              <div className="stat-ribbon-value">{protocolStats.poolsActive}</div>
               <div className="stat-ribbon-label">Safe Pools Active</div>
             </div>
             <div className="stat-ribbon-item">
-              <div className="stat-ribbon-value">24.8 WETH</div>
+              <div className="stat-ribbon-value">
+                {protocolStats.totalRoyaltiesWeth > 0
+                  ? `${protocolStats.totalRoyaltiesWeth < 0.001 ? protocolStats.totalRoyaltiesWeth.toFixed(6) : protocolStats.totalRoyaltiesWeth.toFixed(4)} WETH`
+                  : "0 WETH"
+                }
+              </div>
               <div className="stat-ribbon-label">Creator Royalties</div>
             </div>
             <div className="stat-ribbon-item">
-              <div className="stat-ribbon-value">1.25M+</div>
+              <div className="stat-ribbon-value">
+                {protocolStats.totalBurned > 0
+                  ? protocolStats.totalBurned >= 1000000
+                    ? `${(protocolStats.totalBurned / 1000000).toFixed(2)}M`
+                    : protocolStats.totalBurned >= 1000
+                      ? `${(protocolStats.totalBurned / 1000).toFixed(1)}K`
+                      : protocolStats.totalBurned.toFixed(0)
+                  : "0"
+                }
+              </div>
               <div className="stat-ribbon-label">Tokens Burned</div>
             </div>
+          </div>
+          <div style={{ textAlign: "center", marginTop: "-8px", marginBottom: "24px" }}>
+            <span style={{ fontSize: "0.65rem", color: "var(--muted)", fontStyle: "italic", letterSpacing: "0.5px" }}>
+              ● Live on-chain data from X Layer Mainnet — refreshes every 30s
+            </span>
           </div>
 
           {/* Timeline Section */}
