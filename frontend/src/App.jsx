@@ -389,25 +389,42 @@ export default function App() {
         ], provider);
 
         const stateView = new ethers.Contract(stateViewAddress, [
+          "function getSlot0(bytes32 poolId) external view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)",
           "function getLiquidity(bytes32 poolId) external view returns (uint128 liquidity)"
         ], provider);
 
         let totalRoyalties = 0n;
         let totalBurned = 0n;
-        let totalLiquidity = 0n;
+        let totalWethReserve = 0;
+
+        const Q96 = 2n ** 96n;
 
         const promises = allPools.map(async (pool) => {
           const poolId = pool.poolId;
           if (!poolId) return;
           try {
-            const [claimed, burned, liq] = await Promise.all([
+            const [claimed, burned, slot0, liq] = await Promise.all([
               hookContract.totalCreatorFeesClaimed(poolId).catch(() => 0n),
               hookContract.totalTokensBurned(poolId).catch(() => 0n),
+              stateView.getSlot0(poolId).catch(() => null),
               stateView.getLiquidity(poolId).catch(() => 0n)
             ]);
             totalRoyalties += BigInt(claimed);
             totalBurned += BigInt(burned);
-            totalLiquidity += BigInt(liq);
+
+            // Calculate actual WETH reserves from sqrtPriceX96 + L
+            if (slot0 && liq) {
+              const sqrtPriceX96 = typeof slot0[0] === 'bigint' ? slot0[0] : BigInt(slot0[0]?.toString() || "0");
+              const L = typeof liq === 'bigint' ? liq : BigInt(liq?.toString() || "0");
+              if (sqrtPriceX96 > 0n && L > 0n) {
+                const x = (L * Q96) / sqrtPriceX96; // currency0 amount
+                const y = (L * sqrtPriceX96) / Q96; // currency1 amount
+                // WETH is the non-hatch currency
+                const isWethCurrency0 = !pool.isHatchCurrency0;
+                const wethAmount = isWethCurrency0 ? x : y;
+                totalWethReserve += parseFloat(ethers.formatEther(wethAmount));
+              }
+            }
           } catch {}
         });
 
@@ -417,7 +434,7 @@ export default function App() {
           poolsActive: poolCount,
           totalRoyaltiesWeth: parseFloat(ethers.formatEther(totalRoyalties)),
           totalBurned: parseFloat(ethers.formatEther(totalBurned)),
-          totalLiquidityWeth: totalLiquidity
+          totalLiquidityWeth: totalWethReserve
         });
       } catch (err) {
         console.error("Protocol stats fetch error:", err);
@@ -1400,9 +1417,7 @@ export default function App() {
             <div className="stat-ribbon-item">
               <div className="stat-ribbon-value">
                 {(() => {
-                  const val = protocolStats.totalLiquidityWeth > 0n
-                    ? parseFloat(ethers.formatEther(protocolStats.totalLiquidityWeth))
-                    : 0;
+                  const val = protocolStats.totalLiquidityWeth;
                   if (val === 0) return "0 WETH";
                   if (val < 0.0001) return `${val.toFixed(8)} WETH`;
                   if (val < 0.01) return `${val.toFixed(6)} WETH`;
