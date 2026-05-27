@@ -2295,10 +2295,10 @@ export default function App() {
               </div>
 
               {/* Main Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "24px", marginBottom: "24px" }}>
+              <div className="portal-grid">
                 
                 {/* Left Card: Swap Terminal */}
-                <div className="glass-card" style={{ gridColumn: "span 4", padding: "24px" }}>
+                <div className="glass-card portal-col-4" style={{ padding: "24px" }}>
                   <h2 style={{ fontSize: "1.15rem", fontWeight: "700", marginBottom: "16px", color: "var(--ink)" }}>
                     1. Swap Terminal
                   </h2>
@@ -2602,7 +2602,7 @@ export default function App() {
                 </div>
 
                 {/* Center Card: Decay Monitor */}
-                <div className="glass-card" style={{ gridColumn: "span 8", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div className="glass-card portal-col-8" style={{ padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                     <div>
                       <h2 style={{ fontSize: "1.15rem", fontWeight: "700", color: "var(--ink)" }}>
@@ -2683,7 +2683,7 @@ export default function App() {
                   </div>
 
                   {/* Rule Details */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginTop: "16px", background: "rgba(255,255,255,0.2)", border: "1px solid var(--line)", borderRadius: "10px", padding: "12px" }}>
+                  <div className="decay-stats-grid">
                     <div>
                       <div style={{ color: "var(--color-text-muted)", fontSize: "0.75rem", textTransform: "uppercase" }}>
                         {activeDecayMode === "block" ? "Blocks Remaining" : "Time Remaining"}
@@ -2768,11 +2768,11 @@ export default function App() {
               )}
 
               {/* Bottom Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "24px" }}>
+              <div className="portal-grid-bottom">
                 
                 {/* Simulation Panel */}
                 {targetChainId !== 196 && (
-                  <div className="glass-card" style={{ gridColumn: "span 12", padding: "28px", marginBottom: "12px" }}>
+                  <div className="glass-card portal-col-12" style={{ padding: "28px", marginBottom: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
                       <div>
                         <h2 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--ink)", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -2855,7 +2855,7 @@ export default function App() {
                 )}
                 
                 {/* Payout & Buyback Card */}
-                <div className="glass-card" style={{ gridColumn: "span 6", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div className="glass-card portal-col-6" style={{ padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div>
                     <h2 style={{ fontSize: "1.15rem", fontWeight: "700", color: "var(--ink)", marginBottom: "4px" }}>
                       3. Payout &amp; Deflationary Buyback
@@ -3101,7 +3101,7 @@ export default function App() {
                 </div>
 
                 {/* Blockchain Console */}
-                <div style={{ gridColumn: "span 6" }}>
+                <div className="portal-col-6">
                   <div ref={terminalRef} className="terminal-panel">
                     <div className="terminal-header">
                       <div className="terminal-dots">

@@ -365,6 +365,21 @@ h2 .serif, h1 .serif, .serif {
   -webkit-text-fill-color: transparent;
 }
 
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-box {
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+  .stat-value {
+    font-size: 1.15rem;
+  }
+}
+
 /* Hatching Egg Hero Graphic */
 .egg-container {
   position: relative;
@@ -918,6 +933,63 @@ h2 .serif, h1 .serif, .serif {
   color: var(--ink-soft);
   line-height: 1.5;
   margin: 0;
+}
+
+/* Decay Monitor Stats Grid */
+.decay-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+@media (max-width: 640px) {
+  .decay-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px 10px;
+  }
+  .decay-stats-grid div > div:first-child {
+    font-size: 0.68rem !important;
+  }
+  .decay-stats-grid div > div:last-child {
+    font-size: 0.82rem !important;
+    word-break: break-word;
+  }
+}
+
+/* Portal Grid (12-col that stacks on mobile) */
+.portal-grid,
+.portal-grid-bottom {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.portal-col-4 { grid-column: span 4; }
+.portal-col-6 { grid-column: span 6; }
+.portal-col-8 { grid-column: span 8; }
+.portal-col-12 { grid-column: span 12; }
+
+@media (max-width: 640px) {
+  .portal-grid,
+  .portal-grid-bottom {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .portal-col-4,
+  .portal-col-6,
+  .portal-col-8,
+  .portal-col-12 {
+    grid-column: span 1;
+  }
+  .portal-grid .glass-card,
+  .portal-grid-bottom .glass-card {
+    padding: 18px !important;
+  }
 }
 
 /* Console Tabs */
