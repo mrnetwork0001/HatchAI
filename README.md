@@ -1,12 +1,12 @@
-<p align="center">
-  <img src="frontend/public/favicon.svg" width="80" alt="HatchAI Logo" />
-</p>
-
 <h1 align="center">HatchAI</h1>
 
 <p align="center">
   <strong>Uniswap V4 Hook-Protected Token Launchpad on X Layer</strong>
 </p>
+---
+
+<img width="1577" height="988" alt="27 05 2026_12 38 24_REC" src="https://github.com/user-attachments/assets/9c4f9d42-033b-4089-9bab-3297053879d4"/>
+
 
 <p align="center">
   <a href="https://hatchai.online">🌐 Live App</a> ·
@@ -14,14 +14,6 @@
   <a href="https://flasp.sh">⚡ Flasp.sh</a>
 </p>
 
-<p align="center">
-  <a href="https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0"><img src="https://img.shields.io/badge/Mainnet-Live-brightgreen?style=flat-square" alt="Mainnet Status" /></a>
-  <img src="https://img.shields.io/badge/Solidity-0.8.24-363636?style=flat-square&logo=solidity" alt="Solidity" />
-  <img src="https://img.shields.io/badge/Uniswap-V4_Hooks-FF007A?style=flat-square" alt="Uniswap V4" />
-  <img src="https://img.shields.io/badge/Chain-X_Layer_(196)-blue?style=flat-square" alt="X Layer" />
-  <img src="https://img.shields.io/badge/Flasp.sh-Integrated-orange?style=flat-square" alt="Flasp.sh" />
-  <img src="https://img.shields.io/badge/License-ISC-yellow?style=flat-square" alt="License" />
-</p>
 
 ---
 
