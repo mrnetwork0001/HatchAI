@@ -193,6 +193,43 @@ const CheckIcon = ({ size = 16, color = "var(--success)", style }) => (
   </svg>
 );
 
+// Custom icons replacing emojis
+const CoinsIcon = ({ size = 28, color = "var(--coral)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <circle cx="9" cy="12" r="6" /><path d="M15 7a6 6 0 010 10" /><path d="M9 9v2h2M9 13v2" />
+  </svg>
+);
+
+const VaultIcon = ({ size = 28, color = "var(--success)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 19v2M17 19v2" /><circle cx="12" cy="14" r="2" /><path d="M12 10v2" />
+  </svg>
+);
+
+const FireIcon = ({ size = 28, color = "var(--error)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <path d="M12 2c.5 3.5 4.5 6 4.5 10a6.5 6.5 0 11-13 0c0-4 4-6.5 4.5-10" /><path d="M12 18a3 3 0 003-3c0-2-3-3.5-3-6-0 2.5-3 4-3 6a3 3 0 003 3z" />
+  </svg>
+);
+
+const GraduateIcon = ({ size = 28, color = "var(--coral)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <path d="M22 10l-10-5L2 10l10 5 10-5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /><path d="M22 10v6" />
+  </svg>
+);
+
+const HooksIcon = ({ size = 28, color = "var(--coral)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <path d="M12 3v9" /><path d="M8 8l4-5 4 5" /><path d="M8 15a4 4 0 008 0" /><path d="M8 15v-3M16 15v-3" />
+  </svg>
+);
+
+const LayersIcon = ({ size = 28, color = "var(--coral)", style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <polygon points="12 2 2 7 12 12 22 7" /><path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+  </svg>
+);
+
 const renderSimIcon = (type) => {
   switch (type) {
     case "bot":
@@ -1622,7 +1659,7 @@ export default function App() {
             <div className="yield-flow">
               {/* Source */}
               <div className="yield-flow-source">
-                <div className="yield-flow-source-icon">💰</div>
+                <div className="yield-flow-source-icon"><CoinsIcon size={24} color="var(--coral)" /></div>
                 <div>
                   <div style={{ fontWeight: "700", fontSize: "0.95rem", color: "var(--ink)" }}>Swap Fees Collected</div>
                   <div style={{ fontSize: "0.8rem", color: "var(--muted)" }}>HatchHook intercepts every trade fee onchain</div>
@@ -1641,16 +1678,64 @@ export default function App() {
               <div className="yield-flow-destinations">
                 <div className="yield-dest-card yield-dest-green">
                   <div className="yield-dest-badge" style={{ background: "var(--success)" }}>50%</div>
-                  <div className="yield-dest-emoji">🏦</div>
+                  <div className="yield-dest-emoji"><VaultIcon size={28} color="var(--success)" /></div>
                   <h4 className="yield-dest-title">Creator Royalties</h4>
                   <p className="yield-dest-desc">Sent to the creator wallet. Passive income from every swap to fund development.</p>
                 </div>
                 <div className="yield-dest-card yield-dest-red">
                   <div className="yield-dest-badge" style={{ background: "var(--error)" }}>50%</div>
-                  <div className="yield-dest-emoji">🔥</div>
+                  <div className="yield-dest-emoji"><FireIcon size={28} color="var(--error)" /></div>
                   <h4 className="yield-dest-title">Buyback & Burn</h4>
                   <p className="yield-dest-desc">Buys tokens from the pool and burns them. Constant buy pressure, shrinking supply.</p>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Ecosystem & Roadmap */}
+          <section style={{ marginBottom: "60px" }}>
+            <h3 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "12px", textAlign: "center", color: "var(--ink)" }}>
+              Ecosystem & Roadmap
+            </h3>
+            <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.9rem", maxWidth: "480px", margin: "0 auto 36px auto" }}>
+              Built on proven infrastructure, growing toward full-stack launch coverage
+            </p>
+
+            <div className="roadmap-grid">
+              {/* Flap.sh graduation - the highlight */}
+              <div className="roadmap-card roadmap-highlight">
+                <div className="roadmap-badge roadmap-badge-soon">Coming Soon</div>
+                <div className="roadmap-emoji"><GraduateIcon size={32} color="var(--coral)" /></div>
+                <h4 className="roadmap-title">Flap.sh Token Graduation</h4>
+                <p className="roadmap-desc">
+                  Tokens launched through HatchAI can graduate to <a href="https://flap.sh" target="_blank" rel="noopener noreferrer" style={{ color: "var(--coral)", fontWeight: "600" }}>Flap.sh</a> for
+                  broader social trading and discovery. Once the HatchAI decay period ends and protections expire, creators
+                  can migrate their token to Flap.sh's fair-launch marketplace - unlocking social trading feeds, community analytics,
+                  and exposure to Flap's active trader base on X Layer.
+                </p>
+                <div style={{ marginTop: "14px", fontSize: "0.75rem", color: "var(--muted)", fontFamily: "Geist Mono, monospace" }}>
+                  HATCHAI SAFE-LAUNCH → FLAP.SH SOCIAL TRADING
+                </div>
+              </div>
+
+              {/* Uniswap V4 */}
+              <div className="roadmap-card">
+                <div className="roadmap-badge roadmap-badge-live">Live</div>
+                <div className="roadmap-emoji"><HooksIcon size={32} color="#7c6dd8" /></div>
+                <h4 className="roadmap-title">Uniswap V4 Hooks</h4>
+                <p className="roadmap-desc">
+                  Native Hook integration with Uniswap V4's PoolManager. All protections are enforced at the pool level via beforeSwap callbacks - no wrappers.
+                </p>
+              </div>
+
+              {/* X Layer */}
+              <div className="roadmap-card">
+                <div className="roadmap-badge roadmap-badge-live">Live</div>
+                <div className="roadmap-emoji"><LayersIcon size={32} color="var(--coral-deep)" /></div>
+                <h4 className="roadmap-title">X Layer Native</h4>
+                <p className="roadmap-desc">
+                  Deployed on OKX's X Layer (zkEVM L2). Low gas fees, fast finality, and full EVM compatibility. Supports OKX Wallet natively.
+                </p>
               </div>
             </div>
           </section>

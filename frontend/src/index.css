@@ -920,6 +920,86 @@ h2 .serif, h1 .serif, .serif {
   margin: 0;
 }
 
+/* Roadmap / Ecosystem Grid */
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.roadmap-grid .roadmap-card:not(.roadmap-highlight) {
+  /* The two smaller cards sit side by side */
+}
+/* Use a sub-grid trick: wrap the two small cards */
+@media (min-width: 520px) {
+  .roadmap-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .roadmap-highlight {
+    grid-column: 1 / -1;
+  }
+}
+
+.roadmap-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px 22px;
+  text-align: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+.roadmap-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.roadmap-highlight {
+  border-color: rgba(210, 130, 90, 0.3);
+  background: linear-gradient(135deg, rgba(210, 130, 90, 0.04), rgba(210, 130, 90, 0.01));
+}
+.roadmap-highlight:hover {
+  border-color: var(--coral);
+}
+
+.roadmap-badge {
+  display: inline-block;
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  margin-bottom: 12px;
+}
+.roadmap-badge-soon {
+  background: rgba(210, 130, 90, 0.12);
+  color: var(--coral-deep);
+}
+.roadmap-badge-live {
+  background: rgba(95, 155, 108, 0.12);
+  color: var(--success);
+}
+
+.roadmap-emoji {
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+}
+.roadmap-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.roadmap-desc {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* FAQ Accordions */
 .faq-section {
   max-width: 800px;
