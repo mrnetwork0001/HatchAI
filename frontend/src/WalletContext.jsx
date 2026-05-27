@@ -358,6 +358,32 @@ export function WalletProvider({ children }) {
     }
   });
 
+  // Fetch from backend on load
+  useEffect(() => {
+    const fetchBackendPools = async () => {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+        const res = await fetch(`${backendUrl}/pools`);
+        if (res.ok) {
+          const data = await res.json();
+          setCustomPools(prev => {
+            const merged = [...data];
+            // Merge any local-only pools that failed to sync
+            prev.forEach(lp => {
+              if (!merged.find(p => p.poolId === lp.poolId)) {
+                merged.push(lp);
+              }
+            });
+            return merged;
+          });
+        }
+      } catch (e) {
+        console.error("Failed to fetch pools from backend:", e.message);
+      }
+    };
+    fetchBackendPools();
+  }, []);
+
   // ── Log Helper ──────────────────────────────────────────────────────────────
   const addLog = useCallback((tag, message, type = "info") => {
     const timestamp = new Date().toLocaleTimeString();
@@ -1457,6 +1483,18 @@ export function WalletProvider({ children }) {
         return updated;
       });
 
+      // Post to backend
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+        await fetch(`${backendUrl}/pools`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newPool)
+        });
+      } catch (e) {
+        console.error("Failed to sync pool to backend", e);
+      }
+
       return { success: true, txHash: initTxHash, poolId: newPoolId };
     } catch (err) {
       console.error(err);
@@ -1609,6 +1647,18 @@ export function WalletProvider({ children }) {
         }
         return updated;
       });
+
+      // Post to backend
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+        await fetch(`${backendUrl}/pools`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(importedPool)
+        });
+      } catch (e) {
+        console.error("Failed to sync pool to backend", e);
+      }
 
       // Switch active pool context in UI
       setActivePoolKey(poolKey);
