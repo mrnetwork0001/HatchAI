@@ -74,8 +74,7 @@ interface IHooks {
         address sender,
         PoolKey calldata key,
         uint160 sqrtPriceX96,
-        int24 tick,
-        bytes calldata hookData
+        int24 tick
     ) external returns (bytes4);
 
     function beforeAddLiquidity(
@@ -153,8 +152,7 @@ interface IPoolManager {
 
     function initialize(
         PoolKey calldata key,
-        uint160 sqrtPriceX96,
-        bytes calldata hookData
+        uint160 sqrtPriceX96
     ) external returns (int24 tick);
 
     function swap(

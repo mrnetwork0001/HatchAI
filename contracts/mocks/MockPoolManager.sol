@@ -26,8 +26,7 @@ contract MockPoolManager is IPoolManager {
 
     function initialize(
         PoolKey calldata key,
-        uint160 sqrtPriceX96,
-        bytes calldata hookData
+        uint160 sqrtPriceX96
     ) external override returns (int24 tick) {
         bytes32 poolId = key.toId();
         require(!pools[poolId].initialized, "Pool already initialized");
@@ -41,7 +40,7 @@ contract MockPoolManager is IPoolManager {
         emit PoolInitialized(poolId, key.currency0, key.currency1, key.fee);
 
         if (key.hooks != address(0)) {
-            IHooks(key.hooks).afterInitialize(msg.sender, key, sqrtPriceX96, 0, hookData);
+            IHooks(key.hooks).afterInitialize(msg.sender, key, sqrtPriceX96, 0);
         }
 
         return 0;

@@ -30,8 +30,7 @@ abstract contract BaseHook is IHooks {
         address,
         PoolKey calldata,
         uint160,
-        int24,
-        bytes calldata
+        int24
     ) external virtual override onlyPoolManager returns (bytes4) {
         revert("Not implemented");
     }

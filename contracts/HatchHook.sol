@@ -51,7 +51,11 @@ contract HatchHook is BaseHook, IERC721Receiver {
     event LaunchInitialized(bytes32 indexed poolId, address indexed creator, address projectToken, uint256 launchTime);
     event FeesDistributed(bytes32 indexed poolId, uint256 creatorShare, uint256 buybackAmount, uint256 tokensBurned);
 
-    constructor(IPoolManager _manager) BaseHook(_manager) {}
+    address public immutable weth;
+
+    constructor(IPoolManager _manager, address _weth) BaseHook(_manager) {
+        weth = _weth;
+    }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
@@ -74,24 +78,30 @@ contract HatchHook is BaseHook, IERC721Receiver {
 
     function afterInitialize(
         address,
-        PoolKey calldata key,
+        PoolKey calldata,
         uint160,
-        int24,
-        bytes calldata hookData
+        int24
     ) external override onlyPoolManager returns (bytes4) {
-        (
-            address creator,
-            address projectToken,
-            uint256 decayDuration,
-            uint24 startFee,
-            uint24 endFee,
-            uint256 maxSwapAmount,
-            uint256 cooldownDuration
-        ) = abi.decode(hookData, (address, address, uint256, uint24, uint24, uint256, uint256));
+        return this.afterInitialize.selector;
+    }
 
+    function initializeLaunchPool(
+        PoolKey calldata key,
+        uint256 decayDuration,
+        uint24 startFee,
+        uint24 endFee,
+        uint256 maxSwapAmount,
+        uint256 cooldownDuration
+    ) external {
         bytes32 poolId = key.toId();
+        LaunchConfig storage config = poolConfigs[poolId];
+        require(config.creator == address(0), "Hatch: pool already configured");
+        require(key.hooks == address(this), "Hatch: invalid hook address");
+
+        address projectToken = (key.currency0 == weth) ? key.currency1 : key.currency0;
+
         poolConfigs[poolId] = LaunchConfig({
-            creator: creator,
+            creator: msg.sender,
             projectToken: projectToken,
             launchTime: block.timestamp,
             decayDuration: decayDuration,
@@ -101,8 +111,7 @@ contract HatchHook is BaseHook, IERC721Receiver {
             cooldownDuration: cooldownDuration
         });
 
-        emit LaunchInitialized(poolId, creator, projectToken, block.timestamp);
-        return this.afterInitialize.selector;
+        emit LaunchInitialized(poolId, msg.sender, projectToken, block.timestamp);
     }
 
     function beforeSwap(

@@ -2,15 +2,15 @@
   "196": {
     "chainId": 196,
     "network": "xlayer_mainnet",
-    "deployedAt": "2026-05-26T17:01:21.127Z",
+    "deployedAt": "2026-05-27T04:32:36.353Z",
     "deployer": "0x8131208c08AFe5187C41F7A04746d058600804b2",
     "contracts": {
       "poolManager": "0x360e68faccca8ca495c1b759fd9eee466db9fb32",
-      "hatchHook": "0x29b7f2A8a328066D070a9fC08A013e49F04a90c0",
+      "hatchHook": "0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0",
       "weth": "0x5a77f1443d16ee5761d310e38b62f77f726bc71c",
       "usdt0": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736",
       "positionManager": "0xcf1eafc6928dc385a342e7c6491d371d2871458b",
-      "create2Deployer": "0xcC569e39D0142588E00A12df6F370FE99a073e1E"
+      "create2Deployer": "0x5C3322358C4F3e426870d2eF96cDEc2CF4252E19"
     },
     "explorerUrl": "https://www.oklink.com/xlayer"
   },

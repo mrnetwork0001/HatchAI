@@ -311,6 +311,7 @@ export default function App() {
     disconnect,
     initializePool,
     importPool,
+    addLiquidity,
     deployToken,
     mintWeth,
     resetToDefaultPool,
@@ -336,6 +337,11 @@ export default function App() {
   const [agentThreshold, setAgentThreshold] = useState("0.02");
   const [agentLog, setAgentLog] = useState("Standing by...");
   const terminalRef = useRef(null);
+
+  // Add Liquidity state
+  const [liqProjectAmount, setLiqProjectAmount] = useState("");
+  const [liqWethAmount, setLiqWethAmount] = useState("");
+  const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
 
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -956,10 +962,10 @@ export default function App() {
 
   const startX = padding;
   const endX = chartWidth - padding;
-  const startY = mapY(startFeeDecimal);
-  const endY = mapY(endFeeDecimal);
-  const currentX = startX + progressRatio * (endX - startX);
-  const currentY = mapY(currentFeeRate);
+  const startY = isNaN(mapY(startFeeDecimal)) ? padding : mapY(startFeeDecimal);
+  const endY = isNaN(mapY(endFeeDecimal)) ? (chartHeight - padding) : mapY(endFeeDecimal);
+  const currentX = isNaN(progressRatio) ? startX : startX + progressRatio * (endX - startX);
+  const currentY = isNaN(mapY(currentFeeRate)) ? endY : mapY(currentFeeRate);
 
   const getBlockDecayPath = () => {
     const x0 = startX;
@@ -1522,35 +1528,8 @@ export default function App() {
             </button>
           </div>
 
-          {/* Active Pool Reset Info */}
-          {isCustomPoolActive && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "rgba(210, 130, 90, 0.05)",
-                border: "1px solid rgba(210, 130, 90, 0.2)",
-                borderRadius: "100px",
-                padding: "8px 20px",
-                marginBottom: "24px",
-                fontSize: "0.85rem",
-                color: "var(--ink-soft)"
-              }}
-            >
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                <InfoIcon size={14} color="var(--ink-soft)" />
-                Currently viewing custom pool for token: <strong>{projectTokenDetails.symbol}</strong> ({projectTokenDetails.projectTokenAddress.slice(0, 10)}...{projectTokenDetails.projectTokenAddress.slice(-6)})
-              </span>
-              <button
-                onClick={resetToDefaultPool}
-                className="btn-outline"
-                style={{ padding: "4px 14px", fontSize: "0.75rem" }}
-              >
-                Reset to default HATCH
-              </button>
-            </div>
-          )}
+
+
 
           {/* ── Wallet Info Row (when connected) ────────────────────────────────── */}
           {isConnected && (
@@ -1947,7 +1926,10 @@ export default function App() {
                     WETH Pool Reserve
                   </div>
                   <div className="stat-value">
-                    {poolReserves.weth.toLocaleString(undefined, { maximumFractionDigits: 2 })} WETH
+                    {poolReserves.weth === 0 && poolReserves.hatch === 0 && targetChainId === 196
+                      ? <span style={{ color: "var(--color-text-secondary)", fontSize: "0.95rem" }}>No Liquidity</span>
+                      : <>{poolReserves.weth.toLocaleString(undefined, { maximumFractionDigits: 2 })} WETH</>
+                    }
                   </div>
                 </div>
 
@@ -1956,7 +1938,10 @@ export default function App() {
                     {projectTokenDetails.symbol} Pool Reserve
                   </div>
                   <div className="stat-value">
-                    {poolReserves.hatch.toLocaleString(undefined, { maximumFractionDigits: 0 })} {projectTokenDetails.symbol}
+                    {poolReserves.weth === 0 && poolReserves.hatch === 0 && targetChainId === 196
+                      ? <span style={{ color: "var(--color-text-secondary)", fontSize: "0.95rem" }}>No Liquidity</span>
+                      : <>{poolReserves.hatch.toLocaleString(undefined, { maximumFractionDigits: 0 })} {projectTokenDetails.symbol}</>
+                    }
                   </div>
                 </div>
               </div>
@@ -1984,6 +1969,55 @@ export default function App() {
                     </div>
                   ) : (
                     <>
+                      {/* Add Liquidity panel — shown when pool has no liquidity on mainnet */}
+                      {poolReserves.weth === 0 && poolReserves.hatch === 0 && targetChainId === 196 && (
+                        <div style={{
+                          marginBottom: "16px",
+                          padding: "16px",
+                          borderRadius: "12px",
+                          border: "1px dashed var(--coral)",
+                          background: "rgba(210, 130, 90, 0.04)"
+                        }}>
+                          <div style={{ fontWeight: "600", fontSize: "0.9rem", color: "var(--coral-deep)", marginBottom: "8px" }}>
+                            ⚡ Pool needs liquidity
+                          </div>
+                          <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginBottom: "12px" }}>
+                            This pool was initialized but has no liquidity yet. Add tokens to enable trading.
+                          </p>
+                          <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                            <input
+                              type="number"
+                              placeholder={`${projectTokenDetails.symbol} amount`}
+                              value={liqProjectAmount}
+                              onChange={(e) => setLiqProjectAmount(e.target.value)}
+                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: "var(--sand-light)" }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="WETH amount"
+                              value={liqWethAmount}
+                              onChange={(e) => setLiqWethAmount(e.target.value)}
+                              style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "0.85rem", background: "var(--sand-light)" }}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-neon"
+                            disabled={isAddingLiquidity || !liqProjectAmount || !liqWethAmount}
+                            style={{ width: "100%", fontSize: "0.85rem", padding: "10px" }}
+                            onClick={async () => {
+                              setIsAddingLiquidity(true);
+                              try {
+                                await addLiquidity(liqProjectAmount, liqWethAmount);
+                              } finally {
+                                setIsAddingLiquidity(false);
+                              }
+                            }}
+                          >
+                            {isAddingLiquidity ? "Adding Liquidity..." : `Add Liquidity →`}
+                          </button>
+                        </div>
+                      )}
                       <form onSubmit={handleSwap}>
                         <div style={{ marginBottom: "12px" }}>
                           <label style={{ display: "block", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginBottom: "8px", fontWeight: "600" }}>

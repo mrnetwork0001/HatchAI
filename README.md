@@ -1,151 +1,385 @@
-# HatchAI — Uniswap V4 Hook-Protected Safe Launchpad
+<p align="center">
+  <img src="frontend/public/favicon.svg" width="80" alt="HatchAI Logo" />
+</p>
 
-HatchAI is a next-generation token launchpad and swap terminal built on **X Layer Testnet** (Chain ID: `1952`), powered by customized **Uniswap V4 Hooks**. 
+<h1 align="center">HatchAI</h1>
 
-By leveraging the flexible callback architecture of Uniswap V4, HatchAI implements automated anti-bot, anti-whale, and sustainable yield systems directly at the pool level. The application features a premium soft-minimalist sand/coral/ink visual design, complete with interactive micro-animations (like a hatching egg that splits open on hover) and live onchain transaction dashboards.
+<p align="center">
+  <strong>Uniswap V4 Hook-Protected Token Launchpad on X Layer</strong>
+</p>
 
----
-
-## 🐣 The Problem with Modern Token Launches
-In the decentralized ecosystem, new token launches face severe risks:
-1. **Sniper Bots**: High-speed algorithms buy up massive portions of token supply in the exact block liquidity is added, frontrunning retail community members.
-2. **Whale Price Manipulation**: Large early swaps create massive price slippage and instigate panic selling.
-3. **Short-Term Speculation**: Most pools lose momentum because trading fees go entirely to passive liquidity providers rather than supporting ongoing project development.
-
----
-
-## 🛡️ The HatchAI Solution
-
-HatchAI introduces the **`HatchHook`**, a smart Uniswap V4 hook contract that intercepts pool actions to enforce a secure launch window:
-
-### 1. Dynamic Fee Decay
-During the launch phase, swap fees start high (e.g., `10%`) to make bot frontrunning financially non-viable. Over a configured decay duration (e.g., 24 hours), this tax decays linearly onchain down to the project's standard baseline rate (e.g., `0.3%`).
-
-### 2. Anti-Whale Swap Caps
-Restricts individual transaction sizes to a custom percentage of total pool supply during the launch phase, ensuring a decentralized and fair token distribution.
-
-### 3. Wallet Cooldown Timers
-Enforces a block-level delay between consecutive trades from the same wallet address, neutralizing high-frequency arbitrage algorithms.
-
-### 4. The Deflationary Yield Loop
-Instead of fees disappearing into passive LP positions, the hook contract holds and harvests collected base tokens (WETH). Upon claim, fees are automatically split onchain:
-*   **50% Creator Yield**: Sent directly to the project creator to sustainably fund ongoing development.
-*   **50% Buyback & Burn**: Used to automatically buy back project tokens from the Uniswap pool and burn them instantly, applying constant buying pressure and reducing the token supply.
+<p align="center">
+  <a href="https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0"><img src="https://img.shields.io/badge/Mainnet-Live-brightgreen?style=flat-square" alt="Mainnet Status" /></a>
+  <img src="https://img.shields.io/badge/Solidity-0.8.24-363636?style=flat-square&logo=solidity" alt="Solidity" />
+  <img src="https://img.shields.io/badge/Uniswap-V4_Hooks-FF007A?style=flat-square" alt="Uniswap V4" />
+  <img src="https://img.shields.io/badge/Chain-X_Layer_(196)-blue?style=flat-square" alt="X Layer" />
+  <img src="https://img.shields.io/badge/License-ISC-yellow?style=flat-square" alt="License" />
+</p>
 
 ---
 
-## 🧬 HatchAI & Launchpads (e.g., Flap.sh): A Complementary Evolution
+## Table of Contents
 
-HatchAI is designed to run alongside and supercharge existing token launchpads like **Flap.sh** on **X Layer** and **Uniswap V4**. 
-
-Rather than competing with traditional bonding curve models, HatchAI acts as an **advanced liquidity infrastructure extension** that solves a critical post-launch phase problem: **Post-Migration Security & Sustainable Yield**.
-
-### 1. The Post-Migration Security Shield for Flap.sh
-When tokens launched on **Flap.sh** reach their bonding curve target, their liquidity is migrated to a standard DEX pool on Uniswap. At this exact moment of handoff, all bonding-curve level protections (such as whale limits or price stability mechanisms) disappear, exposing the brand new pool to sniper bots and instant whale manipulation.
-
-* **How HatchAI integrates:** Instead of migrating Flap.sh tokens into a vanilla Uniswap pool, they can be deployed directly into a **HatchHook-protected Uniswap V4 pool**. 
-* **The Result:** The newly migrated token retains institutional-grade swap caps, decaying launch taxes, wallet cooldowns, and automated yield harvesting natively inside the Uniswap V4 pool, ensuring a safe transition onto the public DEX.
-
-### 2. Direct-to-DEX Alternative via V4 Native Hooks
-For projects that prefer to bypass the bonding curve phase entirely, HatchAI provides a direct route by initiating trading in a Uniswap V4 pool from block one. 
-
-* **No Migration Bottlenecks:** The hook coordinates all initial whale protections, dynamic fee decays, and deflationary buyback-burns directly inside the pool. 
-* **Seamless Maturity:** Once the custom launch window passes, the fees dynamically decay and limits disable onchain. The pool transitions into a standard trading pool without moving a single wei of liquidity, eliminating expensive gas and transaction failure risks.
+- [Overview](#overview)
+- [Problem Statement](#problem-statement)
+- [How HatchAI Works](#how-hatchai-works)
+- [Architecture](#architecture)
+- [Smart Contracts](#smart-contracts)
+- [Deployed Addresses](#deployed-addresses)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Deployment](#deployment)
+- [Testing](#testing)
+- [Usage Guide](#usage-guide)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## ⚙️ Architecture Workflow
+## Overview
+
+HatchAI is a decentralized token launchpad built on **X Layer** (OKX's EVM L2), powered by **Uniswap V4 Hooks**. It provides institutional-grade launch protection through on-chain dynamic fee decay, anti-whale swap caps, and wallet cooldown timers — all enforced natively inside the Uniswap V4 pool, with zero off-chain dependencies.
+
+Projects can launch tokens directly into protected Uniswap V4 pools where bot frontrunning is financially disincentivized, whale manipulation is capped, and creator yield is automatically generated through a deflationary buyback-and-burn loop.
+
+---
+
+## Problem Statement
+
+Modern token launches on decentralized exchanges suffer from three critical vulnerabilities:
+
+| Threat | Description | Impact |
+|--------|------------|--------|
+| **Sniper Bots** | Algorithms that buy massive supply in the exact block liquidity is added, frontrunning retail participants | Unfair distribution; community priced out |
+| **Whale Manipulation** | Large early swaps that create extreme price slippage and trigger panic selling | Price instability; eroded trust |
+| **Unsustainable Yield** | Trading fees go entirely to passive LPs, providing no funding for ongoing project development | Projects lose momentum post-launch |
+
+Existing launchpad models (bonding curves, fair launches) protect the pre-DEX phase but offer **zero protection once liquidity migrates to a public pool**. HatchAI fills this gap.
+
+---
+
+## How HatchAI Works
+
+HatchAI introduces the **`HatchHook`** — a Uniswap V4 hook contract that intercepts swap operations to enforce a configurable launch protection window.
+
+### 🛡️ Dynamic Fee Decay
+
+Swap fees start high (e.g., **10%**) at launch, making bot frontrunning financially non-viable. Over a configurable decay duration (e.g., 24 hours), the fee decays **linearly on-chain** to the project's baseline rate (e.g., **0.3%**).
+
+```
+Launch          12h (~5.2%)         24h (0.3%)
+  ●━━━━━━━━━━━━━━━●━━━━━━━━━━━━━━━━●
+ 10% fee         decaying...       standard fee
+```
+
+### 🐋 Anti-Whale Swap Caps
+
+Individual transaction sizes are capped during the launch phase, enforcing a maximum swap amount per trade. This ensures decentralized and fair token distribution among early participants.
+
+### ⏱️ Wallet Cooldown Timers
+
+A configurable delay (in seconds) is enforced between consecutive trades from the same wallet address, neutralizing high-frequency trading algorithms.
+
+### 🔥 Deflationary Yield Loop
+
+Collected trading fees (in WETH) are harvested and split on-chain:
+
+- **50% → Creator Yield**: Sent directly to the project creator wallet
+- **50% → Buyback & Burn**: Used to buy project tokens from the pool and burn them, applying constant buy pressure and reducing circulating supply
+
+---
+
+## Architecture
 
 ```mermaid
 graph TD
-    User([User / Trader]) -->|1. Swap WETH for Project Token| PM[Uniswap V4 PoolManager]
-    PM -->|2. beforeSwap Hook Callback| HH[HatchHook]
-    HH -->|3. Check Whale Caps & Cooldowns| HH
-    HH -->|4. Compute Dynamic Decaying Tax| HH
-    HH -->|5. Return Modified Fee| PM
-    PM -->|6. Execute Trade & Hold Fees in Hook| HH
-    Developer([Project Creator]) -->|7. Trigger Claim/Harvest| HH
-    HH -->|8. Split Fees 50/50| HH
-    HH -->|9a. 50% Creator Yield| DevWallet[Creator Wallet]
-    HH -->|9b. 50% Buyback & Burn| PM
-    PM -->|10. Burn Project Tokens| BurnAddress[Zero Address]
+    User([Trader]) -->|1. Swap WETH ↔ Token| PM[Uniswap V4 PoolManager]
+    PM -->|2. beforeSwap callback| HH[HatchHook Contract]
+    HH -->|3. Enforce whale caps & cooldowns| HH
+    HH -->|4. Compute dynamic decaying fee| HH
+    HH -->|5. Return modified fee| PM
+    PM -->|6. Execute trade & accrue fees in Hook| HH
+
+    Creator([Project Creator]) -->|7. Claim & harvest| HH
+    HH -->|8a. 50% creator yield| CreatorWallet[Creator Wallet]
+    HH -->|8b. 50% buyback & burn| PM
+    PM -->|9. Burn tokens| Burn[Zero Address 🔥]
+```
+
+### Contract Interaction Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     User's Wallet                           │
+│  MetaMask / OKX Wallet                                      │
+└──────────────────┬──────────────────────────────────────────┘
+                   │ swap(poolKey, params, hookData)
+                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Uniswap V4 PoolManager                         │
+│  0x360e68faCcca8cA495c1B759Fd9EEe466db9FB32                │
+│                                                             │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ initialize() │  │ beforeSwap() │  │ afterInitialize()│  │
+│  └──────┬──────┘  └──────┬───────┘  └────────┬─────────┘  │
+└─────────┼────────────────┼───────────────────┼─────────────┘
+          │                │                   │
+          ▼                ▼                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 HatchHook Contract                          │
+│  Permission Mask: 0x10C0 (afterInitialize|beforeSwap|       │
+│                           afterSwap)                        │
+│                                                             │
+│  ┌──────────────────┐  ┌────────────────────────────────┐  │
+│  │  LaunchConfig     │  │  Fee Decay Engine              │  │
+│  │  - creator        │  │  - startFee → endFee           │  │
+│  │  - projectToken   │  │  - linear decay over duration  │  │
+│  │  - decayDuration  │  │  - per-wallet cooldown         │  │
+│  │  - maxSwapAmount  │  │  - anti-whale cap enforcement  │  │
+│  └──────────────────┘  └────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Smart Contracts & Deployment Info
+## Smart Contracts
 
-HatchAI is deployed and active on **X Layer Testnet**:
+| Contract | Description | Source |
+|----------|-------------|--------|
+| `HatchHook.sol` | Core hook implementing dynamic fees, anti-whale caps, cooldowns, and yield harvesting | [`contracts/HatchHook.sol`](contracts/HatchHook.sol) |
+| `BaseHook.sol` | Abstract base providing Uniswap V4 hook callback scaffolding and `onlyPoolManager` guard | [`contracts/BaseHook.sol`](contracts/BaseHook.sol) |
+| `UniswapV4Types.sol` | Type definitions for `PoolKey`, `IHooks`, `IPoolManager`, and helper libraries | [`contracts/UniswapV4Types.sol`](contracts/UniswapV4Types.sol) |
+| `MockPoolManager.sol` | Testnet-only mock that simulates the Uniswap V4 PoolManager for local development | [`contracts/mocks/MockPoolManager.sol`](contracts/mocks/MockPoolManager.sol) |
+| `MockERC20.sol` | Mintable ERC20 for testnet pool seeding | [`contracts/MockERC20.sol`](contracts/MockERC20.sol) |
 
-*   **PoolManager**: [`0xe5392F2AF7f2DA3C386cB879C35ABfa2DAcdaE4D`](https://www.oklink.com/xlayer-test/address/0xe5392F2AF7f2DA3C386cB879C35ABfa2DAcdaE4D)
-*   **HatchHook**: [`0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f`](https://www.oklink.com/xlayer-test/address/0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f)
-*   **Mock WETH Contract**: [`0x7dFA2F6198fA01c2105e197475d40A34032483d7`](https://www.oklink.com/xlayer-test/address/0x7dFA2F6198fA01c2105e197475d40A34032483d7)
-*   **Mock HATCH Token**: [`0x27C17772739E0A241C7b57F3229b47D6882E47FA`](https://www.oklink.com/xlayer-test/address/0x27C17772739E0A241C7b57F3229b47D6882E47FA)
+### Hook Permissions
 
-*Note: Smart contracts are compiled and deployed using Hardhat with optimizer settings enabled.*
+HatchHook requires the following Uniswap V4 hook permission flags encoded in the contract's deploy address (lower 14 bits = `0x10C0`):
+
+| Permission | Bit | Used For |
+|------------|-----|----------|
+| `afterInitialize` | 12 | Register pool with the hook on creation |
+| `beforeSwap` | 7 | Enforce anti-whale caps, cooldowns, compute dynamic fee |
+| `afterSwap` | 6 | Accrue and track collected fees |
 
 ---
 
-## 💻 Tech Stack & Design System
+## Deployed Addresses
 
-*   **Smart Contracts**: Solidity, Hardhat, Ethers.js, Uniswap V4 Core
-*   **Frontend**: React, Vite, Ethers.js (Direct providers for MetaMask and OKX Wallet)
-*   **Design Aesthetics**: Minimalist Sand theme (`#F0ECE4`), Coral accent (`#D2825A`), and Slate-Ink text (`#32343A`) with a fine-grain turbulence background overlay.
-*   **Typography**: `Work Sans` for structure, `Instrument Serif` (Italic) for headings, and `Geist Mono` for logs and numbers.
+### X Layer Mainnet (Chain ID: `196`)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| **PoolManager** (Official Uniswap V4) | `0x360e68faCcca8cA495c1B759Fd9EEe466db9FB32` | [View →](https://www.oklink.com/xlayer/address/0x360e68faCcca8cA495c1B759Fd9EEe466db9FB32) |
+| **HatchHook** | `0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0` | [View →](https://www.oklink.com/xlayer/address/0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0) |
+| **StateView** | `0x76fd297e2d437cd7f76d50f01afe6160f86e9990` | [View →](https://www.oklink.com/xlayer/address/0x76fd297e2d437cd7f76d50f01afe6160f86e9990) |
+| **PositionManager** | `0xcf1eafc6928dc385a342e7c6491d371d2871458b` | [View →](https://www.oklink.com/xlayer/address/0xcf1eafc6928dc385a342e7c6491d371d2871458b) |
+| **WETH** | `0x5A77f1443D16ee5761d310e38b62f77f726bC71c` | [View →](https://www.oklink.com/xlayer/address/0x5A77f1443D16ee5761d310e38b62f77f726bC71c) |
+
+### X Layer Testnet (Chain ID: `1952`)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| **PoolManager** (Mock) | `0xe5392F2AF7f2DA3C386cB879C35ABfa2DAcdaE4D` | [View →](https://www.oklink.com/xlayer-test/address/0xe5392F2AF7f2DA3C386cB879C35ABfa2DAcdaE4D) |
+| **HatchHook** | `0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f` | [View →](https://www.oklink.com/xlayer-test/address/0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f) |
+| **WETH** (Mock) | `0xc147621C235a8004adC2C5dFC90b78ef50B0a061` | [View →](https://www.oklink.com/xlayer-test/address/0xc147621C235a8004adC2C5dFC90b78ef50B0a061) |
+| **HATCH Token** (Mock) | `0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71` | [View →](https://www.oklink.com/xlayer-test/address/0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71) |
 
 ---
 
-## 🚀 Local Development Setup
+## Tech Stack
 
-To run HatchAI locally:
+| Layer | Technology |
+|-------|-----------|
+| **Smart Contracts** | Solidity 0.8.24, Hardhat, Ethers.js v6 |
+| **Hook Framework** | Uniswap V4 Core (IHooks, IPoolManager) |
+| **Deployment** | CREATE2 deterministic deploy (for hook address mining) |
+| **Frontend** | React 19, Vite 8, Ethers.js v6 |
+| **Wallet Integration** | MetaMask, OKX Wallet (direct `BrowserProvider`) |
+| **Chain** | X Layer Mainnet (196) / Testnet (1952) |
+| **Block Explorer** | OKLink |
+| **Design System** | Sand `#F0ECE4`, Coral `#D2825A`, Ink `#32343A` |
+| **Typography** | Work Sans · Instrument Serif (Italic) · Geist Mono |
 
-### 1. Clone the repository and install dependencies
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** ≥ 18.x
+- **npm** ≥ 9.x
+- **MetaMask** or **OKX Wallet** browser extension
+- OKB for gas (X Layer Mainnet) or test OKB (Testnet)
+
+### 1. Clone & Install
+
 ```bash
 git clone https://github.com/your-username/HatchAI.git
 cd HatchAI
 npm install
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory:
+### 2. Configure Environment
+
+Create a `.env` file in the project root:
+
 ```env
-PRIVATE_KEY=your_private_key_here
+PRIVATE_KEY=your_deployer_private_key
 XLAYER_TESTNET_RPC=https://testrpc.xlayer.tech
+XLAYER_MAINNET_RPC=https://rpc.xlayer.tech
 ```
 
-### 3. Deploy Contracts (Optional)
-If you wish to redeploy the contracts on X Layer Testnet:
+### 3. Compile Contracts
+
 ```bash
-npx hardhat run scripts/deploy.js --network xlayer_testnet
+npx hardhat compile
 ```
 
-### 4. Launch the Frontend Dev Server
+### 4. Launch Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Open [http://localhost:5173/](http://localhost:5173/) to view the app console.
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🧪 Test Guide for Hackathon Judges
+## Deployment
 
-Judges can explore the full lifecycle of HatchAI by following these steps:
+### Testnet (X Layer Testnet)
 
-1.  **Enter Launch Portal**: Click **Launch App Console** on the landing page. You will land on the **Launch Portal** displaying the live `HATCH` pool, custom launches, and upcoming locked sales.
-2.  **Connect Wallet**: Connect your wallet to **X Layer Testnet (Chain ID: 1952)** using the top-right button.
-3.  **Perform a Swap**: 
-    *   Navigate to the **Swap Terminal** for the `HATCH` pool.
-    *   Input a WETH amount (e.g., `0.1` WETH) and click **Swap WETH → HATCH**.
-    *   Observe the dynamic fee tax and watch transaction updates log in real-time inside the **X Layer Node Console** at the bottom right.
-4.  **Claim Royalties & Trigger Buyback**:
-    *   Once trades have occurred, the hook accumulates WETH fees.
-    *   Click **Claim Creator Yield & Trigger Buyback-Burn** on the swap dashboard.
-    *   Watch the Hook distribute WETH royalties to the creator, buy back HATCH, and burn them on-chain.
-5.  **Launch a Custom Pool**:
-    *   Go to the **Token Launchpad** tab.
-    *   Input a custom ERC20 token contract address.
-    *   Configure launch defense parameters (decay hours, start tax, anti-whale limit, cooldown duration).
-    *   Click **Initialize Launch Pool** to publish the new protected pool onchain.
-    *   Once initialized, enter the swap console targeting your custom token!
+Deploys MockPoolManager, HatchHook, and mock tokens:
+
+```bash
+npx hardhat run scripts/deploy.js --network xlayer_testnet
+```
+
+### Mainnet (X Layer Mainnet)
+
+Deploys HatchHook via CREATE2 against the official Uniswap V4 PoolManager. The script mines a salt to produce an address whose lower 14 bits match the hook permission mask `0x10C0`:
+
+```bash
+npx hardhat run scripts/deploy_mainnet.js --network xlayer_mainnet
+```
+
+> **Note:** The mainnet deployment script automatically updates `frontend/src/deployments.json` with the new contract addresses.
+
+---
+
+## Testing
+
+### Fork-Based E2E Test
+
+Runs a full lifecycle simulation against a forked mainnet state — deploys HatchHook via CREATE2, initializes a pool on the official PoolManager, and configures launch parameters:
+
+```bash
+npx hardhat test test/SimulateInitialize.js
+```
+
+### Local Simulation
+
+Deploys all contracts to a local Hardhat node and simulates the complete swap + fee decay lifecycle:
+
+```bash
+npx hardhat run scripts/simulate.js
+```
+
+---
+
+## Usage Guide
+
+### 1. Launch a Token Pool
+
+1. Open the app and connect your wallet to **X Layer**
+2. Navigate to the **Hatch Pool Portal**
+3. Click **+ Create Your Token Sale**
+4. Enter your ERC20 token contract address
+5. Configure launch parameters:
+   - **Decay Duration** — How long the fee decay lasts (e.g., 24 hours)
+   - **Start Fee** — Initial high fee to deter bots (e.g., 10%)
+   - **End Fee** — Baseline fee after decay completes (e.g., 0.3%)
+   - **Anti-Whale Cap** — Max tokens per swap during launch phase
+   - **Cooldown** — Seconds between swaps per wallet
+6. Click **Initialize Launch Pool** to deploy on-chain
+
+### 2. Trade on a Protected Pool
+
+1. Select a live pool from the **Pool Portal**
+2. Click **Enter Swap Terminal**
+3. Input the WETH amount and execute the swap
+4. The dynamic fee is applied automatically based on time elapsed since launch
+
+### 3. Claim Creator Yield
+
+1. Navigate to the pool dashboard
+2. Click **Claim Creator Yield & Trigger Buyback-Burn**
+3. 50% of accumulated WETH fees are sent to your wallet
+4. The remaining 50% buys back project tokens and burns them
+
+---
+
+## Project Structure
+
+```
+HatchAI/
+├── contracts/                    # Solidity smart contracts
+│   ├── HatchHook.sol            # Core hook: fees, caps, cooldowns, yield
+│   ├── BaseHook.sol             # Abstract hook base with permission system
+│   ├── UniswapV4Types.sol       # Uniswap V4 interfaces and types
+│   ├── MockERC20.sol            # Mintable test token
+│   └── mocks/
+│       └── MockPoolManager.sol  # Testnet-only pool manager mock
+│
+├── scripts/                      # Deployment and utility scripts
+│   ├── deploy.js                # Testnet full deployment
+│   ├── deploy_mainnet.js        # Mainnet CREATE2 deployment
+│   ├── simulate.js              # Local lifecycle simulation
+│   └── simulate_fork.js         # Mainnet fork simulation
+│
+├── test/
+│   └── SimulateInitialize.js    # E2E fork-based integration test
+│
+├── frontend/                     # React SPA
+│   ├── src/
+│   │   ├── App.jsx              # Main application UI
+│   │   ├── WalletContext.jsx    # On-chain state management & wallet provider
+│   │   ├── deployments.json     # Auto-updated contract addresses
+│   │   ├── index.css            # Design system & theme tokens
+│   │   └── lib/                 # Wallet connection & chain utilities
+│   └── package.json
+│
+├── hardhat.config.js             # Hardhat configuration (Solidity 0.8.24, viaIR)
+├── package.json
+└── README.md
+```
+
+---
+
+## Contributing
+
+Contributions are welcome. Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes (`git commit -m 'Add my feature'`)
+4. Push to the branch (`git push origin feature/my-feature`)
+5. Open a Pull Request
+
+Please ensure all contracts compile and tests pass before submitting.
+
+---
+
+## License
+
+This project is licensed under the [ISC License](LICENSE).
+
+---
+
+<p align="center">
+  Built on <strong>X Layer</strong> · Powered by <strong>Uniswap V4 Hooks</strong>
+</p>

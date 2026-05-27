@@ -55,9 +55,10 @@ async function main() {
   const HatchHook = await ethers.getContractFactory("HatchHook");
   const baseBytecode = HatchHook.bytecode;
 
-  // Encode constructor argument: IPoolManager _manager (pointing to official PoolManager)
+  // Encode constructor arguments: IPoolManager _manager, address _weth
+  const OFFICIAL_WETH = "0x5a77f1443d16ee5761d310e38b62f77f726bc71c";
   const abiCoder = new ethers.AbiCoder();
-  const constructorArgs = abiCoder.encode(["address"], [OFFICIAL_POOL_MANAGER]);
+  const constructorArgs = abiCoder.encode(["address", "address"], [OFFICIAL_POOL_MANAGER, OFFICIAL_WETH]);
   const creationBytecode = ethers.concat([baseBytecode, constructorArgs]);
   const creationBytecodeHash = ethers.keccak256(creationBytecode);
 

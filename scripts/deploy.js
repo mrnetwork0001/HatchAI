@@ -63,7 +63,7 @@ async function main() {
 
   console.log("\n[4/6] Deploying HatchHook...");
   const HatchHook = await ethers.getContractFactory("HatchHook");
-  const hatchHook = await HatchHook.deploy(poolManagerAddress);
+  const hatchHook = await HatchHook.deploy(poolManagerAddress, wethAddress);
   await hatchHook.waitForDeployment();
   const hatchHookAddress = await hatchHook.getAddress();
   console.log(`      HatchHook deployed: ${hatchHookAddress}`);
@@ -91,11 +91,6 @@ async function main() {
   const maxSwapAmount = ethers.parseEther("1000"); // 1,000 HATCH max per swap
   const cooldownDuration = 60;                     // 60 seconds
 
-  const hookData = ethers.AbiCoder.defaultAbiCoder().encode(
-    ["address", "address", "uint256", "uint24", "uint24", "uint256", "uint256"],
-    [deployer.address, hatchTokenAddress, decayDuration, startFee, endFee, maxSwapAmount, cooldownDuration]
-  );
-
   // sqrtPriceX96 for initial price of 1 WETH = 10 HATCH (ratio 0.1)
   // sqrtPriceX96 = sqrt(price) * 2^96
   // If WETH is currency0 and HATCH is currency1: price = HATCH/WETH = 10
@@ -103,9 +98,21 @@ async function main() {
   const sqrtPriceX96 = 250541448375047931186413801569n;
 
   console.log("\n[5/6] Initializing pool on PoolManager...");
-  const initTx = await poolManager.initialize(poolKey, sqrtPriceX96, hookData);
+  const initTx = await poolManager.initialize(poolKey, sqrtPriceX96);
   await initTx.wait();
   console.log(`      Pool initialized! Tx: ${initTx.hash}`);
+
+  console.log("      Configuring launch pool on HatchHook...");
+  const configTx = await hatchHook.initializeLaunchPool(
+    poolKey,
+    decayDuration,
+    startFee,
+    endFee,
+    maxSwapAmount,
+    cooldownDuration
+  );
+  await configTx.wait();
+  console.log(`      Launch pool configured! Tx: ${configTx.hash}`);
 
   // Seed liquidity: add 10,000 WETH + 100,000 HATCH to start
   const liquidityWeth = ethers.parseEther("10000");
