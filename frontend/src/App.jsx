@@ -344,6 +344,14 @@ export default function App() {
   const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
   const [liqSteps, setLiqSteps] = useState(null); // { step, status, message, txHash, errorReason }
 
+  // Reset seed liquidity state when switching pools
+  useEffect(() => {
+    setLiqSteps(null);
+    setLiqProjectAmount("");
+    setLiqWethAmount("");
+    setIsAddingLiquidity(false);
+  }, [poolIdHex]);
+
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
