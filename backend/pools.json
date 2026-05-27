@@ -1,0 +1,36 @@
+[
+  {
+    "poolId": "0x1ea175ae9e7f075f8539de8f118f8407c7e046300ea3e94e2f3f318dc1229bdc",
+    "chainId": 196,
+    "symbol": "HAI",
+    "isHatchCurrency0": false,
+    "projectTokenAddress": "0xef3a51df4761feab2ed21424f5123a793aea46dc",
+    "createdAt": 1779880233640,
+    "priceRatio": "1000",
+    "startFeePercent": "10",
+    "endFeePercent": "0.3",
+    "maxSwapAmountTokens": "1000",
+    "cooldownSeconds": "30",
+    "decayDurationHours": "24",
+    "decayMode": "time",
+    "startBlock": 0,
+    "poolKey": {}
+  },
+  {
+    "poolId": "0x8fb70c677e4715d804e07a0a3f976e8e985b56a83fc5bcc8d076c31718ae2989",
+    "chainId": 196,
+    "symbol": "NTU",
+    "isHatchCurrency0": false,
+    "projectTokenAddress": "0x27f2373d532b94cd060da9303e8aeb1794a58d61",
+    "createdAt": 1779880233640,
+    "priceRatio": "1000",
+    "startFeePercent": "10",
+    "endFeePercent": "0.3",
+    "maxSwapAmountTokens": "1000",
+    "cooldownSeconds": "30",
+    "decayDurationHours": "24",
+    "decayMode": "time",
+    "startBlock": 0,
+    "poolKey": {}
+  }
+]

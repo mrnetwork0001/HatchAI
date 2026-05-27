@@ -349,31 +349,47 @@ export function WalletProvider({ children }) {
   }, [poolIdHex]);
 
   // ── Custom Pool Registrations ───────────────────────────────────────────────
+  // Hardcoded showcase pools — always present regardless of backend or localStorage
+  const SHOWCASE_POOLS = [
+    { poolId: "0x1ea175ae9e7f075f8539de8f118f8407c7e046300ea3e94e2f3f318dc1229bdc", chainId: 196, symbol: "HAI", isHatchCurrency0: false, projectTokenAddress: "0xef3a51df4761feab2ed21424f5123a793aea46dc", createdAt: 1779880233640, priceRatio: "1000", startFeePercent: "10", endFeePercent: "0.3", maxSwapAmountTokens: "1000", cooldownSeconds: "30", decayDurationHours: "24", decayMode: "time", startBlock: 0, poolKey: {} },
+    { poolId: "0x8fb70c677e4715d804e07a0a3f976e8e985b56a83fc5bcc8d076c31718ae2989", chainId: 196, symbol: "NTU", isHatchCurrency0: false, projectTokenAddress: "0x27f2373d532b94cd060da9303e8aeb1794a58d61", createdAt: 1779880233640, priceRatio: "1000", startFeePercent: "10", endFeePercent: "0.3", maxSwapAmountTokens: "1000", cooldownSeconds: "30", decayDurationHours: "24", decayMode: "time", startBlock: 0, poolKey: {} }
+  ];
+
   const [customPools, setCustomPools] = useState(() => {
     try {
       const saved = localStorage.getItem("hatch_custom_pools");
-      return saved ? JSON.parse(saved) : [];
+      const localPools = saved ? JSON.parse(saved) : [];
+      // Merge showcase pools with any local pools
+      const merged = [...SHOWCASE_POOLS];
+      localPools.forEach(lp => {
+        if (!merged.find(p => p.poolId === lp.poolId)) {
+          merged.push(lp);
+        }
+      });
+      return merged;
     } catch {
-      return [];
+      return [...SHOWCASE_POOLS];
     }
   });
 
-  // Fetch from backend on load
+  // Also try fetching from backend if available (additive merge)
   useEffect(() => {
     const fetchBackendPools = async () => {
       try {
         const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
-        const res = await fetch(`${backendUrl}/pools`);
+        const res = await fetch(`${backendUrl}/pools`, { signal: AbortSignal.timeout(5000) });
         if (res.ok) {
           const data = await res.json();
           setCustomPools(prev => {
-            const merged = [...data];
-            // Merge any local-only pools that failed to sync
+            const merged = [...prev];
+            data.forEach(bp => {
+              if (!merged.find(p => p.poolId === bp.poolId)) {
+                merged.push(bp);
+              }
+            });
+            // Also push any local-only pools to backend
             prev.forEach(lp => {
-              if (!merged.find(p => p.poolId === lp.poolId)) {
-                merged.push(lp);
-                
-                // Silently push this missing local pool to the backend so everyone else sees it
+              if (!data.find(p => p.poolId === lp.poolId)) {
                 fetch(`${backendUrl}/pools`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -385,7 +401,7 @@ export function WalletProvider({ children }) {
           });
         }
       } catch (e) {
-        console.error("Failed to fetch pools from backend:", e.message);
+        console.error("Backend unavailable, using hardcoded pools:", e.message);
       }
     };
     fetchBackendPools();
