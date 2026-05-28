@@ -270,12 +270,6 @@ export function WalletProvider({ children }) {
     if (wagmiIsConnected && walletClient && wagmiAddress) {
       const updateEthersWallet = async () => {
         try {
-          // Build an ethers provider backed by the wagmi walletClient's transport.
-          // For read-only RPC calls (balanceOf, etc.) we use a public JsonRpcProvider
-          // so we never trigger wallet pop-ups. For write operations (sendTransaction)
-          // we delegate directly to the wagmi walletClient which already holds the
-          // OKX / MetaMask / Rabby session and properly encodes calldata.
-          
           let chainId = Number(walletClient.chain?.id || wagmiChainId);
           if (chainId === 195) chainId = 1952; // Normalize X Layer Testnet
 
@@ -283,60 +277,77 @@ export function WalletProvider({ children }) {
             ? "https://rpc.xlayer.tech"
             : "https://testrpc.xlayer.tech";
 
-          // Public provider for read-only calls
-          const provider = new ethers.JsonRpcProvider(rpcUrl);
+          // ── EIP-1193 adapter ──────────────────────────────────────────────
+          // Creates a fake EIP-1193 provider that:
+          //   • eth_accounts / eth_requestAccounts → returns address (no popup)
+          //   • eth_sendTransaction → routes to wagmi walletClient
+          //   • personal_sign / eth_sign → routes to walletClient
+          //   • everything else (reads) → forwards to public JSON-RPC
+          // This lets ethers.BrowserProvider + getSigner() produce a real
+          // JsonRpcSigner whose full pipeline (populateTransaction, nonce
+          // management, ContractFactory.deploy, etc.) works correctly.
+          const rpcProvider = new ethers.JsonRpcProvider(rpcUrl);
+          const chainIdHex = "0x" + chainId.toString(16);
 
-          // Wrap walletClient as an ethers Signer so that contract.method() calls
-          // go through the connected wallet (OKX / MetaMask / Rabby).
-          const signer = new ethers.VoidSigner(wagmiAddress, provider);
+          const eip1193Adapter = {
+            request: async ({ method, params }) => {
+              // ── Account / chain methods (no popup) ────────────────────────
+              if (method === "eth_accounts" || method === "eth_requestAccounts") {
+                return [wagmiAddress];
+              }
+              if (method === "eth_chainId") {
+                return chainIdHex;
+              }
 
-          // Override populateTransaction to prevent ethers from injecting a nonce.
-          // VoidSigner calls provider.getTransactionCount() which can return null on
-          // some RPC endpoints, causing "invalid BigNumberish value (tx.nonce, null)".
-          // We let viem (walletClient) manage nonce automatically instead.
-          signer.populateTransaction = async (tx) => {
-            const resolved = await ethers.resolveProperties(tx);
-            // Only fill in fields that viem won't auto-manage; skip nonce entirely.
-            return {
-              ...resolved,
-              from: wagmiAddress,
-              // Remove nonce so viem auto-manages it (avoids null nonce error)
-              nonce: undefined,
-            };
+              // ── Signing methods → wagmi walletClient ──────────────────────
+              if (method === "eth_sendTransaction") {
+                const [tx] = params;
+                const hash = await walletClient.sendTransaction({
+                  ...(tx.to != null && { to: tx.to }),
+                  data: tx.data || tx.input || "0x",
+                  value: tx.value ? BigInt(tx.value) : 0n,
+                  gas: tx.gas ? BigInt(tx.gas) : undefined,
+                  gasPrice: tx.gasPrice ? BigInt(tx.gasPrice) : undefined,
+                  maxFeePerGas: tx.maxFeePerGas ? BigInt(tx.maxFeePerGas) : undefined,
+                  maxPriorityFeePerGas: tx.maxPriorityFeePerGas ? BigInt(tx.maxPriorityFeePerGas) : undefined,
+                  nonce: tx.nonce != null ? Number(tx.nonce) : undefined,
+                  chainId,
+                  account: wagmiAddress,
+                });
+                return hash;
+              }
+              if (method === "personal_sign") {
+                const [data, address] = params;
+                return walletClient.signMessage({
+                  message: { raw: data },
+                  account: address,
+                });
+              }
+              if (method === "eth_sign") {
+                const [address, data] = params;
+                return walletClient.signMessage({
+                  message: { raw: data },
+                  account: address,
+                });
+              }
+
+              // ── Read methods → public RPC (with null-safety) ──────────────
+              // eth_getTransactionCount can return null on X Layer RPCs
+              // which causes ethers to throw "invalid BigNumberish tx.nonce null"
+              const result = await rpcProvider.send(method, params || []);
+              if (method === "eth_getTransactionCount" && result == null) {
+                return "0x0";
+              }
+              return result;
+            },
           };
 
-          // Monkey-patch sendTransaction to use the wagmi walletClient.
-          // This is the only method that actually needs wallet signing.
-          signer.sendTransaction = async (tx) => {
-            // Resolve any ethers promises in the tx object
-            const resolved = await ethers.resolveProperties(tx);
-            const hash = await walletClient.sendTransaction({
-              // For contract deployments, `to` is null — viem needs it omitted (undefined)
-              ...(resolved.to != null && { to: resolved.to }),
-              data: resolved.data || "0x",
-              value: resolved.value ? BigInt(resolved.value.toString()) : 0n,
-              gas: resolved.gasLimit ? BigInt(resolved.gasLimit.toString()) : undefined,
-              gasPrice: resolved.gasPrice ? BigInt(resolved.gasPrice.toString()) : undefined,
-              // Let viem auto-manage nonce; only pass if explicitly provided and not null
-              nonce: (resolved.nonce != null) ? Number(resolved.nonce) : undefined,
-              chainId: chainId,
-              account: wagmiAddress,
-            });
-            // Return immediately with hash — .wait() polls for the receipt asynchronously
-            return {
-              hash,
-              wait: (confirms = 1) => provider.waitForTransaction(hash, confirms),
-              from: wagmiAddress,
-              to: resolved.to,
-              data: resolved.data || "0x",
-              value: resolved.value ? BigInt(resolved.value.toString()) : 0n,
-            };
-          };
+          const provider = new ethers.BrowserProvider(eip1193Adapter, {
+            chainId,
+            name: chainId === 196 ? "X Layer Mainnet" : "X Layer Testnet",
+          });
 
-          // Also patch signMessage (needed for some flows)
-          signer.signMessage = async (message) => {
-            return walletClient.signMessage({ message: typeof message === "string" ? message : { raw: message } });
-          };
+          const signer = await provider.getSigner();
 
           setWallet({
             connected: true,
