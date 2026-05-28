@@ -11,7 +11,7 @@
       "usdt0": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736",
       "positionManager": "0xcf1eafc6928dc385a342e7c6491d371d2871458b",
       "create2Deployer": "0x5C3322358C4F3e426870d2eF96cDEc2CF4252E19",
-      "swapRouter": "0xf958152c5252A40C722c191880d53e5f9d217905"
+      "swapRouter": "0x752c9a2caA2851AB0d329b954FbB7E49971f3503"
     },
     "explorerUrl": "https://www.oklink.com/xlayer"
   },
