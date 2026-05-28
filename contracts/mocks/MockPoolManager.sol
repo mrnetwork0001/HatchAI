@@ -64,14 +64,18 @@ contract MockPoolManager is IPoolManager {
     }
 
     function swap(
-        PoolKey calldata key,
-        IPoolManager.SwapParams calldata params,
+        PoolKey memory key,
+        IPoolManager.SwapParams memory params,
         bytes calldata hookData
     ) external override returns (BalanceDelta delta) {
         bytes32 poolId = key.toId();
         PoolState storage pool = pools[poolId];
         require(pool.initialized, "Pool not initialized");
-        require(params.amountSpecified > 0, "Only exact-input supported for mock");
+
+        uint256 amountSpecified = params.amountSpecified < 0 
+            ? uint256(-params.amountSpecified) 
+            : uint256(params.amountSpecified);
+        require(amountSpecified > 0, "Amount specified must be non-zero");
 
         uint24 fee = key.fee;
 
@@ -90,8 +94,6 @@ contract MockPoolManager is IPoolManager {
                 fee = feeOverride & 0x7fffff; // Strip flag to get actual fee
             }
         }
-
-        uint256 amountSpecified = uint256(params.amountSpecified);
         uint256 amountOut;
         uint256 feeAmount;
 
@@ -162,7 +164,7 @@ contract MockPoolManager is IPoolManager {
         return delta;
     }
 
-    function updateDynamicLPFee(PoolKey calldata key, uint24) external override {
+    function updateDynamicLPFee(PoolKey memory key, uint24) external override {
         // Mock method signature
     }
 
@@ -170,12 +172,20 @@ contract MockPoolManager is IPoolManager {
         revert("MockPoolManager: unlock not implemented");
     }
 
-    function settle(address) external payable override returns (uint256) {
+    function sync(address) external override {
+        // Mock method signature
+    }
+
+    function settle() external payable override returns (uint256) {
         revert("MockPoolManager: settle not implemented");
     }
 
     function take(address, address, uint256) external override {
         revert("MockPoolManager: take not implemented");
+    }
+
+    function currencyDelta(address, address) external view override returns (int256) {
+        return 0;
     }
 
     function claimHookFees(

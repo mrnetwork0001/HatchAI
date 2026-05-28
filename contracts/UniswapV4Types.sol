@@ -17,7 +17,7 @@ library PoolIdLibrary {
 
 library LPFeeLibrary {
     uint24 public constant DYNAMIC_FEE_FLAG = 0x800000;
-    uint24 public constant OVERRIDE_FEE_FLAG = 0x800000;
+    uint24 public constant OVERRIDE_FEE_FLAG = 0x400000;
 }
 
 type BalanceDelta is int256;
@@ -157,20 +157,24 @@ interface IPoolManager {
     ) external returns (int24 tick);
 
     function swap(
-        PoolKey calldata key,
-        SwapParams calldata params,
+        PoolKey memory key,
+        SwapParams memory params,
         bytes calldata hookData
     ) external returns (BalanceDelta delta);
 
-    function updateDynamicLPFee(PoolKey calldata key, uint24 newDynamicLPFee) external;
+    function updateDynamicLPFee(PoolKey memory key, uint24 newDynamicLPFee) external;
 
     function unlock(bytes calldata data) external returns (bytes memory);
 
-    function settle(address token) external payable returns (uint256);
+    function sync(address token) external;
+
+    function settle() external payable returns (uint256);
 
     function take(
         address token,
         address to,
         uint256 amount
     ) external;
+
+    function currencyDelta(address locker, address token) external view returns (int256);
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {BaseHook} from "./BaseHook.sol";
 import {IPoolManager, PoolKey, Hooks, BeforeSwapDelta, BeforeSwapDeltaLibrary, BalanceDelta, BalanceDeltaLibrary, LPFeeLibrary, PoolIdLibrary} from "./UniswapV4Types.sol";
+import "hardhat/console.sol";
 
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
@@ -156,7 +157,7 @@ contract HatchHook is BaseHook, IERC721Receiver {
     function afterSwap(
         address,
         PoolKey calldata key,
-        IPoolManager.SwapParams calldata params,
+        IPoolManager.SwapParams calldata,
         BalanceDelta delta,
         bytes calldata
     ) external override onlyPoolManager returns (bytes4, int128) {
@@ -174,6 +175,10 @@ contract HatchHook is BaseHook, IERC721Receiver {
                 int128 amount1 = BalanceDeltaLibrary.amount1(delta);
                 projectTokenAmount = amount1 > 0 ? uint256(int256(amount1)) : uint256(int256(-amount1));
             }
+
+            console.log("HatchHook debug:");
+            console.log("  projectTokenAmount:", projectTokenAmount);
+            console.log("  maxSwapAmount:     ", config.maxSwapAmount);
 
             require(
                 projectTokenAmount <= config.maxSwapAmount,

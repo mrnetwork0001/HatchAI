@@ -902,7 +902,7 @@ export function WalletProvider({ children }) {
           activePoolKey,
           {
             zeroForOne,
-            amountSpecified: wethAmountWei,
+            amountSpecified: -wethAmountWei,
             sqrtPriceLimitX96: zeroForOne
               ? 4295128740n
               : 1461446703485210103287273052203988822378723970341n,
@@ -915,7 +915,7 @@ export function WalletProvider({ children }) {
           activePoolKey,
           {
             zeroForOne,
-            amountSpecified: wethAmountWei,
+            amountSpecified: -wethAmountWei,
             sqrtPriceLimitX96: zeroForOne
               ? 4295128740n
               : 1461446703485210103287273052203988822378723970341n,

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 import {IPoolManager, PoolKey, BalanceDelta, BalanceDeltaLibrary} from "./UniswapV4Types.sol";
+import "hardhat/console.sol";
 
 interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function transfer(address to, uint256 amount) external returns (bool);
 }
 
 contract SwapRouter {
@@ -43,43 +43,61 @@ contract SwapRouter {
         require(msg.sender == address(manager), "Only PoolManager");
         SwapCallbackData memory callbackData = abi.decode(data, (SwapCallbackData));
 
-        // Transfer input token from the user to the PoolManager
-        address inputToken = callbackData.params.zeroForOne ? callbackData.key.currency0 : callbackData.key.currency1;
-        uint256 amountIn = uint256(callbackData.params.amountSpecified);
-
-        // Perform the transfer from user to PoolManager
-        require(
-            IERC20(inputToken).transferFrom(callbackData.sender, address(manager), amountIn),
-            "Transfer in failed"
+        BalanceDelta delta = manager.swap(
+            callbackData.key,
+            callbackData.params,
+            callbackData.hookData
         );
 
-        // Perform swap
-        BalanceDelta delta = manager.swap(callbackData.key, callbackData.params, callbackData.hookData);
+        int128 amount0 = BalanceDeltaLibrary.amount0(delta);
+        int128 amount1 = BalanceDeltaLibrary.amount1(delta);
 
-        // Settle the balance changes with the PoolManager
-        // If amount is negative, the PoolManager owes us (meaning we get tokens).
-        // If amount is positive, we owe the PoolManager (meaning we must pay).
-        
-        if (callbackData.params.zeroForOne) {
-            // zeroForOne = true: input is currency0, output is currency1
-            int128 amount1 = BalanceDeltaLibrary.amount1(delta);
-            
-            // Settle currency0
-            manager.settle(callbackData.key.currency0);
-            
-            // Take currency1 (transfer from PoolManager to user)
-            uint256 amountOut = uint256(int256(-amount1));
-            manager.take(callbackData.key.currency1, callbackData.sender, amountOut);
-        } else {
-            // zeroForOne = false: input is currency1, output is currency0
-            int128 amount0 = BalanceDeltaLibrary.amount0(delta);
-            
-            // Settle currency1
-            manager.settle(callbackData.key.currency1);
-            
-            // Take currency0 (transfer from PoolManager to user)
-            uint256 amountOut = uint256(int256(-amount0));
-            manager.take(callbackData.key.currency0, callbackData.sender, amountOut);
+        // Settle currency0
+        console.log("Settle currency0:");
+        console.logInt(int256(amount0));
+        if (amount0 < 0) {
+            console.log("  syncing and settling currency0...");
+            manager.sync(callbackData.key.currency0);
+            IERC20(callbackData.key.currency0).transferFrom(
+                callbackData.sender,
+                address(manager),
+                uint256(int256(-amount0))
+            );
+            uint256 paid = manager.settle();
+            console.log("  settle returned paid:");
+            console.log(paid);
+        } else if (amount0 > 0) {
+            console.log("  taking currency0...");
+            manager.take(
+                callbackData.key.currency0,
+                callbackData.sender,
+                uint256(int256(amount0))
+            );
+            console.log("  take completed.");
+        }
+
+        // Settle currency1
+        console.log("Settle currency1:");
+        console.logInt(int256(amount1));
+        if (amount1 < 0) {
+            console.log("  syncing and settling currency1...");
+            manager.sync(callbackData.key.currency1);
+            IERC20(callbackData.key.currency1).transferFrom(
+                callbackData.sender,
+                address(manager),
+                uint256(int256(-amount1))
+            );
+            uint256 paid = manager.settle();
+            console.log("  settle returned paid:");
+            console.log(paid);
+        } else if (amount1 > 0) {
+            console.log("  taking currency1...");
+            manager.take(
+                callbackData.key.currency1,
+                callbackData.sender,
+                uint256(int256(amount1))
+            );
+            console.log("  take completed.");
         }
 
         return abi.encode(delta);
