@@ -302,11 +302,15 @@ export function WalletProvider({ children }) {
               // ── Signing methods → wagmi walletClient ──────────────────────
               if (method === "eth_sendTransaction") {
                 const [tx] = params;
+                // Always include gas so OKX wallet can compute network fee.
+                // If ethers didn't estimate (e.g. estimation reverted), use a
+                // safe default of 3 000 000 — more than enough for any Hatch tx.
+                const DEFAULT_GAS = BigInt(3000000);
                 const hash = await walletClient.sendTransaction({
                   ...(tx.to != null && { to: tx.to }),
                   data: tx.data || tx.input || "0x",
                   value: tx.value ? BigInt(tx.value) : 0n,
-                  gas: tx.gas ? BigInt(tx.gas) : undefined,
+                  gas: tx.gas ? BigInt(tx.gas) : DEFAULT_GAS,
                   gasPrice: tx.gasPrice ? BigInt(tx.gasPrice) : undefined,
                   maxFeePerGas: tx.maxFeePerGas ? BigInt(tx.maxFeePerGas) : undefined,
                   maxPriorityFeePerGas: tx.maxPriorityFeePerGas ? BigInt(tx.maxPriorityFeePerGas) : undefined,
@@ -332,13 +336,23 @@ export function WalletProvider({ children }) {
               }
 
               // ── Read methods → public RPC (with null-safety) ──────────────
-              // eth_getTransactionCount can return null on X Layer RPCs
-              // which causes ethers to throw "invalid BigNumberish tx.nonce null"
-              const result = await rpcProvider.send(method, params || []);
-              if (method === "eth_getTransactionCount" && result == null) {
-                return "0x0";
+              try {
+                const result = await rpcProvider.send(method, params || []);
+                // eth_getTransactionCount can return null on X Layer RPCs
+                if (method === "eth_getTransactionCount" && result == null) {
+                  return "0x0";
+                }
+                return result;
+              } catch (rpcErr) {
+                // eth_estimateGas reverts for custom contracts on X Layer.
+                // Return a safe default so ethers can populate the tx with a
+                // gasLimit and OKX wallet can display the network fee.
+                if (method === "eth_estimateGas") {
+                  console.warn("eth_estimateGas failed, using fallback:", rpcErr.message);
+                  return "0x2dc6c0"; // 3 000 000
+                }
+                throw rpcErr;
               }
-              return result;
             },
           };
 
