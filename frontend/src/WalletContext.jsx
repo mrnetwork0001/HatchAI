@@ -7,12 +7,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
-import { INITIAL_STATE } from "./lib/wallet";
+import { connectWallet, disconnectWallet, INITIAL_STATE } from "./lib/wallet";
+import { switchToChain } from "./lib/xlayer";
 import deployments from "./deployments.json";
-
-// Wagmi & RainbowKit hooks
-import { useAccount, useChainId, useDisconnect, useSwitchChain, useWalletClient } from "wagmi";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { MOCK_ERC20_ABI, MOCK_ERC20_BYTECODE } from "./lib/mockErc20";
 
 
@@ -256,131 +253,6 @@ const WalletContext = createContext();
 
 export function WalletProvider({ children }) {
   const [wallet, setWallet] = useState(INITIAL_STATE);
-
-  // ── Wagmi & RainbowKit Hooks ───────────────────────────────────────────────
-  const { address: wagmiAddress, isConnected: wagmiIsConnected } = useAccount();
-  const wagmiChainId = useChainId();
-  const { disconnectAsync } = useDisconnect();
-  const { switchChainAsync } = useSwitchChain();
-  const { openConnectModal } = useConnectModal();
-  const { data: walletClient } = useWalletClient();
-
-  // ── Sync Wagmi state with Ethers ───────────────────────────────────────────
-  useEffect(() => {
-    if (wagmiIsConnected && walletClient && wagmiAddress) {
-      const updateEthersWallet = async () => {
-        try {
-          let chainId = Number(walletClient.chain?.id || wagmiChainId);
-          if (chainId === 195) chainId = 1952; // Normalize X Layer Testnet
-
-          const rpcUrl = chainId === 196
-            ? "https://rpc.xlayer.tech"
-            : "https://testrpc.xlayer.tech";
-
-          // ── EIP-1193 adapter ──────────────────────────────────────────────
-          // Creates a fake EIP-1193 provider that:
-          //   • eth_accounts / eth_requestAccounts → returns address (no popup)
-          //   • eth_sendTransaction → routes to wagmi walletClient
-          //   • personal_sign / eth_sign → routes to walletClient
-          //   • everything else (reads) → forwards to public JSON-RPC
-          // This lets ethers.BrowserProvider + getSigner() produce a real
-          // JsonRpcSigner whose full pipeline (populateTransaction, nonce
-          // management, ContractFactory.deploy, etc.) works correctly.
-          const rpcProvider = new ethers.JsonRpcProvider(rpcUrl);
-          const chainIdHex = "0x" + chainId.toString(16);
-
-          const eip1193Adapter = {
-            request: async ({ method, params }) => {
-              // ── Account / chain methods (no popup) ────────────────────────
-              if (method === "eth_accounts" || method === "eth_requestAccounts") {
-                return [wagmiAddress];
-              }
-              if (method === "eth_chainId") {
-                return chainIdHex;
-              }
-
-              // ── Signing methods → wagmi walletClient ──────────────────────
-              if (method === "eth_sendTransaction") {
-                const [tx] = params;
-                // Always include gas so OKX wallet can compute network fee.
-                // If ethers didn't estimate (e.g. estimation reverted), use a
-                // safe default of 3 000 000 — more than enough for any Hatch tx.
-                const DEFAULT_GAS = BigInt(3000000);
-                const hash = await walletClient.sendTransaction({
-                  ...(tx.to != null && { to: tx.to }),
-                  data: tx.data || tx.input || "0x",
-                  value: tx.value ? BigInt(tx.value) : 0n,
-                  gas: tx.gas ? BigInt(tx.gas) : DEFAULT_GAS,
-                  gasPrice: tx.gasPrice ? BigInt(tx.gasPrice) : undefined,
-                  maxFeePerGas: tx.maxFeePerGas ? BigInt(tx.maxFeePerGas) : undefined,
-                  maxPriorityFeePerGas: tx.maxPriorityFeePerGas ? BigInt(tx.maxPriorityFeePerGas) : undefined,
-                  nonce: tx.nonce != null ? Number(tx.nonce) : undefined,
-                  chainId,
-                  account: wagmiAddress,
-                });
-                return hash;
-              }
-              if (method === "personal_sign") {
-                const [data, address] = params;
-                return walletClient.signMessage({
-                  message: { raw: data },
-                  account: address,
-                });
-              }
-              if (method === "eth_sign") {
-                const [address, data] = params;
-                return walletClient.signMessage({
-                  message: { raw: data },
-                  account: address,
-                });
-              }
-
-              // ── Read methods → public RPC (with null-safety) ──────────────
-              try {
-                const result = await rpcProvider.send(method, params || []);
-                // eth_getTransactionCount can return null on X Layer RPCs
-                if (method === "eth_getTransactionCount" && result == null) {
-                  return "0x0";
-                }
-                return result;
-              } catch (rpcErr) {
-                // eth_estimateGas reverts for custom contracts on X Layer.
-                // Return a safe default so ethers can populate the tx with a
-                // gasLimit and OKX wallet can display the network fee.
-                if (method === "eth_estimateGas") {
-                  console.warn("eth_estimateGas failed, using fallback:", rpcErr.message);
-                  return "0x2dc6c0"; // 3 000 000
-                }
-                throw rpcErr;
-              }
-            },
-          };
-
-          const provider = new ethers.BrowserProvider(eip1193Adapter, {
-            chainId,
-            name: chainId === 196 ? "X Layer Mainnet" : "X Layer Testnet",
-          });
-
-          const signer = await provider.getSigner();
-
-          setWallet({
-            connected: true,
-            address: wagmiAddress,
-            chainId,
-            isXLayer: chainId === 196 || chainId === 1952,
-            provider,
-            signer,
-          });
-        } catch (err) {
-          console.error("Error setting up ethers provider/signer from walletClient:", err);
-        }
-      };
-      updateEthersWallet();
-    } else {
-      setWallet(INITIAL_STATE);
-    }
-  }, [walletClient, wagmiAddress, wagmiIsConnected, wagmiChainId]);
-
   const [logs, setLogs] = useState([]);
   const [pendingTxHash, setPendingTxHash] = useState(null);
   const [isTxPending, setIsTxPending] = useState(false);
@@ -792,37 +664,96 @@ export function WalletProvider({ children }) {
     }
   }, [wallet.connected, targetChainId]);
 
+  // Listen for window.ethereum events
+  useEffect(() => {
+    if (!window.ethereum) return;
+
+    const handleChainChanged = async (hexChainId) => {
+      let chainId = Number(hexChainId);
+      if (chainId === 195) chainId = 1952; // Normalize X Layer Testnet chain ID
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        const isXLayer = chainId === 196 || chainId === 1952;
+        setWallet({
+          connected: true,
+          address,
+          chainId,
+          isXLayer,
+          provider,
+          signer,
+        });
+        addLog("Network", `Switched network to chain ID ${chainId}`, "info");
+      } catch (err) {
+        setWallet(INITIAL_STATE);
+      }
+    };
+
+    const handleAccountsChanged = async (accounts) => {
+      if (accounts.length === 0) {
+        setWallet(INITIAL_STATE);
+        addLog("Wallet", "Disconnected from accounts change.", "info");
+      } else {
+        try {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const address = await signer.getAddress();
+          const network = await provider.getNetwork();
+          let chainId = Number(network.chainId);
+          if (chainId === 195) chainId = 1952; // Normalize X Layer Testnet chain ID
+          const isXLayer = chainId === 196 || chainId === 1952;
+          setWallet({
+            connected: true,
+            address,
+            chainId,
+            isXLayer,
+            provider,
+            signer,
+          });
+          addLog("Wallet", `Switched to account: ${address.slice(0, 6)}...${address.slice(-4)}`, "info");
+        } catch (err) {
+          setWallet(INITIAL_STATE);
+        }
+      }
+    };
+
+    window.ethereum.on("chainChanged", handleChainChanged);
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+
+    return () => {
+      window.ethereum.removeListener("chainChanged", handleChainChanged);
+      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, [addLog]);
+
   // Connect & Disconnect handlers
   const handleConnect = async () => {
     try {
       addLog("Wallet", "Connecting wallet...", "info");
-      if (openConnectModal) {
-        openConnectModal();
-      } else {
-        addLog("Wallet Error", "Wallet modal not available.", "error");
-      }
+      const state = await connectWallet(targetChainId);
+      setWallet(state);
+      addLog("Wallet Connected", `Address: ${state.address?.slice(0, 10)}... Chain: ${state.chainId}`, "success");
+      return state;
     } catch (err) {
       addLog("Wallet Error", err.message, "error");
+      throw err;
     }
   };
 
-  const handleDisconnect = async () => {
-    try {
-      await disconnectAsync();
-      addLog("Wallet", "Disconnected.", "info");
-    } catch (err) {
-      addLog("Wallet Error", err.message, "error");
-    }
+  const handleDisconnect = () => {
+    setWallet(disconnectWallet());
+    addLog("Wallet", "Disconnected.", "info");
   };
 
   const handleSwitchChain = async () => {
     const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
     addLog("Network", `Prompting wallet to switch to ${targetName} (Chain ID: ${targetChainId})...`, "info");
-    try {
-      await switchChainAsync({ chainId: targetChainId });
+    const success = await switchToChain(targetChainId);
+    if (success) {
       addLog("Network", `Wallet successfully switched to ${targetName}.`, "success");
-    } catch (err) {
-      addLog("Network Error", `Failed to switch wallet network: ${err.message}`, "error");
+    } else {
+      addLog("Network Error", `Failed to switch wallet network.`, "error");
     }
   };
 
@@ -833,13 +764,15 @@ export function WalletProvider({ children }) {
       setTimeout(() => {
         addLog("Network", `Connected to wrong chain (${wallet.chainId}). Prompting to switch to correct network (${targetName}, Chain ID: ${targetChainId})...`, "info");
       }, 0);
-      switchChainAsync({ chainId: targetChainId }).then(() => {
-        setTimeout(() => addLog("Network", `Successfully switched to ${targetName}.`, "success"), 0);
-      }).catch((err) => {
-        setTimeout(() => addLog("Network Error", `Failed to switch network: ${err.message}`, "error"), 0);
+      switchToChain(targetChainId).then((success) => {
+        if (success) {
+          setTimeout(() => addLog("Network", `Successfully switched to ${targetName}.`, "success"), 0);
+        } else {
+          setTimeout(() => addLog("Network Error", "Failed to switch network or switch rejected by user.", "error"), 0);
+        }
       });
     }
-  }, [wallet.connected, wallet.chainId, targetChainId, addLog, switchChainAsync]);
+  }, [wallet.connected, wallet.chainId, targetChainId, addLog]);
 
   // ── Derived State ───────────────────────────────────────────────────────────
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
@@ -1240,15 +1173,6 @@ export function WalletProvider({ children }) {
       return { success: false, reason: "Wrong network" };
     }
 
-    if (!ethers.isAddress(config.projectToken)) {
-      addLog("Launchpad Error", "Invalid project token address.", "error");
-      return { success: false, reason: "Invalid project token address" };
-    }
-    if (!ethers.isAddress(config.baseToken)) {
-      addLog("Launchpad Error", "Invalid base token address.", "error");
-      return { success: false, reason: "Invalid base token address" };
-    }
-
     setIsTxPending(true);
     setIsTxSuccess(false);
 
@@ -1328,15 +1252,8 @@ export function WalletProvider({ children }) {
           console.log("Failed to check pool initialization via StateView", e);
         }
       } else {
-        try {
-          const testnetPublicProvider = new ethers.JsonRpcProvider("https://testrpc.xlayer.tech");
-          const poolManagerRead = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, testnetPublicProvider);
-          poolState = await poolManagerRead.pools(newPoolId);
-          isAlreadyInitialized = poolState && (poolState.initialized || poolState[2]);
-        } catch (e) {
-          console.log("Could not check pool state via pools() — will attempt initialize", e.message);
-          isAlreadyInitialized = false;
-        }
+        poolState = await poolManagerContract.pools(newPoolId);
+        isAlreadyInitialized = poolState && (poolState.initialized || poolState[2]);
       }
 
       let initTxHash = "";
@@ -1629,7 +1546,7 @@ export function WalletProvider({ children }) {
       addLog("Import Error", "Connect your wallet first.", "error");
       return { success: false, reason: "Wallet not connected" };
     }
-    if (!ethers.isAddress(projectTokenAddress)) {
+    if (!projectTokenAddress || !projectTokenAddress.startsWith("0x") || projectTokenAddress.length !== 42) {
       addLog("Import Error", "Invalid project token address.", "error");
       return { success: false, reason: "Invalid address" };
     }
