@@ -152,7 +152,8 @@ interface IPoolManager {
 
     function initialize(
         PoolKey calldata key,
-        uint160 sqrtPriceX96
+        uint160 sqrtPriceX96,
+        bytes calldata hookData
     ) external returns (int24 tick);
 
     function swap(

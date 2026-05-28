@@ -1,6 +1,31 @@
 [
   {
     "poolKey": {
+      "currency0": "0x62247Acaf9B04236309666Bf7577e7B3434ff825",
+      "currency1": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
+      "fee": 3000,
+      "tickSpacing": 60,
+      "hooks": "0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f"
+    },
+    "poolId": "0xfd1e4e5f37ad441d7e4467bd639c94f36044cc055eeeb7c642619dbf97bad9e3",
+    "symbol": "MCU",
+    "isHatchCurrency0": true,
+    "projectTokenAddress": "0x62247Acaf9B04236309666Bf7577e7B3434ff825",
+    "createdAt": 1779974524067,
+    "priceRatio": "500",
+    "decayDurationHours": "24",
+    "startFeePercent": "10",
+    "endFeePercent": "0.3",
+    "maxSwapAmountTokens": "1000",
+    "cooldownSeconds": "60",
+    "seedProjectAmount": "450",
+    "seedWethAmount": "1",
+    "decayMode": "time",
+    "startBlock": 31515517,
+    "chainId": 1952
+  },
+  {
+    "poolKey": {
       "currency0": "0x5a77f1443d16ee5761d310e38b62f77f726bc71c",
       "currency1": "0xa629f92aCbaFb731B245585d38e57183C18a05E7",
       "fee": 8388608,

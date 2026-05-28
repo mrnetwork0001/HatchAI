@@ -3,6 +3,7 @@ import hre from "hardhat";
 const { ethers } = hre;
 
 describe("Uniswap V4 Mainnet Fork End-to-End Validation", function () {
+  this.timeout(150000);
   it("should mine salt, deploy HatchHook via Create2Deployer, initialize pool, and configure launch successfully", async function () {
     const mainnetRpcUrl = "https://rpc.xlayer.tech";
     await hre.network.provider.request({
@@ -80,7 +81,44 @@ describe("Uniswap V4 Mainnet Fork End-to-End Validation", function () {
     await deployTx.wait();
     console.log("HatchHook successfully deployed to:", targetAddress);
 
+    const ratio = 1000000000;
+    const price = isHatchCurrency0 ? (1 / ratio) : ratio;
+    const sqrtPrice = Math.sqrt(price);
+    const sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * 79228162514264337593543950336));
+
     const hatchHook = new ethers.Contract(targetAddress, HatchHook.interface, creatorSigner);
+
+    // Test direct afterInitialize call from PoolManager address
+    console.log("Testing direct afterInitialize call from PoolManager address...");
+    try {
+      // Impersonate PoolManager
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [poolManagerAddress],
+      });
+      const pmSigner = await ethers.getSigner(poolManagerAddress);
+      const hookPmCall = hatchHook.connect(pmSigner);
+      
+      const poolKeyTest = {
+        currency0,
+        currency1,
+        fee: 8388608,
+        tickSpacing: 60,
+        hooks: targetAddress
+      };
+      
+      const res = await hookPmCall.afterInitialize.staticCall(creatorAddress, poolKeyTest, sqrtPriceX96, 0);
+      console.log("✅ Direct afterInitialize call succeeded, returned:", res);
+    } catch (err) {
+      console.error("❌ Direct afterInitialize call failed:");
+      console.error(err);
+    } finally {
+      // Stop impersonating PoolManager
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [poolManagerAddress],
+      });
+    }
 
     // Verify Hook Permissions
     const permissions = await hatchHook.getHookPermissions();
@@ -90,14 +128,9 @@ describe("Uniswap V4 Mainnet Fork End-to-End Validation", function () {
     console.log("  afterSwap:", permissions.afterSwap);
 
     const poolManagerAbi = [
-      "function initialize((address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) key, uint160 sqrtPriceX96) external returns (int24 tick)"
+      "function initialize((address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) key, uint160 sqrtPriceX96, bytes hookData) external returns (int24 tick)"
     ];
     const poolManager = new ethers.Contract(poolManagerAddress, poolManagerAbi, creatorSigner);
-
-    const ratio = 1000000000;
-    const price = isHatchCurrency0 ? (1 / ratio) : ratio;
-    const sqrtPrice = Math.sqrt(price);
-    const sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * 79228162514264337593543950336));
 
     const poolKey = {
       currency0,
@@ -108,11 +141,33 @@ describe("Uniswap V4 Mainnet Fork End-to-End Validation", function () {
     };
 
     console.log("Step 1: Initializing pool on PoolManager...");
-    const initTx = await poolManager.initialize(poolKey, sqrtPriceX96, {
-      gasLimit: 3000000
-    });
-    const initReceipt = await initTx.wait();
-    console.log("Pool initialized! Tx hash:", initReceipt.hash);
+    let initReceipt;
+    try {
+      const initTx = await poolManager.initialize(poolKey, sqrtPriceX96, "0x", {
+        gasLimit: 3000000
+      });
+      initReceipt = await initTx.wait();
+      console.log("Pool initialized! Tx hash:", initReceipt.hash);
+    } catch (err) {
+      console.error("❌ PoolManager.initialize reverted!");
+      console.error("Error message:", err.message);
+      if (err.data) {
+        console.error("Revert data:", err.data);
+        const knownErrors = {
+          "0x90bfb865": "HookAddressNotValid",
+          "0x75383637": "PoolAlreadyInitialized",
+          "0x8ca12fbb": "TickSpacingTooLarge",
+          "0x7cfe07b5": "TickSpacingTooSmall",
+          "0xd4e3ea47": "CurrencyNotSorted",
+          "0xd2c9b8b4": "InvalidSqrtPrice",
+        };
+        const selector = err.data.substring(0, 10);
+        if (knownErrors[selector]) {
+          console.error("Decoded Error:", knownErrors[selector]);
+        }
+      }
+      throw err;
+    }
 
     console.log("Step 2: Configuring launch parameters on HatchHook...");
     const decayDuration = 86400n;

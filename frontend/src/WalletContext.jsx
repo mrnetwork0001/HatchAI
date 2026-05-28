@@ -148,6 +148,7 @@ const POOL_MANAGER_ABI = [
         ],
       },
       { name: "sqrtPriceX96", type: "uint160" },
+      { name: "hookData", type: "bytes" },
     ],
     outputs: [{ name: "tick", type: "int24" }],
   },
@@ -1259,7 +1260,7 @@ export function WalletProvider({ children }) {
       let initTxHash = "";
       if (!isAlreadyInitialized) {
         addLog("Launchpad", "Initializing Uniswap V4 Pool on PoolManager...", "info");
-        const initTx = await poolManagerContract.initialize(poolKey, sqrtPriceX96, { gasLimit: 3000000 });
+        const initTx = await poolManagerContract.initialize(poolKey, sqrtPriceX96, hookData, { gasLimit: 3000000 });
         setPendingTxHash(initTx.hash);
         addLog("Launchpad", `Transaction submitted: ${initTx.hash}. Waiting for confirmation...`, "info");
         await initTx.wait();

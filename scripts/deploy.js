@@ -98,7 +98,7 @@ async function main() {
   const sqrtPriceX96 = 250541448375047931186413801569n;
 
   console.log("\n[5/6] Initializing pool on PoolManager...");
-  const initTx = await poolManager.initialize(poolKey, sqrtPriceX96);
+  const initTx = await poolManager.initialize(poolKey, sqrtPriceX96, "0x");
   await initTx.wait();
   console.log(`      Pool initialized! Tx: ${initTx.hash}`);
 
