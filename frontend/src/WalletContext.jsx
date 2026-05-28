@@ -1230,7 +1230,36 @@ export function WalletProvider({ children }) {
       addLog("Launchpad", "Initializing Uniswap V4 Pool on PoolManager...", "info");
 
       const signer = wallet.signer;
-      const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, signer);
+      const isMainnet = targetChainId === 196;
+
+      // Select the correct ABI for initialize depending on network (Mainnet: 2-arg, Testnet: 3-arg)
+      const pmAbiToUse = POOL_MANAGER_ABI.map(item => {
+        if (item.name === "initialize" && isMainnet) {
+          return {
+            name: "initialize",
+            type: "function",
+            stateMutability: "nonpayable",
+            inputs: [
+              {
+                name: "key",
+                type: "tuple",
+                components: [
+                  { name: "currency0", type: "address" },
+                  { name: "currency1", type: "address" },
+                  { name: "fee", type: "uint24" },
+                  { name: "tickSpacing", type: "int24" },
+                  { name: "hooks", type: "address" },
+                ],
+              },
+              { name: "sqrtPriceX96", type: "uint160" }
+            ],
+            outputs: [{ name: "tick", type: "int24" }]
+          };
+        }
+        return item;
+      });
+
+      const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, pmAbiToUse, signer);
 
       const newPoolId = computePoolId(poolKey);
 
@@ -1238,7 +1267,7 @@ export function WalletProvider({ children }) {
       addLog("Launchpad", "Checking pool status onchain...", "info");
       let isAlreadyInitialized = false;
       let poolState = null;
-      if (targetChainId === 196) {
+      if (isMainnet) {
         try {
           const rpcUrl = "https://rpc.xlayer.tech";
           const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
@@ -1260,7 +1289,12 @@ export function WalletProvider({ children }) {
       let initTxHash = "";
       if (!isAlreadyInitialized) {
         addLog("Launchpad", "Initializing Uniswap V4 Pool on PoolManager...", "info");
-        const initTx = await poolManagerContract.initialize(poolKey, sqrtPriceX96, hookData, { gasLimit: 3000000 });
+        let initTx;
+        if (isMainnet) {
+          initTx = await poolManagerContract.initialize(poolKey, sqrtPriceX96, { gasLimit: 3000000 });
+        } else {
+          initTx = await poolManagerContract.initialize(poolKey, sqrtPriceX96, hookData, { gasLimit: 3000000 });
+        }
         setPendingTxHash(initTx.hash);
         addLog("Launchpad", `Transaction submitted: ${initTx.hash}. Waiting for confirmation...`, "info");
         await initTx.wait();
