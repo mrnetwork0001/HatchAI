@@ -7,9 +7,12 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
-import { connectWallet, disconnectWallet, INITIAL_STATE } from "./lib/wallet";
-import { switchToChain } from "./lib/xlayer";
+import { INITIAL_STATE } from "./lib/wallet";
 import deployments from "./deployments.json";
+
+// Wagmi & RainbowKit hooks
+import { useAccount, useChainId, useDisconnect, useSwitchChain, useWalletClient } from "wagmi";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { MOCK_ERC20_ABI, MOCK_ERC20_BYTECODE } from "./lib/mockErc20";
 
 
@@ -253,6 +256,44 @@ const WalletContext = createContext();
 
 export function WalletProvider({ children }) {
   const [wallet, setWallet] = useState(INITIAL_STATE);
+
+  // ── Wagmi & RainbowKit Hooks ───────────────────────────────────────────────
+  const { address: wagmiAddress, isConnected: wagmiIsConnected } = useAccount();
+  const wagmiChainId = useChainId();
+  const { disconnectAsync } = useDisconnect();
+  const { switchChainAsync } = useSwitchChain();
+  const { openConnectModal } = useConnectModal();
+  const { data: walletClient } = useWalletClient();
+
+  // ── Sync Wagmi state with Ethers ───────────────────────────────────────────
+  useEffect(() => {
+    if (wagmiIsConnected && walletClient && wagmiAddress) {
+      const updateEthersWallet = async () => {
+        try {
+          const provider = new ethers.BrowserProvider(walletClient.transport);
+          const signer = await provider.getSigner();
+          
+          let chainId = Number(walletClient.chain?.id || wagmiChainId);
+          if (chainId === 195) chainId = 1952; // Normalize X Layer Testnet
+          
+          setWallet({
+            connected: true,
+            address: wagmiAddress,
+            chainId,
+            isXLayer: chainId === 196 || chainId === 1952,
+            provider,
+            signer,
+          });
+        } catch (err) {
+          console.error("Error setting up ethers provider/signer from walletClient:", err);
+        }
+      };
+      updateEthersWallet();
+    } else {
+      setWallet(INITIAL_STATE);
+    }
+  }, [walletClient, wagmiAddress, wagmiIsConnected, wagmiChainId]);
+
   const [logs, setLogs] = useState([]);
   const [pendingTxHash, setPendingTxHash] = useState(null);
   const [isTxPending, setIsTxPending] = useState(false);
@@ -664,94 +705,37 @@ export function WalletProvider({ children }) {
     }
   }, [wallet.connected, targetChainId]);
 
-  // Listen for window.ethereum events
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleChainChanged = async (hexChainId) => {
-      const chainId = Number(hexChainId);
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-        const isXLayer = chainId === 196 || chainId === 1952;
-        setWallet({
-          connected: true,
-          address,
-          chainId,
-          isXLayer,
-          provider,
-          signer,
-        });
-        addLog("Network", `Switched network to chain ID ${chainId}`, "info");
-      } catch (err) {
-        setWallet(INITIAL_STATE);
-      }
-    };
-
-    const handleAccountsChanged = async (accounts) => {
-      if (accounts.length === 0) {
-        setWallet(INITIAL_STATE);
-        addLog("Wallet", "Disconnected from accounts change.", "info");
-      } else {
-        try {
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const address = await signer.getAddress();
-          const network = await provider.getNetwork();
-          const chainId = Number(network.chainId);
-          const isXLayer = chainId === 196 || chainId === 1952;
-          setWallet({
-            connected: true,
-            address,
-            chainId,
-            isXLayer,
-            provider,
-            signer,
-          });
-          addLog("Wallet", `Switched to account: ${address.slice(0, 6)}...${address.slice(-4)}`, "info");
-        } catch (err) {
-          setWallet(INITIAL_STATE);
-        }
-      }
-    };
-
-    window.ethereum.on("chainChanged", handleChainChanged);
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-
-    return () => {
-      window.ethereum.removeListener("chainChanged", handleChainChanged);
-      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
-    };
-  }, [addLog]);
-
   // Connect & Disconnect handlers
   const handleConnect = async () => {
     try {
       addLog("Wallet", "Connecting wallet...", "info");
-      const state = await connectWallet(targetChainId);
-      setWallet(state);
-      addLog("Wallet Connected", `Address: ${state.address?.slice(0, 10)}... Chain: ${state.chainId}`, "success");
-      return state;
+      if (openConnectModal) {
+        openConnectModal();
+      } else {
+        addLog("Wallet Error", "Wallet modal not available.", "error");
+      }
     } catch (err) {
       addLog("Wallet Error", err.message, "error");
-      throw err;
     }
   };
 
-  const handleDisconnect = () => {
-    setWallet(disconnectWallet());
-    addLog("Wallet", "Disconnected.", "info");
+  const handleDisconnect = async () => {
+    try {
+      await disconnectAsync();
+      addLog("Wallet", "Disconnected.", "info");
+    } catch (err) {
+      addLog("Wallet Error", err.message, "error");
+    }
   };
 
   const handleSwitchChain = async () => {
     const targetName = targetChainId === 196 ? "X Layer Mainnet" : "X Layer Testnet";
     addLog("Network", `Prompting wallet to switch to ${targetName} (Chain ID: ${targetChainId})...`, "info");
-    const success = await switchToChain(targetChainId);
-    if (success) {
+    try {
+      await switchChainAsync({ chainId: targetChainId });
       addLog("Network", `Wallet successfully switched to ${targetName}.`, "success");
-    } else {
-      addLog("Network Error", `Failed to switch wallet network.`, "error");
+    } catch (err) {
+      addLog("Network Error", `Failed to switch wallet network: ${err.message}`, "error");
     }
   };
 
@@ -762,15 +746,13 @@ export function WalletProvider({ children }) {
       setTimeout(() => {
         addLog("Network", `Connected to wrong chain (${wallet.chainId}). Prompting to switch to correct network (${targetName}, Chain ID: ${targetChainId})...`, "info");
       }, 0);
-      switchToChain(targetChainId).then((success) => {
-        if (success) {
-          setTimeout(() => addLog("Network", `Successfully switched to ${targetName}.`, "success"), 0);
-        } else {
-          setTimeout(() => addLog("Network Error", "Failed to switch network or switch rejected by user.", "error"), 0);
-        }
+      switchChainAsync({ chainId: targetChainId }).then(() => {
+        setTimeout(() => addLog("Network", `Successfully switched to ${targetName}.`, "success"), 0);
+      }).catch((err) => {
+        setTimeout(() => addLog("Network Error", `Failed to switch network: ${err.message}`, "error"), 0);
       });
     }
-  }, [wallet.connected, wallet.chainId, targetChainId, addLog]);
+  }, [wallet.connected, wallet.chainId, targetChainId, addLog, switchChainAsync]);
 
   // ── Derived State ───────────────────────────────────────────────────────────
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));

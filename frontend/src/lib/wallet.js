@@ -32,7 +32,8 @@ export async function connectWallet(targetChainId = DEFAULT_CHAIN_ID) {
     const signer = await provider.getSigner();
     const address = await signer.getAddress();
     const network = await provider.getNetwork();
-    const chainId = Number(network.chainId);
+    let chainId = Number(network.chainId);
+    if (chainId === 195) chainId = 1952; // Normalize X Layer Testnet chain ID
     const balance = ethers.formatEther(await provider.getBalance(address));
     
     // Check if the current chain is supported
@@ -43,7 +44,8 @@ export async function connectWallet(targetChainId = DEFAULT_CHAIN_ID) {
       await switchToChain(targetChainId);
       // Re-check after switch
       const updatedNetwork = await provider.getNetwork();
-      const updatedChainId = Number(updatedNetwork.chainId);
+      let updatedChainId = Number(updatedNetwork.chainId);
+      if (updatedChainId === 195) updatedChainId = 1952; // Normalize X Layer Testnet chain ID
       return {
         connected: true,
         address,

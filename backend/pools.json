@@ -1,5 +1,30 @@
 [
   {
+    "poolKey": {
+      "currency0": "0x36E84e9A807b6C67D0d9CD46d906fa26913238Bd",
+      "currency1": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
+      "fee": 3000,
+      "tickSpacing": 60,
+      "hooks": "0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f"
+    },
+    "poolId": "0xde6b1fb3aee0ab3882f4c9182b6b9f34a5d16c1f95b468f0d34c49701bed71c0",
+    "symbol": "NAI",
+    "isHatchCurrency0": true,
+    "projectTokenAddress": "0x36E84e9A807b6C67D0d9CD46d906fa26913238Bd",
+    "createdAt": 1779814219261,
+    "priceRatio": "9980851.859769022",
+    "decayDurationHours": "24",
+    "startFeePercent": "10",
+    "endFeePercent": "0.3",
+    "maxSwapAmountTokens": "5000.0",
+    "cooldownSeconds": "60",
+    "seedProjectAmount": "4995416.355814395385226378",
+    "seedWethAmount": "0.5005",
+    "decayMode": "time",
+    "startBlock": 0,
+    "chainId": 1952
+  },
+  {
     "poolId": "0x1ea175ae9e7f075f8539de8f118f8407c7e046300ea3e94e2f3f318dc1229bdc",
     "chainId": 196,
     "symbol": "HAI",
