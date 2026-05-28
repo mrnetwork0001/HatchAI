@@ -290,6 +290,21 @@ export function WalletProvider({ children }) {
           // go through the connected wallet (OKX / MetaMask / Rabby).
           const signer = new ethers.VoidSigner(wagmiAddress, provider);
 
+          // Override populateTransaction to prevent ethers from injecting a nonce.
+          // VoidSigner calls provider.getTransactionCount() which can return null on
+          // some RPC endpoints, causing "invalid BigNumberish value (tx.nonce, null)".
+          // We let viem (walletClient) manage nonce automatically instead.
+          signer.populateTransaction = async (tx) => {
+            const resolved = await ethers.resolveProperties(tx);
+            // Only fill in fields that viem won't auto-manage; skip nonce entirely.
+            return {
+              ...resolved,
+              from: wagmiAddress,
+              // Remove nonce so viem auto-manages it (avoids null nonce error)
+              nonce: undefined,
+            };
+          };
+
           // Monkey-patch sendTransaction to use the wagmi walletClient.
           // This is the only method that actually needs wallet signing.
           signer.sendTransaction = async (tx) => {
@@ -302,7 +317,8 @@ export function WalletProvider({ children }) {
               value: resolved.value ? BigInt(resolved.value.toString()) : 0n,
               gas: resolved.gasLimit ? BigInt(resolved.gasLimit.toString()) : undefined,
               gasPrice: resolved.gasPrice ? BigInt(resolved.gasPrice.toString()) : undefined,
-              nonce: resolved.nonce !== undefined ? Number(resolved.nonce) : undefined,
+              // Let viem auto-manage nonce; only pass if explicitly provided and not null
+              nonce: (resolved.nonce != null) ? Number(resolved.nonce) : undefined,
               chainId: chainId,
               account: wagmiAddress,
             });
