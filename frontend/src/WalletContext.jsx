@@ -270,12 +270,58 @@ export function WalletProvider({ children }) {
     if (wagmiIsConnected && walletClient && wagmiAddress) {
       const updateEthersWallet = async () => {
         try {
-          const provider = new ethers.BrowserProvider(walletClient.transport);
-          const signer = await provider.getSigner();
+          // Build an ethers provider backed by the wagmi walletClient's transport.
+          // For read-only RPC calls (balanceOf, etc.) we use a public JsonRpcProvider
+          // so we never trigger wallet pop-ups. For write operations (sendTransaction)
+          // we delegate directly to the wagmi walletClient which already holds the
+          // OKX / MetaMask / Rabby session and properly encodes calldata.
           
           let chainId = Number(walletClient.chain?.id || wagmiChainId);
           if (chainId === 195) chainId = 1952; // Normalize X Layer Testnet
-          
+
+          const rpcUrl = chainId === 196
+            ? "https://rpc.xlayer.tech"
+            : "https://testrpc.xlayer.tech";
+
+          // Public provider for read-only calls
+          const provider = new ethers.JsonRpcProvider(rpcUrl);
+
+          // Wrap walletClient as an ethers Signer so that contract.method() calls
+          // go through the connected wallet (OKX / MetaMask / Rabby).
+          const signer = new ethers.VoidSigner(wagmiAddress, provider);
+
+          // Monkey-patch sendTransaction to use the wagmi walletClient.
+          // This is the only method that actually needs wallet signing.
+          signer.sendTransaction = async (tx) => {
+            // Resolve any ethers promises in the tx object
+            const resolved = await ethers.resolveProperties(tx);
+            const hash = await walletClient.sendTransaction({
+              // For contract deployments, `to` is null — viem needs it omitted (undefined)
+              ...(resolved.to != null && { to: resolved.to }),
+              data: resolved.data || "0x",
+              value: resolved.value ? BigInt(resolved.value.toString()) : 0n,
+              gas: resolved.gasLimit ? BigInt(resolved.gasLimit.toString()) : undefined,
+              gasPrice: resolved.gasPrice ? BigInt(resolved.gasPrice.toString()) : undefined,
+              nonce: resolved.nonce !== undefined ? Number(resolved.nonce) : undefined,
+              chainId: chainId,
+              account: wagmiAddress,
+            });
+            // Return immediately with hash — .wait() polls for the receipt asynchronously
+            return {
+              hash,
+              wait: (confirms = 1) => provider.waitForTransaction(hash, confirms),
+              from: wagmiAddress,
+              to: resolved.to,
+              data: resolved.data || "0x",
+              value: resolved.value ? BigInt(resolved.value.toString()) : 0n,
+            };
+          };
+
+          // Also patch signMessage (needed for some flows)
+          signer.signMessage = async (message) => {
+            return walletClient.signMessage({ message: typeof message === "string" ? message : { raw: message } });
+          };
+
           setWallet({
             connected: true,
             address: wagmiAddress,
@@ -1241,8 +1287,15 @@ export function WalletProvider({ children }) {
           console.log("Failed to check pool initialization via StateView", e);
         }
       } else {
-        poolState = await poolManagerContract.pools(newPoolId);
-        isAlreadyInitialized = poolState && (poolState.initialized || poolState[2]);
+        try {
+          const testnetPublicProvider = new ethers.JsonRpcProvider("https://testrpc.xlayer.tech");
+          const poolManagerRead = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, testnetPublicProvider);
+          poolState = await poolManagerRead.pools(newPoolId);
+          isAlreadyInitialized = poolState && (poolState.initialized || poolState[2]);
+        } catch (e) {
+          console.log("Could not check pool state via pools() — will attempt initialize", e.message);
+          isAlreadyInitialized = false;
+        }
       }
 
       let initTxHash = "";
