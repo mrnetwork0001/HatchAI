@@ -1153,6 +1153,15 @@ export function WalletProvider({ children }) {
       return { success: false, reason: "Wrong network" };
     }
 
+    if (!ethers.isAddress(config.projectToken)) {
+      addLog("Launchpad Error", "Invalid project token address.", "error");
+      return { success: false, reason: "Invalid project token address" };
+    }
+    if (!ethers.isAddress(config.baseToken)) {
+      addLog("Launchpad Error", "Invalid base token address.", "error");
+      return { success: false, reason: "Invalid base token address" };
+    }
+
     setIsTxPending(true);
     setIsTxSuccess(false);
 
@@ -1526,7 +1535,7 @@ export function WalletProvider({ children }) {
       addLog("Import Error", "Connect your wallet first.", "error");
       return { success: false, reason: "Wallet not connected" };
     }
-    if (!projectTokenAddress || !projectTokenAddress.startsWith("0x") || projectTokenAddress.length !== 42) {
+    if (!ethers.isAddress(projectTokenAddress)) {
       addLog("Import Error", "Invalid project token address.", "error");
       return { success: false, reason: "Invalid address" };
     }
