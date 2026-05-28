@@ -163,4 +163,14 @@ interface IPoolManager {
     ) external returns (BalanceDelta delta);
 
     function updateDynamicLPFee(PoolKey calldata key, uint24 newDynamicLPFee) external;
+
+    function unlock(bytes calldata data) external returns (bytes memory);
+
+    function settle(address token) external payable returns (uint256);
+
+    function take(
+        address token,
+        address to,
+        uint256 amount
+    ) external;
 }

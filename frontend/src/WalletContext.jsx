@@ -864,17 +864,24 @@ export function WalletProvider({ children }) {
     setIsTxSuccess(false);
 
     try {
+      const isMainnet = targetChainId === 196;
+      const spenderAddress = isMainnet ? CONTRACTS.swapRouter : CONTRACTS.poolManager;
+
       if (!isValidAddress(CONTRACTS.weth) || !isValidAddress(CONTRACTS.poolManager)) {
         throw new Error("Required contracts (WETH or PoolManager) are not deployed on this network.");
       }
+      if (isMainnet && !isValidAddress(CONTRACTS.swapRouter)) {
+        throw new Error("Required contracts (SwapRouter) are not deployed on X Layer Mainnet.");
+      }
+
       const signer = wallet.signer;
       const wethContract = new ethers.Contract(CONTRACTS.weth, ERC20_ABI, signer);
-      const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, signer);
 
-      const currentAllowance = wethAllowance || 0n;
+      const currentAllowance = await wethContract.allowance(wallet.address, spenderAddress);
       if (currentAllowance < wethAmountWei) {
-        addLog("Approve", "Approving WETH for PoolManager...", "info");
-        const approveTx = await wethContract.approve(CONTRACTS.poolManager, wethAmountWei * 10n);
+        const spenderName = isMainnet ? "SwapRouter" : "PoolManager";
+        addLog("Approve", `Approving WETH for ${spenderName}...`, "info");
+        const approveTx = await wethContract.approve(spenderAddress, wethAmountWei * 10n);
         setPendingTxHash(approveTx.hash);
         addLog("Approve", `Approval tx submitted: ${approveTx.hash}. Waiting for confirmation...`, "info");
         await approveTx.wait();
@@ -885,17 +892,37 @@ export function WalletProvider({ children }) {
       const zeroForOne = !customTokenDetails.isHatchCurrency0;
       addLog("Swap", `Swapping ${wethAmountStr} WETH → ${customTokenDetails.symbol} onchain...`, "info");
 
-      const swapTx = await poolManagerContract.swap(
-        activePoolKey,
-        {
-          zeroForOne,
-          amountSpecified: wethAmountWei,
-          sqrtPriceLimitX96: zeroForOne
-            ? 4295128740n
-            : 1461446703485210103287273052203988822378723970341n,
-        },
-        "0x"
-      );
+      let swapTx;
+      if (isMainnet) {
+        const swapRouterAbi = [
+          "function swap((address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) key, (bool zeroForOne, int256 amountSpecified, uint160 sqrtPriceLimitX96) params, bytes hookData) external payable returns (int256 delta)"
+        ];
+        const swapRouterContract = new ethers.Contract(CONTRACTS.swapRouter, swapRouterAbi, signer);
+        swapTx = await swapRouterContract.swap(
+          activePoolKey,
+          {
+            zeroForOne,
+            amountSpecified: wethAmountWei,
+            sqrtPriceLimitX96: zeroForOne
+              ? 4295128740n
+              : 1461446703485210103287273052203988822378723970341n,
+          },
+          "0x"
+        );
+      } else {
+        const poolManagerContract = new ethers.Contract(CONTRACTS.poolManager, POOL_MANAGER_ABI, signer);
+        swapTx = await poolManagerContract.swap(
+          activePoolKey,
+          {
+            zeroForOne,
+            amountSpecified: wethAmountWei,
+            sqrtPriceLimitX96: zeroForOne
+              ? 4295128740n
+              : 1461446703485210103287273052203988822378723970341n,
+          },
+          "0x"
+        );
+      }
 
       setPendingTxHash(swapTx.hash);
       addLog("SWAP SUBMITTED", `Tx hash: ${swapTx.hash}. Waiting for confirmation...`, "info");

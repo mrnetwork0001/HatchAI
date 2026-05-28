@@ -10,7 +10,8 @@
       "weth": "0x5a77f1443d16ee5761d310e38b62f77f726bc71c",
       "usdt0": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736",
       "positionManager": "0xcf1eafc6928dc385a342e7c6491d371d2871458b",
-      "create2Deployer": "0x5C3322358C4F3e426870d2eF96cDEc2CF4252E19"
+      "create2Deployer": "0x5C3322358C4F3e426870d2eF96cDEc2CF4252E19",
+      "swapRouter": "0xf958152c5252A40C722c191880d53e5f9d217905"
     },
     "explorerUrl": "https://www.oklink.com/xlayer"
   },
@@ -23,7 +24,8 @@
       "poolManager": "0xe5392F2AF7f2DA3C386cB879C35ABfa2DAcdaE4D",
       "hatchHook": "0xe78117Bf2Ca342ce1DcBa2367d3CCAb30bb3508f",
       "weth": "0xc147621C235a8004adC2C5dFC90b78ef50B0a061",
-      "hatchToken": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71"
+      "hatchToken": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71",
+      "swapRouter": "0x116D7726dEe540A728b9fE0f0aE0c9C99f561529"
     },
     "poolKey": {
       "currency0": "0x9363Ef64d538BEe4706Aa2Dd13cfB559441d7c71",

@@ -166,6 +166,18 @@ contract MockPoolManager is IPoolManager {
         // Mock method signature
     }
 
+    function unlock(bytes calldata) external override returns (bytes memory) {
+        revert("MockPoolManager: unlock not implemented");
+    }
+
+    function settle(address) external payable override returns (uint256) {
+        revert("MockPoolManager: settle not implemented");
+    }
+
+    function take(address, address, uint256) external override {
+        revert("MockPoolManager: take not implemented");
+    }
+
     function claimHookFees(
         PoolKey calldata key,
         address recipient
