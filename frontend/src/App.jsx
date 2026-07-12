@@ -1209,17 +1209,26 @@ export default function App() {
 
         {/* Desktop nav items */}
         <div className="header-nav-desktop">
-          {view === "landing" ? (
-            <button
-              onClick={() => {
-                setView("console");
-                setConsoleTab("portal");
-              }}
-              className="btn-neon"
-              style={{ padding: "10px 24px", fontSize: "14px" }}
-            >
-              Launch App →
-            </button>
+          {view === "landing" || view === "agent" ? (
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={() => setView(view === "landing" ? "agent" : "landing")}
+                className="btn-outline"
+                style={{ padding: "10px 24px", fontSize: "14px" }}
+              >
+                {view === "landing" ? "Agent API" : "Home"}
+              </button>
+              <button
+                onClick={() => {
+                  setView("console");
+                  setConsoleTab("portal");
+                }}
+                className="btn-neon"
+                style={{ padding: "10px 24px", fontSize: "14px" }}
+              >
+                Launch App →
+              </button>
+            </div>
           ) : (
             <>
               <button
@@ -3672,6 +3681,53 @@ export default function App() {
         </div>
       )}
 
+      {/* ===================================================================== */}
+      {/* ── VIEW 3: AGENT REDIRECT PAGE ────────────────────────────────────── */}
+      {/* ===================================================================== */}
+      {view === "agent" && (
+        <div style={{ animation: "fadeIn 0.5s ease", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", padding: "80px 0" }}>
+          <div className="status-badge" style={{ marginBottom: "24px" }}>
+            <span className="dot" style={{ background: "var(--coral)", boxShadow: "0 0 8px var(--coral)" }}></span>
+            <span style={{ color: "var(--coral)" }}>Agent Service Provider (ASP)</span>
+          </div>
+          <h1 style={{ fontWeight: "800", fontSize: "clamp(32px, 5vw, 56px)", lineHeight: "1.1", letterSpacing: "-0.035em", marginBottom: "24px", color: "var(--ink)" }}>
+            HatchAI SafeLaunch <br/>
+            <span className="serif">Autonomous Agent</span>
+          </h1>
+          <p style={{ fontSize: "17px", lineHeight: "1.6", color: "var(--ink-soft)", maxWidth: "600px", marginBottom: "40px" }}>
+            The HatchAI SafeLaunch Agent runs completely autonomously on an OKX TEE (Trusted Execution Environment). It monitors X Layer mempools, executes cryptographically secure token deployments, and automatically harvests LP yield to buy back and burn your project tokens.
+          </p>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", maxWidth: "800px", marginBottom: "48px", width: "100%" }}>
+            <div style={{ padding: "24px", background: "rgba(50, 52, 58, 0.02)", borderRadius: "16px", border: "1px solid var(--line)", textAlign: "left" }}>
+              <ShieldIcon size={24} color="var(--success)" style={{ marginBottom: "12px" }} />
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--ink)", marginBottom: "8px" }}>TEE Security</h3>
+              <p style={{ fontSize: "14px", color: "var(--ink-soft)", lineHeight: "1.5" }}>Private keys never leave the secure enclave. Fully trustless deployments.</p>
+            </div>
+            <div style={{ padding: "24px", background: "rgba(50, 52, 58, 0.02)", borderRadius: "16px", border: "1px solid var(--line)", textAlign: "left" }}>
+              <FireIcon size={24} color="var(--error)" style={{ marginBottom: "12px" }} />
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--ink)", marginBottom: "8px" }}>Auto Buyback & Burn</h3>
+              <p style={{ fontSize: "14px", color: "var(--ink-soft)", lineHeight: "1.5" }}>Agent harvests fees and automatically executes buybacks to pump your token.</p>
+            </div>
+            <div style={{ padding: "24px", background: "rgba(50, 52, 58, 0.02)", borderRadius: "16px", border: "1px solid var(--line)", textAlign: "left" }}>
+              <LockIcon size={24} color="var(--coral)" style={{ marginBottom: "12px" }} />
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--ink)", marginBottom: "8px" }}>x402 Payments</h3>
+              <p style={{ fontSize: "14px", color: "var(--ink-soft)", lineHeight: "1.5" }}>Seamless machine-to-machine monetization via the Agentic Wallet protocol.</p>
+            </div>
+          </div>
+
+          <a 
+            href="https://web3.okx.com/onchainos" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="btn-neon"
+            style={{ padding: "16px 32px", fontSize: "16px", borderRadius: "100px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "12px" }}
+          >
+            <BotIcon size={20} color="var(--sand)" /> Use Agent on OKX Marketplace →
+          </a>
+        </div>
+      )}
+
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer
         style={{
@@ -3716,6 +3772,11 @@ export default function App() {
               <li>
                 <span style={{ cursor: "pointer", color: "var(--ink-soft)", transition: "color 0.2s" }} className="hover-coral" onClick={() => setView("landing")}>
                   Home Landing
+                </span>
+              </li>
+              <li>
+                <span style={{ cursor: "pointer", color: "var(--coral)", fontWeight: "600", transition: "color 0.2s" }} className="hover-coral" onClick={() => setView("agent")}>
+                  SafeLaunch Agent API
                 </span>
               </li>
               <li>

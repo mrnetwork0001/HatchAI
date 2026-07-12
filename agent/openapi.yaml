@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info:
+  title: HatchAI SafeLaunch ASP
+  description: Agent Service Provider for safely launching anti-sniper protected tokens on X Layer via Uniswap V4 Hooks.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/v1/launch:
+    post:
+      summary: Execute a Safe Launch
+      description: Deploys a new ERC20 token and initializes a Uniswap V4 Pool with HatchHook protections.
+      security:
+        - x402Payment: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tokenName
+                - tokenSymbol
+                - totalSupply
+              properties:
+                tokenName:
+                  type: string
+                  example: "Agent Coin"
+                tokenSymbol:
+                  type: string
+                  example: "AGENT"
+                totalSupply:
+                  type: string
+                  example: "1000000"
+                decayDurationHours:
+                  type: number
+                  example: 24
+                startFeePercent:
+                  type: number
+                  example: 99
+      responses:
+        '200':
+          description: Successfully launched token.
+        '402':
+          description: Payment Required (x402 Protocol)
+components:
+  securitySchemes:
+    x402Payment:
+      type: apiKey
+      in: header
+      name: ok-web3-openapi-pay

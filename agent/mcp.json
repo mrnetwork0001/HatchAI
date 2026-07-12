@@ -1,0 +1,26 @@
+{
+  "mcpVersion": "1.0",
+  "name": "hatchai-safelaunch-asp",
+  "version": "1.0.0",
+  "description": "Agent Service Provider for safely launching anti-sniper protected tokens on X Layer via Uniswap V4 Hooks.",
+  "publisher": "HatchAI",
+  "tools": [
+    {
+      "name": "safeLaunch",
+      "description": "Deploys a new ERC20 token and initializes a Uniswap V4 Pool with HatchHook protections on X Layer.",
+      "endpoint": "/api/v1/launch",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tokenName": { "type": "string" },
+          "tokenSymbol": { "type": "string" },
+          "totalSupply": { "type": "string" },
+          "decayDurationHours": { "type": "number", "default": 24 },
+          "startFeePercent": { "type": "number", "default": 99 }
+        },
+        "required": ["tokenName", "tokenSymbol", "totalSupply"]
+      }
+    }
+  ]
+}
