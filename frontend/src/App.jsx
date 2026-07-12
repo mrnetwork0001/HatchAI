@@ -3717,7 +3717,7 @@ export default function App() {
           </div>
 
           <a 
-            href="https://web3.okx.com/onchainos" 
+            href="https://www.okx.ai/agents/5164" 
             target="_blank" 
             rel="noopener noreferrer"
             className="btn-neon"
