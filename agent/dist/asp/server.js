@@ -155,6 +155,13 @@ app.all('/api/v1/launch', requireAgentPayment, async (req, res) => {
     }
 });
 async function ensureWalletLoggedIn() {
+    // When a direct signer key is configured, settlement + launch broadcast via ethers
+    // and the onchainos CLI is not used — skip the login check entirely (avoids noisy
+    // "command not found" errors on hosts without the binary, e.g. Railway).
+    if (process.env.RELAYER_PRIVATE_KEY || process.env.PRIVATE_KEY || process.env.AGENT_PRIVATE_KEY) {
+        console.log("[Startup] 🔑 Direct signer key configured — skipping onchainos login (ethers broadcast).");
+        return;
+    }
     console.log("[Startup] 🔍 Checking OKX wallet status...");
     try {
         const { stdout } = await execAsync("onchainos wallet status");

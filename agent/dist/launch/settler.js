@@ -7,65 +7,106 @@ const ethers_1 = require("ethers");
 const config_1 = require("../payment/config");
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
 const USDT_CONTRACT_ADDRESS = config_1.USDT_ADDRESS;
+const TRANSFER_WITH_AUTH_ABI = [
+    "function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, uint8 v, bytes32 r, bytes32 s)",
+];
 function getProvider() {
     const rpcUrl = process.env.XLAYER_RPC_URL || "https://rpc.xlayer.tech";
-    return new ethers_1.ethers.JsonRpcProvider(rpcUrl);
+    return new ethers_1.ethers.JsonRpcProvider(rpcUrl, config_1.XLAYER_MAINNET_CHAIN_ID, { staticNetwork: true });
 }
+/** The relayer that broadcasts the EIP-3009 transfer and pays gas (funds still flow to `to`). */
+function getRelayerKey() {
+    return process.env.RELAYER_PRIVATE_KEY
+        || process.env.PRIVATE_KEY
+        || process.env.AGENT_PRIVATE_KEY
+        || undefined;
+}
+/**
+ * Settle an x402 "exact" (EIP-3009) payment on-chain: broadcast
+ * transferWithAuthorization so `value` USDT moves from the payer to `to`.
+ *
+ * Prefers a direct ethers relayer (works on Railway with only PRIVATE_KEY + gas);
+ * falls back to the onchainos CLI when no key is configured. Retries transient
+ * RPC/network errors, but never retries a deterministic revert (used/expired
+ * authorization, bad signature), and only returns on a status==1 receipt.
+ */
 async function executeOnChainSettlement(authorization, signature) {
-    console.log(`[Settler] 💸 Initiating on-chain settlement for ${ethers_1.ethers.formatUnits(authorization.value, 6)} USDT...`);
-    // Extract v, r, s from the EIP-3009 signature
+    console.log(`[Settler] 💸 Settling ${ethers_1.ethers.formatUnits(authorization.value, 6)} USDT (from ${authorization.from} → ${authorization.to})...`);
     const sig = ethers_1.ethers.Signature.from(signature);
-    const v = sig.v;
-    const r = sig.r;
-    const s = sig.s;
-    // We use the onchainos CLI to execute the smart contract call using the Agentic Wallet
-    const iface = new ethers_1.ethers.Interface([
-        "function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, uint8 v, bytes32 r, bytes32 s)"
-    ]);
-    // Format the args array as a JSON string for the CLI
-    const inputData = iface.encodeFunctionData("transferWithAuthorization", [
+    const args = [
         authorization.from,
         authorization.to,
         authorization.value,
         authorization.validAfter,
         authorization.validBefore,
         authorization.nonce,
-        v,
-        r,
-        s
-    ]);
-    const cmd = `onchainos wallet contract-call --chain 196 --to ${USDT_CONTRACT_ADDRESS} --input-data "${inputData}"`;
+        sig.v,
+        sig.r,
+        sig.s,
+    ];
+    const relayerKey = getRelayerKey();
+    if (relayerKey) {
+        return settleViaEthers(relayerKey, args);
+    }
+    return settleViaOnchainos(args);
+}
+async function settleViaEthers(relayerKey, args) {
+    const provider = getProvider();
+    const wallet = new ethers_1.ethers.Wallet(relayerKey, provider);
+    const usdt = new ethers_1.ethers.Contract(USDT_CONTRACT_ADDRESS, TRANSFER_WITH_AUTH_ABI, wallet);
+    console.log(`[Settler] 🔑 Relayer ${wallet.address} broadcasting settlement...`);
+    const MAX_ATTEMPTS = 3;
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+            const tx = await usdt.transferWithAuthorization(...args, { gasLimit: 200000 });
+            console.log(`[Settler] 📡 Settlement broadcast (attempt ${attempt}/${MAX_ATTEMPTS}): ${tx.hash}`);
+            const receipt = await tx.wait(1);
+            if (!receipt)
+                throw new Error(`settlement not confirmed within timeout: ${tx.hash}`);
+            if (receipt.status !== 1)
+                throw new Error(`settlement transaction reverted: ${tx.hash}`);
+            console.log(`[Settler] ✅ Settlement confirmed in block ${receipt.blockNumber}: ${tx.hash}`);
+            return tx.hash;
+        }
+        catch (err) {
+            lastErr = err;
+            const detail = err?.shortMessage || err?.message || String(err);
+            console.error(`[Settler] ❌ Settlement attempt ${attempt} failed: ${detail}`);
+            // Only retry transient RPC/network issues; a revert or bad-funds error is final.
+            const transient = ["TIMEOUT", "NETWORK_ERROR", "SERVER_ERROR"].includes(err?.code);
+            if (!transient || attempt === MAX_ATTEMPTS)
+                break;
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
+        }
+    }
+    throw new Error(`On-chain settlement failed: ${lastErr?.shortMessage || lastErr?.message || lastErr}`);
+}
+/** Legacy fallback: broadcast via the onchainos CLI (requires the binary + a logged-in wallet). */
+async function settleViaOnchainos(args) {
+    const iface = new ethers_1.ethers.Interface(TRANSFER_WITH_AUTH_ABI);
+    const inputData = iface.encodeFunctionData("transferWithAuthorization", args);
+    const cmd = `onchainos wallet contract-call --chain ${config_1.XLAYER_MAINNET_CHAIN_ID} --to ${USDT_CONTRACT_ADDRESS} --input-data "${inputData}"`;
     try {
-        console.log(`[Settler] 📡 Broadcasting settlement transaction to X Layer...`);
+        console.log(`[Settler] 📡 Broadcasting settlement via onchainos CLI...`);
         const { stdout, stderr } = await execAsync(cmd);
-        if (stderr) {
-            console.error(`[Settler] CLI Warning/Error:`, stderr);
-        }
-        // Parse the CLI output. We look for a line starting with `Hash:` or a JSON output.
-        // The onchainos CLI might just output the hash directly.
+        if (stderr)
+            console.error(`[Settler] CLI warning:`, stderr);
         const match = stdout.match(/0x[a-fA-F0-9]{64}/);
-        if (!match) {
-            console.error(`[Settler] ⚠️ Could not extract a tx hash from stdout:`, stdout);
-            throw new Error("Settlement broadcast returned no transaction hash");
-        }
+        if (!match)
+            throw new Error(`settlement broadcast returned no tx hash: ${stdout}`);
         const txHash = match[0];
-        console.log(`[Settler] ✅ Settlement transaction broadcasted: ${txHash}`);
-        // Wait for the settlement to actually confirm on-chain before granting access.
-        // A broadcast hash alone does not prove the transfer succeeded (it could revert
-        // on a used nonce, expired authorization, or insufficient balance).
-        console.log(`[Settler] ⏳ Waiting for settlement confirmation...`);
+        console.log(`[Settler] ✅ Settlement broadcast: ${txHash}. Waiting for confirmation...`);
         const receipt = await getProvider().waitForTransaction(txHash, 1, 90000);
-        if (!receipt) {
-            throw new Error(`Settlement not confirmed within timeout: ${txHash}`);
-        }
-        if (receipt.status !== 1) {
-            throw new Error(`Settlement transaction reverted on-chain: ${txHash}`);
-        }
+        if (!receipt)
+            throw new Error(`settlement not confirmed within timeout: ${txHash}`);
+        if (receipt.status !== 1)
+            throw new Error(`settlement transaction reverted: ${txHash}`);
         console.log(`[Settler] ✅ Settlement confirmed in block ${receipt.blockNumber}: ${txHash}`);
         return txHash;
     }
     catch (error) {
-        console.error(`[Settler] ❌ Failed to execute settlement transaction:`, error.message);
+        console.error(`[Settler] ❌ onchainos settlement failed:`, error.message);
         throw new Error(`On-chain settlement failed: ${error.message}`);
     }
 }

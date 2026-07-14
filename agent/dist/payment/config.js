@@ -17,7 +17,9 @@ exports.USDT_EIP712_VERSION = "1";
 exports.PAY_TO_ADDRESS = "0x66A4c73e7C02858B49F15fBC24589A76B97C0F5a";
 // The launch fee, expressed once in minimal units and derived everywhere else.
 exports.LAUNCH_FEE_UNITS = "500000"; // 0.5 USD₮0 (6 decimals)
-exports.NETWORK_NAME = "xlayer_mainnet";
+// CAIP-2 network id. The OKX task-402-pay CLI rejects the raw "xlayer_mainnet"
+// id and requires the CAIP-2 form (eip155:<chainId>).
+exports.NETWORK_NAME = "eip155:196";
 exports.RESOURCE_ID = "hatchai-agent-launch";
 /** Human-readable fee string, e.g. "0.5 USDT", derived from the canonical units. */
 function launchFeeHuman() {

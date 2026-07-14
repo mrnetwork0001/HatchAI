@@ -8,15 +8,19 @@ import util from 'util';
 
 const execAsync = util.promisify(exec);
 
+// Normalize to a valid EIP-55 checksum so ethers' direct-signer path (which validates
+// addresses, unlike the onchainos CLI) never rejects a hand-typed constant.
+const addr = (a: string) => ethers.getAddress(a.toLowerCase());
+
 // X Layer Mainnet (chain 196) deployment addresses — the live Uniswap V4 + HatchAI stack.
 const MAINNET = {
     chainId: 196,
-    poolManager: "0x360e68faCcca8cA495c1B759Fd9EEe466db9FB32",
-    hatchHook: "0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0",
-    weth: "0x5A77f1443D16ee5761d310e38b62f77f726bC71c",
-    create2Deployer: "0xE313713b2b3d5779fd54ac125E428bF1faAd0C0D",
-    positionManager: "0xcf1eafc6928dc385a342e7c6491d371d2871458b",
-    permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    poolManager: addr("0x360e68faCcca8cA495c1B759Fd9EEe466db9FB32"),
+    hatchHook: addr("0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0"),
+    weth: addr("0x5A77f1443D16ee5761d310e38b62f77f726bC71c"),
+    create2Deployer: addr("0xE313713b2b3d5779fd54ac125E428bF1faAd0C0D"),
+    positionManager: addr("0xcf1eafc6928dc385a342e7c6491d371d2871458b"),
+    permit2: addr("0x000000000022D473030F116dDEE9F6B43aC78BA3"),
     // Uniswap V4 dynamic-fee flag (0x800000) — HatchHook overrides the fee per-swap.
     dynamicFee: 8388608,
     tickSpacing: 60,
@@ -43,38 +47,57 @@ function computePoolId(poolKey: {
 export class SafeLaunchOrchestrator {
     private provider: ethers.JsonRpcProvider;
     private wallet: ethers.Wallet | ethers.HDNodeWallet;
+    // When true, on-chain writes are signed/broadcast directly via ethers using
+    // `this.wallet` (works anywhere — e.g. Railway). When false, we fall back to
+    // shelling out to the onchainos CLI (requires that binary + a logged-in wallet).
+    private readonly useDirectSigner: boolean;
 
     constructor() {
         const rpcUrl = process.env.XLAYER_RPC_URL || 'https://rpc.xlayer.tech';
-        this.provider = new ethers.JsonRpcProvider(rpcUrl);
-        
-        const privateKey = process.env.AGENT_PRIVATE_KEY;
-        if (!privateKey) {
-            console.warn("[Orchestrator] ⚠️ No AGENT_PRIVATE_KEY found. Running in simulation mode.");
-            // We use a random wallet for simulation purposes if none provided
-            this.wallet = ethers.Wallet.createRandom().connect(this.provider);
-        } else {
+        this.provider = new ethers.JsonRpcProvider(rpcUrl, MAINNET.chainId, { staticNetwork: true });
+
+        const privateKey = process.env.AGENT_PRIVATE_KEY || process.env.PRIVATE_KEY;
+        if (privateKey) {
             this.wallet = new ethers.Wallet(privateKey, this.provider);
-            console.log(`[Orchestrator] 🔒 OKX Agentic Wallet loaded: ${this.wallet.address}`);
+            this.useDirectSigner = true;
+            console.log(`[Orchestrator] 🔒 Direct signer loaded: ${this.wallet.address}`);
+        } else {
+            console.warn("[Orchestrator] ⚠️ No AGENT_PRIVATE_KEY/PRIVATE_KEY found. Falling back to onchainos CLI for broadcasts.");
+            this.wallet = ethers.Wallet.createRandom().connect(this.provider);
+            this.useDirectSigner = false;
         }
     }
 
     /**
-     * Broadcast a contract call through the OKX Agentic Wallet (TEE) via the onchainos CLI,
-     * then wait for it to confirm. Returns the confirmed transaction hash.
+     * Broadcast a contract call and wait for it to confirm. Returns the confirmed tx hash.
+     * Uses the direct ethers signer when available (Railway-friendly), else the onchainos CLI.
      */
     private async broadcastAndConfirm(
         to: string,
         inputData: string,
         opts: { gasLimit?: number; label: string } = { label: "tx" },
     ): Promise<string> {
+        if (this.useDirectSigner) {
+            console.log(`[Orchestrator] 📡 ${opts.label}: sending from ${this.wallet.address}...`);
+            const tx = await this.wallet.sendTransaction({
+                to,
+                data: inputData,
+                ...(opts.gasLimit ? { gasLimit: opts.gasLimit } : {}),
+            });
+            console.log(`[Orchestrator] ⏳ ${opts.label} broadcast (${tx.hash}). Waiting for confirmation...`);
+            const receipt = await tx.wait(1);
+            if (!receipt) throw new Error(`${opts.label}: not confirmed within timeout (${tx.hash})`);
+            if (receipt.status !== 1) throw new Error(`${opts.label}: transaction reverted (${tx.hash})`);
+            console.log(`[Orchestrator] ✅ ${opts.label} confirmed in block ${receipt.blockNumber}`);
+            return tx.hash;
+        }
+
+        // Fallback: broadcast via the onchainos CLI (requires the binary + a logged-in wallet).
         const gasFlag = opts.gasLimit ? ` --gas-limit ${opts.gasLimit}` : "";
         const cmd = `onchainos wallet contract-call --chain ${MAINNET.chainId} --to "${to}" --input-data "${inputData}"${gasFlag} --force`;
         console.log(`[Orchestrator] 📡 ${opts.label}: ${cmd.slice(0, 90)}...`);
 
         const { stdout } = await execAsync(cmd);
-
-        // The CLI may print structured JSON or a bare hash — accept either.
         let txHash = "";
         try {
             const parsed = JSON.parse(stdout);
@@ -115,11 +138,14 @@ export class SafeLaunchOrchestrator {
     }
 
     /**
-     * Resolve the OKX Agentic Wallet's EVM address — the actual sender of every tx we
-     * broadcast via the onchainos CLI (NOT this.wallet, which only reads artifacts).
-     * Seeded liquidity and the resulting LP NFT are owned by this address.
+     * Resolve the operating wallet's EVM address — the actual sender of every launch tx.
+     * Seeded liquidity and the resulting LP NFT are owned by this address. With the direct
+     * signer this is this.wallet; otherwise it's the onchainos-logged-in wallet.
      */
     private async getAgentAddress(): Promise<string> {
+        if (this.useDirectSigner) {
+            return ethers.getAddress(this.wallet.address);
+        }
         const { stdout } = await execAsync("onchainos wallet addresses");
         const parsed = JSON.parse(stdout);
         const addr = parsed?.data?.xlayer?.[0]?.address || parsed?.data?.evm?.[0]?.address;
@@ -241,75 +267,66 @@ export class SafeLaunchOrchestrator {
             // 1. Validate & Refine Parameters
             const safeParams = validateAntiSniperSettings(params);
 
-            // 2. Deploy Token Contract (ERC20) via OKX Agentic Wallet (TEE)
-            console.log(`[Orchestrator] Deploying token contract via TEE Agentic Wallet on X Layer...`);
-            
-            // Generate bytecode for the token
-            const factory = new ethers.ContractFactory(MockERC20Artifact.abi, MockERC20Artifact.bytecode);
+            // 2. Deploy the ERC20 token.
+            console.log(`[Orchestrator] Deploying ${safeParams.tokenSymbol} token on X Layer...`);
             const totalSupplyParam = safeParams.totalSupply || "1000000";
             // MockERC20's constructor scales _initialSupply by 1e18 internally, so pass the
             // plain token count. Using parseEther here would double-apply 18 decimals and
             // mint a supply 1e18x too large. Parse the integer part from the string (no
             // float) to preserve precision for very large supplies.
             const initialSupply = BigInt(totalSupplyParam.trim().split('.')[0] || "0");
-            const deployTxReq = await factory.getDeployTransaction(safeParams.tokenName, safeParams.tokenSymbol, initialSupply);
-            const initCode = deployTxReq.data;
 
-            // Encode the factory call using Create2Deployer
-            const iface = new ethers.Interface([
-                "function deploy(bytes32 salt, bytes bytecode) external returns (address)",
-                "event Deployed(address addr, bytes32 salt)"
-            ]);
-            
-            const salt = ethers.randomBytes(32);
-            const inputData = iface.encodeFunctionData("deploy", [
-                salt,
-                initCode
-            ]);
-            
-            const factoryAddress = "0xE313713b2b3d5779fd54ac125E428bF1faAd0C0D"; // Live Create2Deployer on X Layer
             let tokenAddress = '';
             let deployTxHash = '0x0';
 
-            // Execute TEE signature via onchainos CLI
-            const cmd = `onchainos wallet contract-call --chain 196 --to "${factoryAddress}" --input-data ${inputData} --force`;
-            console.log(`[Orchestrator] Executing CLI: ${cmd.slice(0, 80)}...`);
-
-            const { stdout } = await execAsync(cmd);
-            const result = JSON.parse(stdout);
-
-            if (result.ok && result.data && result.data.txHash) {
-                deployTxHash = result.data.txHash;
-                console.log(`[Orchestrator] ✅ TEE Tx Broadcasted: ${deployTxHash}`);
-
-                console.log(`[Orchestrator] ⏳ Waiting for transaction confirmation to extract token address...`);
-                const receipt = await this.provider.waitForTransaction(deployTxHash, 1, 60000);
-                
-                if (receipt && receipt.logs) {
-                    for (const log of receipt.logs) {
-                        try {
-                            const parsedLog = iface.parseLog({ topics: log.topics.slice(), data: log.data });
-                            if (parsedLog && parsedLog.name === "Deployed") {
-                                tokenAddress = parsedLog.args.addr;
-                                break;
-                            }
-                        } catch (e) {
-                            // Ignore logs that don't match our ABI
-                        }
-                    }
-                }
-                
-                if (!tokenAddress || tokenAddress === ethers.ZeroAddress) {
-                    throw new Error("Deployed event not found in receipt");
-                }
+            if (this.useDirectSigner) {
+                // Deploy directly from the signer wallet. msg.sender = this.wallet, so the full
+                // supply is minted to the operating wallet — native custody, no CREATE2 orphaning.
+                const factory = new ethers.ContractFactory(
+                    MockERC20Artifact.abi, MockERC20Artifact.bytecode, this.wallet,
+                );
+                const token = await factory.deploy(safeParams.tokenName, safeParams.tokenSymbol, initialSupply);
+                deployTxHash = token.deploymentTransaction()?.hash || '0x0';
+                console.log(`[Orchestrator] ⏳ Token deploy broadcast (${deployTxHash}). Waiting...`);
+                await token.waitForDeployment();
+                tokenAddress = await token.getAddress();
             } else {
-                throw new Error(`CLI response format unexpected: ${JSON.stringify(result)}`);
+                // Fallback: deploy via the CREATE2Deployer through the onchainos CLI.
+                const factory = new ethers.ContractFactory(MockERC20Artifact.abi, MockERC20Artifact.bytecode);
+                const deployTxReq = await factory.getDeployTransaction(safeParams.tokenName, safeParams.tokenSymbol, initialSupply);
+                const iface = new ethers.Interface([
+                    "function deploy(bytes32 salt, bytes bytecode) external returns (address)",
+                    "event Deployed(address addr, bytes32 salt)",
+                ]);
+                const salt = ethers.randomBytes(32);
+                const inputData = iface.encodeFunctionData("deploy", [salt, deployTxReq.data]);
+                const cmd = `onchainos wallet contract-call --chain ${MAINNET.chainId} --to "${MAINNET.create2Deployer}" --input-data ${inputData} --force`;
+                console.log(`[Orchestrator] Executing CLI: ${cmd.slice(0, 80)}...`);
+                const { stdout } = await execAsync(cmd);
+                const result = JSON.parse(stdout);
+                if (!result.ok || !result.data?.txHash) {
+                    throw new Error(`CLI response format unexpected: ${JSON.stringify(result)}`);
+                }
+                deployTxHash = result.data.txHash;
+                console.log(`[Orchestrator] ✅ TEE Tx Broadcasted: ${deployTxHash}. Waiting for confirmation...`);
+                const receipt = await this.provider.waitForTransaction(deployTxHash, 1, 60000);
+                for (const log of receipt?.logs || []) {
+                    try {
+                        const parsedLog = iface.parseLog({ topics: log.topics.slice(), data: log.data });
+                        if (parsedLog && parsedLog.name === "Deployed") { tokenAddress = parsedLog.args.addr; break; }
+                    } catch { /* not our event */ }
+                }
             }
 
+            if (!tokenAddress || tokenAddress === ethers.ZeroAddress) {
+                throw new Error("Token deployment failed: no token address");
+            }
             console.log(`[Orchestrator] ✅ Token deployed at: ${tokenAddress}`);
 
             // 3. Build the real Uniswap V4 PoolKey (canonical currency ordering).
-            const baseToken = safeParams.baseToken || MAINNET.weth;
+            const baseToken = safeParams.baseToken
+                ? ethers.getAddress(safeParams.baseToken.toLowerCase())
+                : MAINNET.weth;
             const projectLc = tokenAddress.toLowerCase();
             const baseLc = baseToken.toLowerCase();
             const currency0 = projectLc < baseLc ? tokenAddress : baseToken;
