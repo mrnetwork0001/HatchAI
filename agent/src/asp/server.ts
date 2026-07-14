@@ -108,7 +108,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // A2MCP Standard Launch Endpoint
-app.post('/api/v1/launch', requireAgentPayment, async (req: Request, res: Response) => {
+app.all('/api/v1/launch', requireAgentPayment, async (req: Request, res: Response) => {
     try {
         const params: LaunchParameters = req.body;
         

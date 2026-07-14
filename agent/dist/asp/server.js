@@ -99,7 +99,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'HatchAI SafeLaunch ASP' });
 });
 // A2MCP Standard Launch Endpoint
-app.post('/api/v1/launch', requireAgentPayment, async (req, res) => {
+app.all('/api/v1/launch', requireAgentPayment, async (req, res) => {
     try {
         const params = req.body;
         // Basic input validation
