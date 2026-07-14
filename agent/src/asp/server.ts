@@ -52,14 +52,12 @@ const requireAgentPayment = async (req: Request, res: Response, next: NextFuncti
         // The exact standard x402 formatting (base64 encoded)
         const base64Payload = Buffer.from(paymentPayload).toString('base64');
         
-        // Return HTTP 402 with the correct WWW-Authenticate challenge header
-        res.setHeader('WWW-Authenticate', `Payment ${base64Payload}`);
+        // Return HTTP 402 with the correct headers for v2
+        res.setHeader('PAYMENT-REQUIRED', base64Payload);
         res.setHeader('X-PAYMENT-REQUIRED', base64Payload); // Fallback for some clients
         
-        res.status(402).json({
-            error: "Payment Required",
-            message: "Standard x402 Payment Challenge Issued via Headers"
-        });
+        // Return the exact JSON payload in the body for v1
+        res.status(402).json(JSON.parse(paymentPayload));
         return;
     }
 
