@@ -7,8 +7,7 @@ exports.SafeLaunchOrchestrator = void 0;
 const ethers_1 = require("ethers");
 const antiSniper_1 = require("../protections/antiSniper");
 const config_1 = require("../hooks/config");
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
+const mockERC20Artifact_1 = require("../contracts/mockERC20Artifact");
 const child_process_1 = require("child_process");
 const util_1 = __importDefault(require("util"));
 const execAsync = util_1.default.promisify(child_process_1.exec);
@@ -52,15 +51,6 @@ class SafeLaunchOrchestrator {
             this.wallet = new ethers_1.ethers.Wallet(privateKey, this.provider);
             console.log(`[Orchestrator] 🔒 OKX Agentic Wallet loaded: ${this.wallet.address}`);
         }
-    }
-    getArtifact(name) {
-        const basePath1 = path_1.default.resolve(__dirname, '../../../../artifacts/contracts');
-        const file1 = path_1.default.join(basePath1, `${name}.sol`, `${name}.json`);
-        if (fs_1.default.existsSync(file1))
-            return JSON.parse(fs_1.default.readFileSync(file1, 'utf8'));
-        const basePath2 = path_1.default.resolve(__dirname, '../../../artifacts/contracts');
-        const file2 = path_1.default.join(basePath2, `${name}.sol`, `${name}.json`);
-        return JSON.parse(fs_1.default.readFileSync(file2, 'utf8'));
     }
     /**
      * Broadcast a contract call through the OKX Agentic Wallet (TEE) via the onchainos CLI,
@@ -210,8 +200,7 @@ class SafeLaunchOrchestrator {
             // 2. Deploy Token Contract (ERC20) via OKX Agentic Wallet (TEE)
             console.log(`[Orchestrator] Deploying token contract via TEE Agentic Wallet on X Layer...`);
             // Generate bytecode for the token
-            const mockErc20 = this.getArtifact('MockERC20');
-            const factory = new ethers_1.ethers.ContractFactory(mockErc20.abi, mockErc20.bytecode);
+            const factory = new ethers_1.ethers.ContractFactory(mockERC20Artifact_1.MockERC20Artifact.abi, mockERC20Artifact_1.MockERC20Artifact.bytecode);
             const totalSupplyParam = safeParams.totalSupply || "1000000";
             const deployTxReq = await factory.getDeployTransaction(safeParams.tokenName, safeParams.tokenSymbol, ethers_1.ethers.parseEther(totalSupplyParam));
             const initCode = deployTxReq.data;

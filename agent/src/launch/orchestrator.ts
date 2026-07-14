@@ -2,8 +2,7 @@ import { ethers } from 'ethers';
 import { LaunchParameters, LaunchResult } from '../types';
 import { validateAntiSniperSettings } from '../protections/antiSniper';
 import { buildHookConfig } from '../hooks/config';
-import fs from 'fs';
-import path from 'path';
+import { MockERC20Artifact } from '../contracts/mockERC20Artifact';
 import { exec } from 'child_process';
 import util from 'util';
 
@@ -58,16 +57,6 @@ export class SafeLaunchOrchestrator {
             this.wallet = new ethers.Wallet(privateKey, this.provider);
             console.log(`[Orchestrator] 🔒 OKX Agentic Wallet loaded: ${this.wallet.address}`);
         }
-    }
-
-    private getArtifact(name: string) {
-        const basePath1 = path.resolve(__dirname, '../../../../artifacts/contracts');
-        const file1 = path.join(basePath1, `${name}.sol`, `${name}.json`);
-        if (fs.existsSync(file1)) return JSON.parse(fs.readFileSync(file1, 'utf8'));
-        
-        const basePath2 = path.resolve(__dirname, '../../../artifacts/contracts');
-        const file2 = path.join(basePath2, `${name}.sol`, `${name}.json`);
-        return JSON.parse(fs.readFileSync(file2, 'utf8'));
     }
 
     /**
@@ -256,8 +245,7 @@ export class SafeLaunchOrchestrator {
             console.log(`[Orchestrator] Deploying token contract via TEE Agentic Wallet on X Layer...`);
             
             // Generate bytecode for the token
-            const mockErc20 = this.getArtifact('MockERC20');
-            const factory = new ethers.ContractFactory(mockErc20.abi, mockErc20.bytecode);
+            const factory = new ethers.ContractFactory(MockERC20Artifact.abi, MockERC20Artifact.bytecode);
             const totalSupplyParam = safeParams.totalSupply || "1000000";
             const deployTxReq = await factory.getDeployTransaction(safeParams.tokenName, safeParams.tokenSymbol, ethers.parseEther(totalSupplyParam));
             const initCode = deployTxReq.data;
