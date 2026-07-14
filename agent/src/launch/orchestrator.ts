@@ -16,10 +16,19 @@ const MAINNET = {
     hatchHook: "0xb2DaAC3Fc51E958f89A6346f92eF7542805150c0",
     weth: "0x5A77f1443D16ee5761d310e38b62f77f726bC71c",
     create2Deployer: "0xE313713b2b3d5779fd54ac125E428bF1faAd0C0D",
+    positionManager: "0xcf1eafc6928dc385a342e7c6491d371d2871458b",
+    permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     // Uniswap V4 dynamic-fee flag (0x800000) — HatchHook overrides the fee per-swap.
     dynamicFee: 8388608,
     tickSpacing: 60,
 };
+
+// Uniswap V4 PositionManager action codes.
+const MINT_POSITION = 0x02;
+const SETTLE_PAIR = 0x0d;
+// Full-range ticks (nearest multiples of tickSpacing=60).
+const FULL_RANGE_TICK_LOWER = -887220;
+const FULL_RANGE_TICK_UPPER = 887220;
 
 /** Compute the Uniswap V4 poolId (keccak256 of the abi-encoded PoolKey). */
 function computePoolId(poolKey: {
@@ -116,6 +125,126 @@ export class SafeLaunchOrchestrator {
         }
     }
 
+    /**
+     * Resolve the OKX Agentic Wallet's EVM address — the actual sender of every tx we
+     * broadcast via the onchainos CLI (NOT this.wallet, which only reads artifacts).
+     * Seeded liquidity and the resulting LP NFT are owned by this address.
+     */
+    private async getAgentAddress(): Promise<string> {
+        const { stdout } = await execAsync("onchainos wallet addresses");
+        const parsed = JSON.parse(stdout);
+        const addr = parsed?.data?.xlayer?.[0]?.address || parsed?.data?.evm?.[0]?.address;
+        if (!addr || !ethers.isAddress(addr)) {
+            throw new Error(`Could not resolve agent EVM address from wallet: ${stdout}`);
+        }
+        return ethers.getAddress(addr);
+    }
+
+    /** Read an ERC20 balance for `owner`. */
+    private async erc20Balance(token: string, owner: string): Promise<bigint> {
+        const c = new ethers.Contract(token, ["function balanceOf(address) view returns (uint256)"], this.provider);
+        return await c.balanceOf(owner);
+    }
+
+    /**
+     * Seed initial liquidity so the pool is actually tradeable, and mint the resulting
+     * LP NFT to the agent wallet (the future owner of the harvest/buyback loop).
+     *
+     * Mainnet path mirrors the proven frontend flow: mint the project side to the agent
+     * (custody fix), approve both tokens through Permit2 → PositionManager, then call
+     * PositionManager.modifyLiquidities with MINT_POSITION + SETTLE_PAIR.
+     *
+     * Returns the seeding tx hash, or null when seeding is skipped (with the reason logged).
+     */
+    private async seedLiquidity(args: {
+        agentAddr: string;
+        projectToken: string;
+        baseToken: string;
+        poolKey: { currency0: string; currency1: string; fee: number; tickSpacing: number; hooks: string };
+        sqrtPriceX96: bigint;
+        isProjectCurrency0: boolean;
+        seedProjectAmount: string;
+        seedWethAmount: string;
+    }): Promise<string | null> {
+        const { agentAddr, projectToken, baseToken, poolKey, sqrtPriceX96, isProjectCurrency0 } = args;
+
+        const seedProjectWei = ethers.parseEther(args.seedProjectAmount);
+        const seedWethWei = ethers.parseEther(args.seedWethAmount);
+
+        // 1. Custody fix — the token supply was minted to the CREATE2 deployer, so the agent
+        // holds none. MockERC20 exposes a public mint(); give the agent exactly what it needs.
+        const mintIface = new ethers.Interface(["function mint(address to, uint256 amount)"]);
+        const mintData = mintIface.encodeFunctionData("mint", [agentAddr, seedProjectWei]);
+        await this.broadcastAndConfirm(projectToken, mintData, {
+            gasLimit: 150000,
+            label: "MockERC20.mint (custody)",
+        });
+
+        // 2. The agent must already hold the WETH side — we cannot conjure real WETH.
+        const wethBal = await this.erc20Balance(baseToken, agentAddr);
+        if (wethBal < seedWethWei) {
+            console.warn(
+                `[Orchestrator] ⚠️ Skipping liquidity seeding: agent WETH balance `
+                + `${ethers.formatEther(wethBal)} < required ${args.seedWethAmount}. `
+                + `Pool is initialized but unseeded until WETH is funded.`,
+            );
+            return null;
+        }
+
+        // 3. Approvals: ERC20 → Permit2, then Permit2 → PositionManager (uint160/uint48).
+        const erc20Iface = new ethers.Interface(["function approve(address spender, uint256 amount) returns (bool)"]);
+        const permit2Iface = new ethers.Interface([
+            "function approve(address token, address spender, uint160 amount, uint48 expiration)",
+        ]);
+        const MAX_UINT160 = (2n ** 160n) - 1n;
+        const MAX_UINT48 = (2n ** 48n) - 1n;
+
+        for (const token of [projectToken, baseToken]) {
+            const approveData = erc20Iface.encodeFunctionData("approve", [MAINNET.permit2, ethers.MaxUint256]);
+            await this.broadcastAndConfirm(token, approveData, { gasLimit: 150000, label: `approve ${token.slice(0, 8)} → Permit2` });
+
+            const p2Data = permit2Iface.encodeFunctionData("approve", [token, MAINNET.positionManager, MAX_UINT160, MAX_UINT48]);
+            await this.broadcastAndConfirm(MAINNET.permit2, p2Data, { gasLimit: 100000, label: `Permit2 approve ${token.slice(0, 8)} → PM` });
+        }
+
+        // 4. Compute Uniswap liquidity L from desired amounts and price (mirror of frontend math).
+        const amount0Desired = isProjectCurrency0 ? seedProjectWei : seedWethWei;
+        const amount1Desired = isProjectCurrency0 ? seedWethWei : seedProjectWei;
+        const Q96 = 2n ** 96n;
+        const L0 = (amount0Desired * sqrtPriceX96) / Q96;
+        const L1 = (amount1Desired * Q96) / sqrtPriceX96;
+        const liquidity = ((L0 < L1 ? L0 : L1) * 95n) / 100n; // 95% to avoid rounding reverts
+        const amount0Max = (amount0Desired * 105n) / 100n;
+        const amount1Max = (amount1Desired * 105n) / 100n;
+
+        // 5. Encode MINT_POSITION + SETTLE_PAIR and call modifyLiquidities.
+        const actions = ethers.solidityPacked(["uint8", "uint8"], [MINT_POSITION, SETTLE_PAIR]);
+        const coder = ethers.AbiCoder.defaultAbiCoder();
+        const mintParams = coder.encode(
+            [
+                "tuple(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks)",
+                "int24", "int24", "uint256", "uint128", "uint128", "address", "bytes",
+            ],
+            [
+                [poolKey.currency0, poolKey.currency1, poolKey.fee, poolKey.tickSpacing, poolKey.hooks],
+                FULL_RANGE_TICK_LOWER, FULL_RANGE_TICK_UPPER, liquidity, amount0Max, amount1Max, agentAddr, "0x",
+            ],
+        );
+        const settleParams = coder.encode(["address", "address"], [poolKey.currency0, poolKey.currency1]);
+        const unlockData = coder.encode(["bytes", "bytes[]"], [actions, [mintParams, settleParams]]);
+
+        const deadline = Math.floor(Date.now() / 1000) + 1800; // 30 min
+        const pmIface = new ethers.Interface([
+            "function modifyLiquidities(bytes unlockData, uint256 deadline) payable",
+        ]);
+        const liqData = pmIface.encodeFunctionData("modifyLiquidities", [unlockData, deadline]);
+
+        return await this.broadcastAndConfirm(MAINNET.positionManager, liqData, {
+            gasLimit: 5000000,
+            label: "PositionManager.modifyLiquidities (seed)",
+        });
+    }
+
     public async executeLaunch(params: LaunchParameters): Promise<LaunchResult> {
         console.log(`\n🚀 [Orchestrator] Starting Safe Launch sequence for ${params.tokenSymbol}...`);
         
@@ -147,21 +276,21 @@ export class SafeLaunchOrchestrator {
             
             const factoryAddress = "0xE313713b2b3d5779fd54ac125E428bF1faAd0C0D"; // Live Create2Deployer on X Layer
             let tokenAddress = '';
-            let liquidityTxHash = '0x0';
+            let deployTxHash = '0x0';
 
             // Execute TEE signature via onchainos CLI
             const cmd = `onchainos wallet contract-call --chain 196 --to "${factoryAddress}" --input-data ${inputData} --force`;
             console.log(`[Orchestrator] Executing CLI: ${cmd.slice(0, 80)}...`);
-            
+
             const { stdout } = await execAsync(cmd);
             const result = JSON.parse(stdout);
-            
+
             if (result.ok && result.data && result.data.txHash) {
-                liquidityTxHash = result.data.txHash;
-                console.log(`[Orchestrator] ✅ TEE Tx Broadcasted: ${liquidityTxHash}`);
-                
+                deployTxHash = result.data.txHash;
+                console.log(`[Orchestrator] ✅ TEE Tx Broadcasted: ${deployTxHash}`);
+
                 console.log(`[Orchestrator] ⏳ Waiting for transaction confirmation to extract token address...`);
-                const receipt = await this.provider.waitForTransaction(liquidityTxHash, 1, 60000);
+                const receipt = await this.provider.waitForTransaction(deployTxHash, 1, 60000);
                 
                 if (receipt && receipt.logs) {
                     for (const log of receipt.logs) {
@@ -265,22 +394,55 @@ export class SafeLaunchOrchestrator {
                 console.warn(`[Orchestrator] ⚠️ Hook configuration skipped/failed: ${cfgErr.message}`);
             }
 
+            // 8. Seed initial liquidity so the pool is actually tradeable (optional).
+            // Requires both seed amounts; only runs when they are provided.
+            let seedTxHash: string | null = null;
+            const seedProjectAmount = safeParams.seedProjectAmount;
+            const seedWethAmount = safeParams.seedWethAmount;
+            if (seedProjectAmount && seedWethAmount
+                && parseFloat(seedProjectAmount) > 0 && parseFloat(seedWethAmount) > 0) {
+                try {
+                    const agentAddr = await this.getAgentAddress();
+                    console.log(`[Orchestrator] 🌱 Seeding liquidity from agent wallet ${agentAddr}...`);
+                    seedTxHash = await this.seedLiquidity({
+                        agentAddr,
+                        projectToken: tokenAddress,
+                        baseToken,
+                        poolKey,
+                        sqrtPriceX96,
+                        isProjectCurrency0,
+                        seedProjectAmount,
+                        seedWethAmount,
+                    });
+                } catch (seedErr: any) {
+                    // Non-fatal: the pool is live and protected even if seeding fails; it can
+                    // be seeded later. Surface the reason rather than failing the whole launch.
+                    console.warn(`[Orchestrator] ⚠️ Liquidity seeding failed: ${seedErr.message}`);
+                }
+            } else {
+                console.log(`[Orchestrator] ℹ️ No seed amounts provided — pool initialized without liquidity.`);
+            }
+
             const hookConfig = buildHookConfig(poolId, safeParams);
+            const seeded = !!seedTxHash;
 
             return {
                 status: 'success',
                 tokenAddress,
                 poolId,
-                deployTxHash: liquidityTxHash,
+                deployTxHash,
                 initTxHash: initTxHash || undefined,
                 configTxHash: configTxHash || undefined,
-                liquidityTxHash: initTxHash || liquidityTxHash,
+                liquidityTxHash: seedTxHash || undefined,
                 hookConfig,
                 monitoringLink: `https://hatchai.online/pool/${poolId}`,
                 summary: `Launched ${safeParams.tokenName} (${safeParams.tokenSymbol}) on X Layer at ${tokenAddress}. `
                     + `Uniswap V4 pool ${poolId.slice(0, 10)}… initialized with HatchHook protections: `
                     + `${safeParams.startFeePercent}% → ${safeParams.endFeePercent}% fee decay over ${safeParams.decayDurationHours}h, `
-                    + `${safeParams.cooldownSeconds}s wallet cooldown, ${safeParams.maxSwapAmountTokens} max swap.`,
+                    + `${safeParams.cooldownSeconds}s wallet cooldown, ${safeParams.maxSwapAmountTokens} max swap. `
+                    + (seeded
+                        ? `Seeded with ${seedProjectAmount} ${safeParams.tokenSymbol} + ${seedWethAmount} WETH — pool is live and tradeable.`
+                        : `Not yet seeded — fund liquidity to enable trading.`),
             };
         } catch (error: any) {
             console.error(`[Orchestrator] ❌ Launch failed:`, error.message);
