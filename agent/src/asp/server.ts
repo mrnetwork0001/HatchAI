@@ -40,6 +40,7 @@ const requireAgentPayment = async (req: Request, res: Response, next: NextFuncti
                     scheme: "exact",
                     asset: "0x779ded0c9e1022225f8e0630b35a9b54be713736",
                     amount: "500000", // 0.5 USDT
+                    decimals: 6,
                     payTo: "0x66A4c73e7C02858B49F15fBC24589A76B97C0F5a", // Agentic Wallet Address
                     extra: {
                         name: "USD₮0",
