@@ -5,8 +5,13 @@ import { SafeLaunchOrchestrator } from '../launch/orchestrator';
 import { LaunchParameters } from '../types';
 import { ethers } from 'ethers';
 import { executeOnChainSettlement } from '../launch/settler';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
 
-dotenv.config();
+const execAsync = promisify(exec);
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
 app.use(cors());
@@ -130,8 +135,55 @@ app.post('/api/v1/launch', requireAgentPayment, async (req: Request, res: Respon
     }
 });
 
+async function ensureWalletLoggedIn() {
+    console.log("[Startup] 🔍 Checking OKX wallet status...");
+    try {
+        const { stdout } = await execAsync("onchainos wallet status");
+        let status;
+        try {
+            status = JSON.parse(stdout);
+        } catch (err) {
+            console.warn("[Startup] ⚠️ Failed to parse wallet status JSON response:", stdout);
+            return;
+        }
+        
+        const isProduction = process.env.NODE_ENV === 'production';
+        const hasApiKeys = !!(process.env.OKX_API_KEY && process.env.OKX_SECRET_KEY && process.env.OKX_PASSPHRASE);
+        
+        // We log in if not logged in, OR if in production and not logged in via API Key (ak)
+        const needsLogin = !status.data?.loggedIn || (isProduction && status.data?.loginType !== 'ak' && hasApiKeys);
+        
+        if (needsLogin) {
+            if (hasApiKeys) {
+                console.log("[Startup] 🔑 OKX API Keys detected. Logging in headlessly...");
+                const loginCmd = `onchainos wallet login --force`;
+                const { stdout: loginStdout } = await execAsync(loginCmd);
+                console.log("[Startup] 🔑 Login response:", loginStdout);
+                
+                // Verify new login status
+                const { stdout: verifyStdout } = await execAsync("onchainos wallet status");
+                const verifyStatus = JSON.parse(verifyStdout);
+                if (verifyStatus.data?.loggedIn && verifyStatus.data?.loginType === 'ak') {
+                    console.log(`[Startup] 🎉 Headless API Key login successful! Active account: ${verifyStatus.data.currentAccountName}`);
+                } else {
+                    console.warn("[Startup] ⚠️ Headless API Key login completed but verification failed:", verifyStatus);
+                }
+            } else {
+                console.warn("[Startup] ⚠️ Wallet not logged in and no OKX API Keys found in environment variables.");
+            }
+        } else {
+            console.log(`[Startup] ✅ OKX Wallet is already logged in (Login Type: ${status.data?.loginType || 'unknown'}).`);
+        }
+    } catch (error: any) {
+        console.error("[Startup] ❌ Error checking or executing headless login:", error.message);
+    }
+}
+
 // Start the Agent Service Provider
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`🤖 HatchAI SafeLaunch ASP running on port ${PORT}`);
     console.log(`🌐 A2MCP Endpoint active at POST http://localhost:${PORT}/api/v1/launch`);
+    
+    // Perform headless OKX wallet login check
+    await ensureWalletLoggedIn();
 });
