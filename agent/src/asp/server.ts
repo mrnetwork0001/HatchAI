@@ -5,6 +5,18 @@ import { SafeLaunchOrchestrator } from '../launch/orchestrator';
 import { LaunchParameters } from '../types';
 import { ethers } from 'ethers';
 import { executeOnChainSettlement } from '../launch/settler';
+import { verifyPaymentAuthorization } from '../payment/verify';
+import {
+    LAUNCH_FEE_UNITS,
+    NETWORK_NAME,
+    PAY_TO_ADDRESS,
+    RESOURCE_ID,
+    USDT_ADDRESS,
+    USDT_DECIMALS,
+    USDT_EIP712_NAME,
+    USDT_EIP712_VERSION,
+    launchFeeHuman,
+} from '../payment/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
@@ -20,85 +32,116 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const orchestrator = new SafeLaunchOrchestrator();
 
-// The fixed fee for the A2MCP service in stablecoins (e.g. USDT)
-const LAUNCH_FEE = "50.00"; 
+// The fixed fee for the A2MCP service, derived from the canonical payment config.
+const LAUNCH_FEE = launchFeeHuman();
+
+// Opt-in escape hatch for local testing ONLY. When unset (the default, and always in
+// production) a signed-but-unsettled voucher can NOT buy access.
+const ALLOW_SIMULATED_PAYMENTS = process.env.ALLOW_SIMULATED_PAYMENTS === 'true';
+
+function buildPaymentChallenge(): string {
+    return JSON.stringify({
+        x402Version: "2.0",
+        resource: RESOURCE_ID,
+        accepts: [
+            {
+                network: NETWORK_NAME,
+                scheme: "exact",
+                asset: USDT_ADDRESS.toLowerCase(),
+                amount: LAUNCH_FEE_UNITS,
+                decimals: USDT_DECIMALS,
+                payTo: PAY_TO_ADDRESS,
+                extra: {
+                    name: USDT_EIP712_NAME,
+                    version: USDT_EIP712_VERSION,
+                },
+            },
+        ],
+    });
+}
 
 // Payment Middleware (x402 protocol)
 const requireAgentPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // 1. Check for OKX Agent Payments protocol header (v1 or v2)
-    const rawHeader = req.headers['ok-web3-openapi-pay'] || req.headers['payment-signature'] || req.headers['authorization'];
+    // 1. Check for the x402 payment header (v1 or v2). We deliberately do NOT read the
+    // generic `authorization` header — a bearer token there is not an x402 voucher.
+    const rawHeader = req.headers['ok-web3-openapi-pay']
+        || req.headers['payment-signature']
+        || req.headers['x-payment'];
     const paymentHeader = Array.isArray(rawHeader) ? rawHeader[0] : (rawHeader as string | undefined);
-    
-    if (!paymentHeader) {
-        // Construct standard x402 payload
-        const paymentPayload = JSON.stringify({
-            x402Version: "2.0",
-            resource: "hatchai-agent-launch",
-            accepts: [
-                {
-                    network: "xlayer_mainnet",
-                    scheme: "exact",
-                    asset: "0x779ded0c9e1022225f8e0630b35a9b54be713736",
-                    amount: "500000", // 0.5 USDT
-                    decimals: 6,
-                    payTo: "0x66A4c73e7C02858B49F15fBC24589A76B97C0F5a", // Agentic Wallet Address
-                    extra: {
-                        name: "USD₮0",
-                        version: "1"
-                    }
-                }
-            ]
-        });
 
-        // The exact standard x402 formatting (base64 encoded)
+    if (!paymentHeader) {
+        // Issue the HTTP 402 payment challenge.
+        const paymentPayload = buildPaymentChallenge();
         const base64Payload = Buffer.from(paymentPayload).toString('base64');
-        
-        // Return HTTP 402 with the correct headers for v2
         res.setHeader('PAYMENT-REQUIRED', base64Payload);
         res.setHeader('X-PAYMENT-REQUIRED', base64Payload); // Fallback for some clients
-        
-        // Return the exact JSON payload in the body for v1
         res.status(402).json(JSON.parse(paymentPayload));
         return;
     }
 
-    // 2. Cryptographically verify the payment voucher (Phase 2)
+    // 2. Parse the voucher.
+    let payload: any;
     try {
-        // We expect the payment header to be a base64 encoded JSON string
-        const payload = JSON.parse(Buffer.from(paymentHeader, 'base64').toString('utf8'));
-        
-        // EIP-3009 Standard (exact scheme)
-        if (payload.payload && payload.payload.authorization && payload.payload.signature) {
-            const auth = payload.payload.authorization;
-            const sig = payload.payload.signature;
-            
-            console.log(`[A2MCP] 🔐 EIP-3009 payment signature received from: ${auth.from}`);
-            
-            // Execute on-chain settlement
-            try {
-                const txHash = await executeOnChainSettlement(auth, sig);
-                console.log(`[A2MCP] 💰 On-chain settlement completed! Tx: ${txHash}`);
-                next();
-            } catch (err: any) {
-                console.error("[A2MCP] ❌ On-chain settlement failed:", err.message);
-                res.status(402).json({ error: "On-chain settlement failed" });
-                return;
-            }
-        } 
-        // Fallback for our simulation script (raw signature)
-        else if (payload.voucher && payload.signature) {
-            const recoveredAddress = ethers.verifyMessage(payload.voucher, payload.signature);
-            console.log(`[A2MCP] 🔐 (Simulated) Payment signature verified from: ${recoveredAddress}`);
-            console.log("[A2MCP] 💰 Agent payment verified successfully (No on-chain settlement).");
-            next();
-        } else {
-            throw new Error("Invalid x402 payload structure");
-        }
+        payload = JSON.parse(Buffer.from(paymentHeader, 'base64').toString('utf8'));
     } catch (e: any) {
-        console.error("[A2MCP] ❌ Payment verification failed:", e.message);
-        res.status(403).json({ error: "Invalid payment signature" });
+        console.error("[A2MCP] ❌ Malformed payment header:", e.message);
+        res.status(400).json({ error: "Malformed payment header (expected base64-encoded JSON)" });
         return;
     }
+
+    // 3. EIP-3009 "exact" scheme — verify terms, THEN settle on-chain.
+    if (payload?.payload?.authorization && payload?.payload?.signature) {
+        const auth = payload.payload.authorization;
+        const sig = payload.payload.signature;
+
+        // 3a. Verify the voucher pays the correct amount to the correct address and is
+        // signed by `from` — BEFORE we broadcast anything. Rejects underpayment,
+        // wrong-recipient, and expired/forged vouchers up front.
+        try {
+            verifyPaymentAuthorization(auth, sig, payload.payload.extra || payload.extra);
+            console.log(`[A2MCP] 🔐 Verified x402 voucher: ${LAUNCH_FEE} from ${auth.from} → ${auth.to}`);
+        } catch (err: any) {
+            console.error("[A2MCP] ❌ Payment terms rejected:", err.message);
+            res.status(402).json({ error: `Payment rejected: ${err.message}` });
+            return;
+        }
+
+        // 3b. Settle on-chain and wait for confirmation. Only a confirmed transfer
+        // grants access.
+        try {
+            const txHash = await executeOnChainSettlement(auth, sig);
+            console.log(`[A2MCP] 💰 On-chain settlement confirmed! Tx: ${txHash}`);
+            res.setHeader('X-PAYMENT-TX', txHash);
+            (req as any).paymentTxHash = txHash;
+            next();
+        } catch (err: any) {
+            console.error("[A2MCP] ❌ On-chain settlement failed:", err.message);
+            res.status(402).json({ error: "On-chain settlement failed" });
+        }
+        return;
+    }
+
+    // 4. Simulation fallback (raw signed voucher, no on-chain settlement). Disabled unless
+    // ALLOW_SIMULATED_PAYMENTS=true — never in production.
+    if (payload?.voucher && payload?.signature) {
+        if (!ALLOW_SIMULATED_PAYMENTS) {
+            console.error("[A2MCP] ❌ Simulated voucher rejected (ALLOW_SIMULATED_PAYMENTS not set).");
+            res.status(402).json({ error: "Simulated payments are not accepted on this server" });
+            return;
+        }
+        try {
+            const recoveredAddress = ethers.verifyMessage(payload.voucher, payload.signature);
+            console.log(`[A2MCP] 🧪 (Simulated) Payment voucher verified from: ${recoveredAddress}`);
+            next();
+        } catch (e: any) {
+            console.error("[A2MCP] ❌ Simulated voucher signature invalid:", e.message);
+            res.status(403).json({ error: "Invalid payment signature" });
+        }
+        return;
+    }
+
+    console.error("[A2MCP] ❌ Unrecognized x402 payload structure.");
+    res.status(400).json({ error: "Invalid x402 payload structure" });
 };
 
 // Health Check
@@ -122,7 +165,7 @@ app.all('/api/v1/launch', requireAgentPayment, async (req: Request, res: Respons
         const result = await orchestrator.executeLaunch(params);
         
         if (result.status === 'success') {
-            result.feePaid = `${LAUNCH_FEE} USDT`;
+            result.feePaid = LAUNCH_FEE;
             return res.status(200).json(result);
         } else {
             return res.status(500).json(result);

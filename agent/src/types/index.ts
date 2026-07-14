@@ -8,6 +8,13 @@ export interface LaunchParameters {
     decayDurationHours: number; // e.g. 24
     cooldownSeconds: number; // e.g. 30
     maxSwapAmountTokens: string; // e.g. "1000"
+
+    // Optional pool-pricing controls. If omitted, the orchestrator derives a starting
+    // price from totalSupply / initialLiquidityWeth.
+    priceRatio?: string;   // project tokens per 1 WETH, e.g. "1000"
+    baseToken?: string;    // quote token address; defaults to X Layer WETH
+    seedProjectAmount?: string; // optional initial liquidity (project side)
+    seedWethAmount?: string;    // optional initial liquidity (WETH side)
 }
 
 export interface HookConfig {
@@ -23,7 +30,10 @@ export interface LaunchResult {
     status: 'success' | 'failed';
     tokenAddress?: string;
     poolId?: string;
-    liquidityTxHash?: string;
+    deployTxHash?: string;      // token deployment tx
+    initTxHash?: string;        // PoolManager.initialize tx
+    configTxHash?: string;      // HatchHook.initializeLaunchPool tx
+    liquidityTxHash?: string;   // optional liquidity seeding tx
     hookConfig?: HookConfig;
     monitoringLink?: string;
     feePaid?: string;

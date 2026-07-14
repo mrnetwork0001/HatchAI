@@ -4,8 +4,13 @@ exports.executeOnChainSettlement = executeOnChainSettlement;
 const child_process_1 = require("child_process");
 const util_1 = require("util");
 const ethers_1 = require("ethers");
+const config_1 = require("../payment/config");
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
-const USDT_CONTRACT_ADDRESS = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
+const USDT_CONTRACT_ADDRESS = config_1.USDT_ADDRESS;
+function getProvider() {
+    const rpcUrl = process.env.XLAYER_RPC_URL || "https://rpc.xlayer.tech";
+    return new ethers_1.ethers.JsonRpcProvider(rpcUrl);
+}
 async function executeOnChainSettlement(authorization, signature) {
     console.log(`[Settler] 💸 Initiating on-chain settlement for ${ethers_1.ethers.formatUnits(authorization.value, 6)} USDT...`);
     // Extract v, r, s from the EIP-3009 signature
@@ -39,17 +44,28 @@ async function executeOnChainSettlement(authorization, signature) {
         // Parse the CLI output. We look for a line starting with `Hash:` or a JSON output.
         // The onchainos CLI might just output the hash directly.
         const match = stdout.match(/0x[a-fA-F0-9]{64}/);
-        if (match) {
-            console.log(`[Settler] ✅ Settlement transaction broadcasted: ${match[0]}`);
-            return match[0];
+        if (!match) {
+            console.error(`[Settler] ⚠️ Could not extract a tx hash from stdout:`, stdout);
+            throw new Error("Settlement broadcast returned no transaction hash");
         }
-        else {
-            console.log(`[Settler] ⚠️ Could not extract hash from stdout:`, stdout);
-            return stdout;
+        const txHash = match[0];
+        console.log(`[Settler] ✅ Settlement transaction broadcasted: ${txHash}`);
+        // Wait for the settlement to actually confirm on-chain before granting access.
+        // A broadcast hash alone does not prove the transfer succeeded (it could revert
+        // on a used nonce, expired authorization, or insufficient balance).
+        console.log(`[Settler] ⏳ Waiting for settlement confirmation...`);
+        const receipt = await getProvider().waitForTransaction(txHash, 1, 90000);
+        if (!receipt) {
+            throw new Error(`Settlement not confirmed within timeout: ${txHash}`);
         }
+        if (receipt.status !== 1) {
+            throw new Error(`Settlement transaction reverted on-chain: ${txHash}`);
+        }
+        console.log(`[Settler] ✅ Settlement confirmed in block ${receipt.blockNumber}: ${txHash}`);
+        return txHash;
     }
     catch (error) {
         console.error(`[Settler] ❌ Failed to execute settlement transaction:`, error.message);
-        throw new Error("On-chain settlement failed.");
+        throw new Error(`On-chain settlement failed: ${error.message}`);
     }
 }
