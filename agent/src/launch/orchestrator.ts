@@ -247,7 +247,12 @@ export class SafeLaunchOrchestrator {
             // Generate bytecode for the token
             const factory = new ethers.ContractFactory(MockERC20Artifact.abi, MockERC20Artifact.bytecode);
             const totalSupplyParam = safeParams.totalSupply || "1000000";
-            const deployTxReq = await factory.getDeployTransaction(safeParams.tokenName, safeParams.tokenSymbol, ethers.parseEther(totalSupplyParam));
+            // MockERC20's constructor scales _initialSupply by 1e18 internally, so pass the
+            // plain token count. Using parseEther here would double-apply 18 decimals and
+            // mint a supply 1e18x too large. Parse the integer part from the string (no
+            // float) to preserve precision for very large supplies.
+            const initialSupply = BigInt(totalSupplyParam.trim().split('.')[0] || "0");
+            const deployTxReq = await factory.getDeployTransaction(safeParams.tokenName, safeParams.tokenSymbol, initialSupply);
             const initCode = deployTxReq.data;
 
             // Encode the factory call using Create2Deployer
