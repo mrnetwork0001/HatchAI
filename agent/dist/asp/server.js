@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const orchestrator_1 = require("../launch/orchestrator");
+const params_1 = require("../launch/params");
 const ethers_1 = require("ethers");
 const settler_1 = require("../launch/settler");
 const verify_1 = require("../payment/verify");
@@ -44,6 +45,8 @@ function buildPaymentChallenge() {
                 },
             },
         ],
+        // Accepted-fields hint so buyers know what to send (all optional; defaults applied).
+        input: params_1.LAUNCH_INPUT_SCHEMA,
     });
 }
 // Payment Middleware (x402 protocol)
@@ -130,28 +133,29 @@ const requireAgentPayment = async (req, res, next) => {
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'HatchAI SafeLaunch ASP' });
 });
-// A2MCP Standard Launch Endpoint
+// Public schema discovery — the request-body contract for /api/v1/launch (no payment).
+app.get('/api/v1/launch/schema', (req, res) => {
+    res.json({ service: config_1.RESOURCE_ID, price: LAUNCH_FEE, input: params_1.LAUNCH_INPUT_SCHEMA });
+});
+// A2MCP Standard Launch Endpoint. Every body field is OPTIONAL — a minimal or empty
+// body still deploys a protected token using safe defaults (see LAUNCH_INPUT_SCHEMA).
 app.all('/api/v1/launch', requireAgentPayment, async (req, res) => {
     try {
-        const params = req.body;
-        // Basic input validation
-        if (!params.tokenName || !params.tokenSymbol || !params.totalSupply) {
-            return res.status(400).json({ error: "Missing required token parameters" });
-        }
-        console.log(`[ASP] Received launch request for ${params.tokenName} (${params.tokenSymbol})`);
-        // Execute the orchestration
+        // Normalize the (possibly empty/partial/non-numeric) body into valid params.
+        // This never throws and never yields NaN, so missing fields can't crash the handler.
+        const params = (0, params_1.normalizeLaunchParameters)(req.body);
+        console.log(`[ASP] Launch request → ${params.tokenName} (${params.tokenSymbol}), supply ${params.totalSupply}`);
         const result = await orchestrator.executeLaunch(params);
         if (result.status === 'success') {
             result.feePaid = LAUNCH_FEE;
             return res.status(200).json(result);
         }
-        else {
-            return res.status(500).json(result);
-        }
+        // Launch failed downstream (e.g. RPC/chain error) — surface it with the input hint.
+        return res.status(502).json({ ...result, inputSchema: params_1.LAUNCH_INPUT_SCHEMA });
     }
     catch (error) {
         console.error(`[ASP] Server error:`, error.message);
-        res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ error: "Internal Server Error", detail: error.message, inputSchema: params_1.LAUNCH_INPUT_SCHEMA });
     }
 });
 async function ensureWalletLoggedIn() {

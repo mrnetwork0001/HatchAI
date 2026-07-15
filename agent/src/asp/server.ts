@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { SafeLaunchOrchestrator } from '../launch/orchestrator';
 import { LaunchParameters } from '../types';
+import { normalizeLaunchParameters, LAUNCH_INPUT_SCHEMA } from '../launch/params';
 import { ethers } from 'ethers';
 import { executeOnChainSettlement } from '../launch/settler';
 import { verifyPaymentAuthorization } from '../payment/verify';
@@ -57,6 +58,8 @@ function buildPaymentChallenge(): string {
                 },
             },
         ],
+        // Accepted-fields hint so buyers know what to send (all optional; defaults applied).
+        input: LAUNCH_INPUT_SCHEMA,
     });
 }
 
@@ -149,31 +152,32 @@ app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', service: 'HatchAI SafeLaunch ASP' });
 });
 
-// A2MCP Standard Launch Endpoint
+// Public schema discovery — the request-body contract for /api/v1/launch (no payment).
+app.get('/api/v1/launch/schema', (req: Request, res: Response) => {
+    res.json({ service: RESOURCE_ID, price: LAUNCH_FEE, input: LAUNCH_INPUT_SCHEMA });
+});
+
+// A2MCP Standard Launch Endpoint. Every body field is OPTIONAL — a minimal or empty
+// body still deploys a protected token using safe defaults (see LAUNCH_INPUT_SCHEMA).
 app.all('/api/v1/launch', requireAgentPayment, async (req: Request, res: Response) => {
     try {
-        const params: LaunchParameters = req.body;
-        
-        // Basic input validation
-        if (!params.tokenName || !params.tokenSymbol || !params.totalSupply) {
-            return res.status(400).json({ error: "Missing required token parameters" });
-        }
+        // Normalize the (possibly empty/partial/non-numeric) body into valid params.
+        // This never throws and never yields NaN, so missing fields can't crash the handler.
+        const params: LaunchParameters = normalizeLaunchParameters(req.body);
+        console.log(`[ASP] Launch request → ${params.tokenName} (${params.tokenSymbol}), supply ${params.totalSupply}`);
 
-        console.log(`[ASP] Received launch request for ${params.tokenName} (${params.tokenSymbol})`);
-        
-        // Execute the orchestration
         const result = await orchestrator.executeLaunch(params);
-        
+
         if (result.status === 'success') {
             result.feePaid = LAUNCH_FEE;
             return res.status(200).json(result);
-        } else {
-            return res.status(500).json(result);
         }
+        // Launch failed downstream (e.g. RPC/chain error) — surface it with the input hint.
+        return res.status(502).json({ ...result, inputSchema: LAUNCH_INPUT_SCHEMA });
 
     } catch (error: any) {
         console.error(`[ASP] Server error:`, error.message);
-        res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ error: "Internal Server Error", detail: error.message, inputSchema: LAUNCH_INPUT_SCHEMA });
     }
 });
 
