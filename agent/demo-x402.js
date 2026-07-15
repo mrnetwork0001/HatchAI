@@ -16,6 +16,11 @@ const USDT = "0x779Ded0c9e1022225f8E0630b35a9b54bE713736";
 const RPC = process.env.XLAYER_RPC_URL || "https://rpc.xlayer.tech";
 const DRY = process.argv.includes('--dry');
 
+// ── explorer (OKX Explorer, X Layer EVM) ────────────────────────────────────
+const EXPLORER = "https://web3.okx.com/explorer/x-layer/evm";
+const txUrl = (h) => `${EXPLORER}/tx/${h}`;
+const addrUrl = (a) => `${EXPLORER}/address/${a}`;
+
 // ── presentation helpers ────────────────────────────────────────────────────
 const C = { r: "\x1b[0m", b: "\x1b[1m", dim: "\x1b[2m", cy: "\x1b[36m", gr: "\x1b[32m", ye: "\x1b[33m", ma: "\x1b[35m" };
 const short = (s) => (s && s.length > 14 ? `${s.slice(0, 6)}…${s.slice(-4)}` : s);
@@ -86,6 +91,13 @@ async function preflight(wallet) {
     if (DRY) {
         line();
         line(`${C.ye}  REHEARSAL COMPLETE — voucher signed, nothing submitted.${C.r}`);
+        line();
+        line(`  ${C.dim}Explorer links the real run will print (open these once to verify the format):${C.r}`);
+        line(`  ${C.b}🔗 Agent payment hash${C.r}`);
+        line(`     ${C.cy}${txUrl("0x4a8f8ea9ea2a3c023ddb19eb14526d6948dbe8fe45821b4fe95f5de8b6b3cf4d")}${C.r}`);
+        line(`  ${C.b}🔗 Token deployed — verification${C.r}`);
+        line(`     ${C.cy}${addrUrl("0x81dd2f9fC837ab74de31BD201C39FbF583e75c14")}${C.r}`);
+        line();
         line(`${C.dim}  Run without --dry to execute the real paid launch.${C.r}`);
         line();
         return;
@@ -115,8 +127,11 @@ async function preflight(wallet) {
     kv("maxSwap", `${out.hookConfig?.maxSwapAmount} tokens`);
     kv("feePaid", `${C.b}${out.feePaid}${C.r}`);
     line();
-    line(`  ${C.cy}🔗 https://www.oklink.com/xlayer/tx/${settleTx}${C.r}`);
-    line(`  ${C.cy}🔗 https://www.oklink.com/xlayer/address/${out.tokenAddress}${C.r}`);
+    line(`  ${C.b}🔗 Agent payment hash${C.r}  ${C.dim}— 0.5 USDT settled on-chain${C.r}`);
+    line(`     ${C.cy}${txUrl(settleTx)}${C.r}`);
+    line();
+    line(`  ${C.b}🔗 Token deployed — verification${C.r}  ${C.dim}— live contract on X Layer${C.r}`);
+    line(`     ${C.cy}${addrUrl(out.tokenAddress)}${C.r}`);
     line();
     line(`  ${C.b}${C.gr}⏱ total ${((Date.now() - t0) / 1000).toFixed(1)}s${C.r} — token deployed · Uniswap V4 pool live · HatchHook protections enforced`);
     line();
