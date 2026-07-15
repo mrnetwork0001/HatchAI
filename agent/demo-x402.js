@@ -19,7 +19,8 @@ const DRY = process.argv.includes('--dry');
 // ── explorer (OKX Explorer, X Layer EVM) ────────────────────────────────────
 const EXPLORER = "https://web3.okx.com/explorer/x-layer/evm";
 const txUrl = (h) => `${EXPLORER}/tx/${h}`;
-const addrUrl = (a) => `${EXPLORER}/address/${a}`;
+// Lowercase to match OKX Explorer's canonical address form.
+const addrUrl = (a) => `${EXPLORER}/address/${String(a).toLowerCase()}`;
 
 // ── presentation helpers ────────────────────────────────────────────────────
 const C = { r: "\x1b[0m", b: "\x1b[1m", dim: "\x1b[2m", cy: "\x1b[36m", gr: "\x1b[32m", ye: "\x1b[33m", ma: "\x1b[35m" };
