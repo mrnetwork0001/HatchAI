@@ -5,6 +5,14 @@
  *   Rehearse (no payment, no spend):   node agent/demo-x402.js --dry
  *   Real run (spends 0.5 USDT + gas):  node agent/demo-x402.js
  *
+ * Launch params (all optional — the endpoint defaults anything omitted):
+ *   --name "My Token"   --symbol MYT   --supply 21000000
+ *   --start-fee 10      --end-fee 0.3  --decay-hours 24
+ *   --cooldown 30       --max-swap 1000
+ *
+ * Example:
+ *   node agent/demo-x402.js --name "Bitcoin Hatch" --symbol BHATCH --supply 21000000
+ *
  * Loads PRIVATE_KEY from the repo-root .env automatically.
  * Prints a clean, large-font-friendly narrative for screen recording.
  */
@@ -15,6 +23,34 @@ const BASE = process.env.DEMO_BASE_URL || "https://hatchai-production-997b.up.ra
 const USDT = "0x779Ded0c9e1022225f8E0630b35a9b54bE713736";
 const RPC = process.env.XLAYER_RPC_URL || "https://rpc.xlayer.tech";
 const DRY = process.argv.includes('--dry');
+
+// ── CLI args ────────────────────────────────────────────────────────────────
+// Reads `--flag value`. Returns undefined when absent, so the field is simply
+// omitted from the request body and the endpoint applies its own default.
+function arg(flag) {
+    const i = process.argv.indexOf(`--${flag}`);
+    if (i === -1) return undefined;
+    const v = process.argv[i + 1];
+    return v && !v.startsWith('--') ? v : undefined;
+}
+function buildLaunchBody() {
+    const map = {
+        tokenName: arg('name'),
+        tokenSymbol: arg('symbol'),
+        totalSupply: arg('supply'),
+        startFeePercent: arg('start-fee'),
+        endFeePercent: arg('end-fee'),
+        decayDurationHours: arg('decay-hours'),
+        cooldownSeconds: arg('cooldown'),
+        maxSwapAmountTokens: arg('max-swap'),
+    };
+    const body = {};
+    for (const [k, v] of Object.entries(map)) if (v !== undefined) body[k] = v;
+    // Sensible demo identity when the operator passes nothing.
+    if (!body.tokenName) body.tokenName = "Demo Token";
+    if (!body.tokenSymbol) body.tokenSymbol = "DEMO";
+    return body;
+}
 
 // ── explorer (OKX Explorer, X Layer EVM) ────────────────────────────────────
 const EXPLORER = "https://web3.okx.com/explorer/x-layer/evm";
@@ -61,8 +97,15 @@ async function preflight(wallet) {
     await preflight(wallet);
 
     // ── STEP 1: unpaid request → 402 challenge ──────────────────────────────
+    const launchBody = buildLaunchBody();
     step(1, "An AI agent requests a token launch");
     line(`  ${C.dim}POST ${BASE}/api/v1/launch${C.r}`);
+    line(`  ${C.dim}the agent specifies its own launch terms:${C.r}`);
+    const w = Math.max(...Object.keys(launchBody).map(k => k.length));
+    for (const [k, v] of Object.entries(launchBody)) {
+        line(`     ${C.dim}${k.padEnd(w)}${C.r}  ${C.b}${v}${C.r}`);
+    }
+    line(`  ${C.dim}(anything omitted is safely defaulted by the endpoint)${C.r}`);
     const chRes = await fetch(`${BASE}/api/v1/launch`);
     const challenge = await chRes.json();
     const acc = challenge.accepts[0];
@@ -112,7 +155,7 @@ async function preflight(wallet) {
     const res = await fetch(`${BASE}/api/v1/launch`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "payment-signature": header },
-        body: JSON.stringify({ tokenName: "Demo Token", tokenSymbol: "DEMO", totalSupply: "1000000" }),
+        body: JSON.stringify(launchBody),
     });
     const settleTx = res.headers.get('x-payment-tx');
     const out = await res.json();
