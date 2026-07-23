@@ -1314,14 +1314,23 @@ export default function App() {
       {/* Mobile drawer */}
       {mobileMenuOpen && (
         <div className="mobile-drawer">
-          {view === "landing" ? (
-            <button
-              onClick={() => { setView("console"); setConsoleTab("portal"); setMobileMenuOpen(false); }}
-              className="btn-neon"
-              style={{ width: "100%", padding: "14px", fontSize: "15px" }}
-            >
-              Launch App →
-            </button>
+          {view === "landing" || view === "agent" ? (
+            <>
+              <button
+                onClick={() => { setView(view === "landing" ? "agent" : "landing"); setMobileMenuOpen(false); }}
+                className="btn-outline"
+                style={{ width: "100%", padding: "14px", fontSize: "15px" }}
+              >
+                {view === "landing" ? "Agent API" : "Home"}
+              </button>
+              <button
+                onClick={() => { setView("console"); setConsoleTab("portal"); setMobileMenuOpen(false); }}
+                className="btn-neon"
+                style={{ width: "100%", padding: "14px", fontSize: "15px" }}
+              >
+                Launch App →
+              </button>
+            </>
           ) : (
             <>
               <button
