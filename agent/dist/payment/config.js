@@ -14,7 +14,9 @@ exports.USDT_DECIMALS = 6;
 exports.USDT_EIP712_NAME = "USD₮0";
 exports.USDT_EIP712_VERSION = "1";
 // Where the launch fee is collected (OKX Agentic Wallet).
-exports.PAY_TO_ADDRESS = "0x66A4c73e7C02858B49F15fBC24589A76B97C0F5a";
+// Treasury: ifeanyichukwuonwo agentic wallet (email-recoverable) — receives the launch fee.
+// Kept separate from the API-key owner wallet (agent ops) on purpose.
+exports.PAY_TO_ADDRESS = "0x4E5be7d456AEaB8D387db26A620e522fF100ce94";
 // The launch fee, expressed once in minimal units and derived everywhere else.
 exports.LAUNCH_FEE_UNITS = "500000"; // 0.5 USD₮0 (6 decimals)
 // CAIP-2 network id. The OKX task-402-pay CLI rejects the raw "xlayer_mainnet"
